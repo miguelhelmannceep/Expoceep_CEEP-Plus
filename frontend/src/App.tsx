@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { StudentLayout } from "./components/layout/StudentLayout";
@@ -63,7 +63,8 @@ const AppContent: React.FC = () => {
     return (
       <ProtectedRoute allowedRoles={["GESTAO"]}>
         <ManagementLayout activeTab={managementTab} onTabChange={setManagementTab}>
-          <ManagementDashboardPage activeTab={managementTab} />
+          <ManagementDashboardPage activeTab={managementTab} onTabChange={setManagementTab} />
+
         </ManagementLayout>
       </ProtectedRoute>
     );

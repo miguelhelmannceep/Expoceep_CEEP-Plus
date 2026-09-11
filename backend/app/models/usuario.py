@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timezone
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.db.base import Base
@@ -18,3 +18,5 @@ class Usuario(Base):
     turma_rel = relationship("Turma", back_populates="usuarios")
     tarefas = relationship("Tarefa", back_populates="aluno_rel")
     avisos_publicados = relationship("Aviso", back_populates="autor_rel")
+    pedidos = relationship("Pedido", back_populates="usuario_rel")
+

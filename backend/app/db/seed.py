@@ -1,17 +1,55 @@
-﻿from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.db.base import Base
 from app.db.session import engine, SessionLocal
 from app.core.security import get_password_hash
 from app.models.turma import Curso, Turma
+from app.models.disciplina import Disciplina
+from app.models.professor import Professor
 from app.models.usuario import Usuario
 from app.models.horario import Horario
 from app.models.aviso import Aviso
 from app.models.tarefa import Tarefa
 from app.models.produto import Produto
 
+def ensure_schema_migrations(db: Session) -> None:
+    """Garante que colunas recém-adicionadas existam em bancos SQLite pré-existentes."""
+    with engine.connect() as conn:
+        # 1. Horários
+        try:
+            h_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(horarios)")).fetchall()]
+            if h_cols:
+                if "disciplina_id" not in h_cols:
+                    conn.execute(text("ALTER TABLE horarios ADD COLUMN disciplina_id INTEGER REFERENCES disciplinas(id)"))
+                if "professor_id" not in h_cols:
+                    conn.execute(text("ALTER TABLE horarios ADD COLUMN professor_id INTEGER REFERENCES professores(id)"))
+                if "ativo" not in h_cols:
+                    conn.execute(text("ALTER TABLE horarios ADD COLUMN ativo BOOLEAN DEFAULT 1"))
+                conn.commit()
+        except Exception as e:
+            print(f"Migration warning horarios: {e}")
+
 def init_db(db: Session) -> None:
     Base.metadata.create_all(bind=engine)
+    ensure_schema_migrations(db)
+
+    # Backfill disciplina_id e professor_id para horários legados se existirem
+    try:
+        horarios_sem_fk = db.query(Horario).filter((Horario.disciplina_id == None) | (Horario.professor_id == None)).all()
+        if horarios_sem_fk:
+            discs = {d.nome.lower(): d.id for d in db.query(Disciplina).all()}
+            profs = {p.nome.lower(): p.id for p in db.query(Professor).all()}
+            for h in horarios_sem_fk:
+                if h.disciplina_id is None and h.disciplina and h.disciplina.lower() in discs:
+                    h.disciplina_id = discs[h.disciplina.lower()]
+                if h.professor_id is None and h.professor and h.professor.lower() in profs:
+                    h.professor_id = profs[h.professor.lower()]
+                if h.ativo is None:
+                    h.ativo = True
+            db.commit()
+    except Exception as e:
+        print(f"Backfill warning: {e}")
 
     # Se já existirem dados, não duplica
     if db.query(Usuario).first():
@@ -20,17 +58,59 @@ def init_db(db: Session) -> None:
     print("Populando banco de dados com dados de demonstração do CEEP+...")
 
     # 1. Cursos
-    ds = Curso(nome="Desenvolvimento de Sistemas", sigla="DS")
-    edif = Curso(nome="Edificações", sigla="EDIF")
-    eletro = Curso(nome="Eletrotécnica", sigla="ELETRO")
+    ds = Curso(nome="Desenvolvimento de Sistemas", sigla="DS", ativo=True)
+    edif = Curso(nome="Edificações", sigla="EDIF", ativo=True)
+    eletro = Curso(nome="Eletrotécnica", sigla="ELETRO", ativo=True)
     db.add_all([ds, edif, eletro])
     db.flush()
 
     # 2. Turmas
-    turma_3c = Turma(nome_turma="3º C — Desenvolvimento de Sistemas", curso="Desenvolvimento de Sistemas", periodo="Manhã", curso_id=ds.id)
-    turma_2a = Turma(nome_turma="2º A — Desenvolvimento de Sistemas", curso="Desenvolvimento de Sistemas", periodo="Tarde", curso_id=ds.id)
-    turma_1b = Turma(nome_turma="1º B — Edificações", curso="Edificações", periodo="Manhã", curso_id=edif.id)
+    turma_3c = Turma(nome_turma="3º C — Desenvolvimento de Sistemas", curso="Desenvolvimento de Sistemas", ano="3º Ano", periodo="Manhã", curso_id=ds.id, ativo=True)
+    turma_2a = Turma(nome_turma="2º A — Desenvolvimento de Sistemas", curso="Desenvolvimento de Sistemas", ano="2º Ano", periodo="Tarde", curso_id=ds.id, ativo=True)
+    turma_1b = Turma(nome_turma="1º B — Edificações", curso="Edificações", ano="1º Ano", periodo="Manhã", curso_id=edif.id, ativo=True)
     db.add_all([turma_3c, turma_2a, turma_1b])
+    db.flush()
+
+    # 3. Disciplinas
+    disc_ds = [
+        Disciplina(nome="Desenvolvimento Web", sigla="DW", curso_id=ds.id, ativo=True),
+        Disciplina(nome="Banco de Dados", sigla="BD", curso_id=ds.id, ativo=True),
+        Disciplina(nome="Programação de Aplicativos", sigla="PAM", curso_id=ds.id, ativo=True),
+        Disciplina(nome="Redes de Computadores", sigla="RC", curso_id=ds.id, ativo=True),
+        Disciplina(nome="Segurança da Informação", sigla="SI", curso_id=ds.id, ativo=True),
+        Disciplina(nome="Estrutura de Dados", sigla="ED", curso_id=ds.id, ativo=True),
+        Disciplina(nome="Engenharia de Software", sigla="ES", curso_id=ds.id, ativo=True),
+        Disciplina(nome="Lógica de Programação", sigla="LP", curso_id=ds.id, ativo=True),
+    ]
+    disc_edif = [
+        Disciplina(nome="Desenho Arquitetônico", sigla="DA", curso_id=edif.id, ativo=True),
+        Disciplina(nome="Materiais de Construção", sigla="MC", curso_id=edif.id, ativo=True),
+        Disciplina(nome="Topografia", sigla="TOPO", curso_id=edif.id, ativo=True),
+        Disciplina(nome="Geometria Descritiva", sigla="GD", curso_id=edif.id, ativo=True),
+    ]
+    disc_eletro = [
+        Disciplina(nome="Circuitos Elétricos", sigla="CE", curso_id=eletro.id, ativo=True),
+        Disciplina(nome="Instalações Elétricas", sigla="IE", curso_id=eletro.id, ativo=True),
+        Disciplina(nome="Automação Industrial", sigla="AI", curso_id=eletro.id, ativo=True),
+    ]
+    db.add_all(disc_ds + disc_edif + disc_eletro)
+    db.flush()
+
+    # 4. Professores
+    professores_demo = [
+        Professor(nome="Prof. Carlos", email="carlos.docente@ceep.demo", ativo=True),
+        Professor(nome="Prof. Ricardo", email="ricardo.docente@ceep.demo", ativo=True),
+        Professor(nome="Profª. Ana", email="ana.docente@ceep.demo", ativo=True),
+        Professor(nome="Prof. Marcos", email="marcos.docente@ceep.demo", ativo=True),
+        Professor(nome="Profª. Juliana", email="juliana.docente@ceep.demo", ativo=True),
+        Professor(nome="Prof. Paulo", email="paulo.docente@ceep.demo", ativo=True),
+        Professor(nome="Profª. Mariana", email="mariana.docente@ceep.demo", ativo=True),
+        Professor(nome="Profª. Fernanda", email="fernanda.docente@ceep.demo", ativo=True),
+        Professor(nome="Prof. Roberto", email="roberto.docente@ceep.demo", ativo=True),
+        Professor(nome="Profª. Patrícia", email="patricia.docente@ceep.demo", ativo=True),
+        Professor(nome="Prof. Henrique", email="henrique.docente@ceep.demo", ativo=True),
+    ]
+    db.add_all(professores_demo)
     db.flush()
 
     # 3. Usuários Demo
@@ -125,6 +205,7 @@ def init_db(db: Session) -> None:
             descricao="Estão abertas as inscrições de projetos para a tradicional feira técnica anual do CEEP. Procure a coordenação do seu curso para registrar sua equipe até o dia 25/09.",
             prioridade="ALTA",
             publico_alvo_tipo="GERAL",
+            status="PUBLICADO",
             autor_id=gestao_demo.id
         ),
         Aviso(
@@ -133,6 +214,7 @@ def init_db(db: Session) -> None:
             prioridade="URGENTE",
             publico_alvo_tipo="CURSO",
             publico_alvo_id=ds.id,
+            status="PUBLICADO",
             autor_id=gestao_demo.id
         ),
         Aviso(
@@ -140,6 +222,7 @@ def init_db(db: Session) -> None:
             descricao="Informamos que durante o recesso escolar a biblioteca estará aberta das 08h às 14h para empréstimos, devoluções e pesquisas acadêmicas.",
             prioridade="MEDIA",
             publico_alvo_tipo="GERAL",
+            status="PUBLICADO",
             autor_id=gestao_demo.id
         ),
         Aviso(
@@ -148,10 +231,21 @@ def init_db(db: Session) -> None:
             prioridade="BAIXA",
             publico_alvo_tipo="CURSO",
             publico_alvo_id=ds.id,
+            status="PUBLICADO",
+            autor_id=gestao_demo.id
+        ),
+        Aviso(
+            titulo="Alinhamento do Projeto Integrador — 3º C",
+            descricao="Orientações específicas para os grupos de TCC da turma 3º C referentes ao cronograma de entrega das documentações técnicas.",
+            prioridade="ALTA",
+            publico_alvo_tipo="TURMA",
+            publico_alvo_id=turma_3c.id,
+            status="PUBLICADO",
             autor_id=gestao_demo.id
         ),
     ]
     db.add_all(avisos_demo)
+
 
     # 6. Tarefas para Aluno Demo
     tarefas_demo = [

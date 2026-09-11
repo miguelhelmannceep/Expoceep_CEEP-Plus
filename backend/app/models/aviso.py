@@ -12,6 +12,7 @@ class Aviso(Base):
     prioridade = Column(String(20), default="MEDIA") # BAIXA, MEDIA, ALTA, URGENTE
     publico_alvo_tipo = Column(String(20), default="GERAL") # GERAL, CURSO, TURMA
     publico_alvo_id = Column(Integer, nullable=True)
+    status = Column(String(20), default="PUBLICADO", nullable=False) # RASCUNHO, PUBLICADO
     data_publicacao = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     autor_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
 

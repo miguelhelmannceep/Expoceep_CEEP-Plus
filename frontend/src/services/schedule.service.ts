@@ -1,7 +1,11 @@
-﻿import { request } from "./api";
-import type { ClassOption, ScheduleItem } from "../types";
+import { request } from "./api";
+import type { ClassOption, CourseOption, ScheduleItem } from "../types";
 
 export const scheduleService = {
+  async getCourses(): Promise<CourseOption[]> {
+    return request<CourseOption[]>("/schedules/courses");
+  },
+
   async getClasses(): Promise<ClassOption[]> {
     return request<ClassOption[]>("/schedules/classes");
   },
@@ -10,3 +14,4 @@ export const scheduleService = {
     return request<ScheduleItem[]>(`/schedules/${turmaId}`);
   },
 };
+

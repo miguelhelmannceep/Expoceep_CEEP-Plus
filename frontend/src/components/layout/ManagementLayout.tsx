@@ -1,8 +1,7 @@
-﻿import React from "react";
-import { LayoutDashboard, Bell, Users, Coffee, Settings, LogOut, Shield } from "lucide-react";
+import { LayoutDashboard, Bell, Users, BookOpen, Calendar, Coffee, Settings, LogOut, Shield } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
-export type ManagementTab = "dashboard" | "avisos" | "turmas" | "cantina" | "configuracoes";
+export type ManagementTab = "dashboard" | "avisos" | "turmas" | "disciplinas" | "horarios" | "cantina" | "configuracoes";
 
 interface ManagementLayoutProps {
   activeTab: ManagementTab;
@@ -20,7 +19,9 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
   const navItems: { id: ManagementTab; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "avisos", label: "Avisos", icon: Bell },
-    { id: "turmas", label: "Turmas & Horários", icon: Users },
+    { id: "turmas", label: "Cursos & Turmas", icon: Users },
+    { id: "disciplinas", label: "Disciplinas & Docentes", icon: BookOpen },
+    { id: "horarios", label: "Grade Horária", icon: Calendar },
     { id: "cantina", label: "Cantina / Demanda", icon: Coffee },
     { id: "configuracoes", label: "Configurações", icon: Settings },
   ];

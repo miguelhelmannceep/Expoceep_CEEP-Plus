@@ -1,4 +1,4 @@
-﻿from typing import Optional, List
+from typing import Optional, List
 from pydantic import BaseModel
 from app.schemas.horario import HorarioOut
 from app.schemas.aviso import AvisoOut
@@ -10,7 +10,7 @@ class NextClassOut(BaseModel):
     horario_fim: str
     disciplina: str
     professor: str
-    sala: str
+    sala: Optional[str] = None
 
 class StudentDashboardOut(BaseModel):
     saudacao: str

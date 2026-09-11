@@ -1,6 +1,7 @@
-﻿from datetime import datetime
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_
 from app.api.deps import get_db, require_roles
 from app.models.usuario import Usuario
 from app.models.horario import Horario
@@ -31,21 +32,41 @@ def get_student_dashboard(
     turma_nome = current_user.turma_rel.nome_turma if current_user.turma_rel else "Sem Turma"
     curso_nome = current_user.turma_rel.curso if current_user.turma_rel else "CEEP"
 
-    # Próxima aula fictícia/baseada nos horários da turma
+    # Próxima aula dinâmica baseada nos horários cadastrados da turma
     proxima_aula = None
     if current_user.turma_id:
-        horario = db.query(Horario).filter(Horario.turma_id == current_user.turma_id).first()
+        horario = db.query(Horario).filter(
+            Horario.turma_id == current_user.turma_id,
+            (Horario.ativo == True) | (Horario.ativo == None)
+        ).order_by(Horario.horario_inicio.asc()).first()
         if horario:
+            disc_nome = horario.disciplina_rel.nome if horario.disciplina_rel else (horario.disciplina or "Disciplina")
+            prof_nome = horario.professor_rel.nome if horario.professor_rel else (horario.professor or "Professor")
             proxima_aula = NextClassOut(
-                horario_inicio="08:20",
-                horario_fim="09:10",
-                disciplina="Banco de Dados",
-                professor="Prof. Ricardo",
-                sala="Laboratório 03"
+                horario_inicio=horario.horario_inicio,
+                horario_fim=horario.horario_fim,
+                disciplina=disc_nome,
+                professor=prof_nome,
+                sala=None
             )
 
-    # Aviso recente
-    aviso_db = db.query(Aviso).order_by(Aviso.data_publicacao.desc()).first()
+    # Aviso recente publicado e segmentado para o aluno
+    curso_id = current_user.turma_rel.curso_id if current_user.turma_rel else None
+    aviso_db = db.query(Aviso).filter(
+        Aviso.status == "PUBLICADO",
+        or_(
+            Aviso.publico_alvo_tipo == "GERAL",
+            and_(
+                Aviso.publico_alvo_tipo == "CURSO",
+                Aviso.publico_alvo_id == curso_id
+            ),
+            and_(
+                Aviso.publico_alvo_tipo == "TURMA",
+                Aviso.publico_alvo_id == current_user.turma_id
+            )
+        )
+    ).order_by(Aviso.data_publicacao.desc()).first()
+
     aviso_recente = None
     if aviso_db:
         aviso_recente = AvisoOut(

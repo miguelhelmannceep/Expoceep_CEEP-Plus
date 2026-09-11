@@ -1,11 +1,12 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { scheduleService } from "../../services/schedule.service";
 import type { ClassOption, ScheduleItem } from "../../types";
 import { Card } from "../../components/common/Card";
 import { ListSkeleton } from "../../components/common/Skeleton";
 import { EmptyState } from "../../components/common/EmptyState";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
-import { Calendar, Clock, MapPin, User as UserIcon, BookOpen } from "lucide-react";
+import { Calendar, Clock, User as UserIcon, BookOpen } from "lucide-react";
+
 
 export const SchedulesPage: React.FC = () => {
   const [classes, setClasses] = useState<ClassOption[]>([]);
@@ -137,13 +138,8 @@ export const SchedulesPage: React.FC = () => {
                   <Clock className="w-3 h-3 mr-1 text-emerald-600" />
                   {item.horario_inicio} - {item.horario_fim}
                 </span>
-                {item.sala && (
-                  <span className="text-[11px] text-slate-500 font-medium flex items-center">
-                    <MapPin className="w-3 h-3 text-slate-400 mr-1" />
-                    {item.sala}
-                  </span>
-                )}
               </div>
+
 
               <div>
                 <h3 className="text-sm font-bold text-slate-900">{item.disciplina}</h3>

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { studentService } from "../../services/student.service";
 import type { StudentDashboard } from "../../types";
 import { Card } from "../../components/common/Card";
@@ -6,7 +6,8 @@ import { Badge } from "../../components/common/Badge";
 import { DashboardSkeleton } from "../../components/common/Skeleton";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
 import type { StudentTab } from "../../components/layout/StudentLayout";
-import { Clock, MapPin, Bell, CheckSquare, Coffee, ChevronRight, BookOpen, User as UserIcon } from "lucide-react";
+import { Clock, Bell, CheckSquare, Coffee, ChevronRight, BookOpen, User as UserIcon } from "lucide-react";
+
 
 interface DashboardPageProps {
   onNavigate: (tab: StudentTab) => void;
@@ -89,12 +90,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               {dashboard.proxima_aula.professor}
             </p>
           </div>
-
-          <div className="flex items-center space-x-1.5 text-xs text-slate-600 pt-2 border-t border-emerald-200/60 font-medium">
-            <MapPin className="w-3.5 h-3.5 text-emerald-700" />
-            <span>Local: {dashboard.proxima_aula.sala}</span>
-          </div>
         </Card>
+
       ) : null}
 
       {/* Aviso Destaque */}

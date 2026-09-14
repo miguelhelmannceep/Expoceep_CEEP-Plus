@@ -1,14 +1,15 @@
-﻿import React, { useEffect } from "react";
+import React, { useEffect } from "react";
 import { X } from "lucide-react";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
+  maxWidth?: string;
   children: React.ReactNode;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, maxWidth = "max-w-md", children }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -33,7 +34,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
       aria-modal="true"
     >
       <div
-        className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl relative animate-in zoom-in-95 duration-200"
+        className={`bg-white rounded-3xl p-6 ${maxWidth} w-full max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl relative animate-in zoom-in-95 duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
         <button

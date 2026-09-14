@@ -1970,6 +1970,161 @@ def test_integration_management_overview_consistency():
     assert overview["cantina_resumo"]["receita_confirmada"] >= 0.0
 
 
+# ============================================================================
+# MILESTONE 4A: FLUXO COMPLETO E QA DE DEMONSTRAÇÃO (E2E)
+# ============================================================================
+
+def test_e2e_student_complete_journey():
+    """Validação completa da jornada do Aluno: Login -> Dashboard -> Horários -> Tarefas -> Compra na Cantina -> PIX Simulado -> QR Code de Retirada."""
+    # 1. Login Aluno
+    token_aluno = get_auth_token("aluno@ceep.demo")
+    headers = {"Authorization": f"Bearer {token_aluno}"}
+
+    # 2. Consulta ao Dashboard
+    dash_resp = client.get("/api/v1/student/dashboard", headers=headers)
+    assert dash_resp.status_code == 200
+    dash = dash_resp.json()
+    assert dash["aluno_nome"] == "Aluno Demo"
+    assert "3º C" in dash["turma_nome"]
+    if dash.get("proxima_aula"):
+        assert dash["proxima_aula"]["sala"] is None
+
+    # 3. Consulta de Horários
+    sched_resp = client.get("/api/v1/schedules/1", headers=headers)
+    assert sched_resp.status_code == 200
+    schedules = sched_resp.json()
+    assert len(schedules) > 0
+    for s in schedules:
+        assert "disciplina" in s
+        assert "horario_inicio" in s
+
+    # 4. Ciclo de Vida de Tarefas (Criar -> Alternar Conclusão)
+    task_resp = client.post("/api/v1/tasks/", json={
+        "titulo": "Tarefa E2E Demo Aluno",
+        "descricao": "Atividade criada para validação ponta a ponta",
+        "prioridade": "ALTA"
+    }, headers=headers)
+    assert task_resp.status_code == 201
+    task_id = task_resp.json()["id"]
+
+    toggle_resp = client.patch(f"/api/v1/tasks/{task_id}/toggle", headers=headers)
+    assert toggle_resp.status_code == 200
+    assert toggle_resp.json()["status"] == "CONCLUIDA"
+
+    # 5. Cantina: Listar produtos ativos
+    prods_resp = client.get("/api/v1/canteen/products", headers=headers)
+    assert prods_resp.status_code == 200
+    prods = prods_resp.json()
+    assert len(prods) > 0
+    salgado = next(p for p in prods if p["nome"] == "Salgado")
+
+    # 6. Cantina: Criar Pedido
+    order_resp = client.post("/api/v1/canteen/orders", json={
+        "produto_id": salgado["id"],
+        "quantidade": 1
+    }, headers=headers)
+    assert order_resp.status_code == 201
+    order = order_resp.json()
+    order_id = order["id"]
+    assert order["status"] == "PENDENTE_PAGAMENTO"
+    assert "pix_code" in order
+
+    # 7. Cantina: Simulação de Pagamento PIX
+    pay_resp = client.post(f"/api/v1/canteen/orders/{order_id}/simulate-payment", headers=headers)
+    assert pay_resp.status_code == 200
+    paid_order = pay_resp.json()
+    assert paid_order["status"] == "PAGO"
+
+    # 8. Cantina: Obtenção do QR Code de Retirada
+    qr_resp = client.get(f"/api/v1/canteen/orders/{order_id}/pickup-qr", headers=headers)
+    assert qr_resp.status_code == 200
+    qr_data = qr_resp.json()
+    assert qr_data["status"] == "PAGO"
+    assert qr_data["pickup_code"].startswith("CEEPPLUS-PICKUP-")
+
+
+def test_e2e_canteen_staff_validation_and_reuse_prevention():
+    """Validação completa da Cantina: Leitura do QR -> Confirmação da Retirada -> Pedido UTILIZADO -> Bloqueio de reuso."""
+    # 1. Aluno cria e paga um pedido
+    token_aluno = get_auth_token("aluno@ceep.demo")
+    headers_aluno = {"Authorization": f"Bearer {token_aluno}"}
+
+    create_resp = client.post("/api/v1/canteen/orders", json={"produto_id": 1, "quantidade": 1}, headers=headers_aluno)
+    order_id = create_resp.json()["id"]
+    client.post(f"/api/v1/canteen/orders/{order_id}/simulate-payment", headers=headers_aluno)
+    qr_data = client.get(f"/api/v1/canteen/orders/{order_id}/pickup-qr", headers=headers_aluno).json()
+    pickup_code = qr_data["pickup_code"]
+
+    # 2. Atendente da Cantina autentica
+    token_cantina = get_auth_token("cantina@ceep.demo")
+    headers_cantina = {"Authorization": f"Bearer {token_cantina}"}
+
+    # 3. Terminal da cantina valida o QR Code lido
+    val_resp = client.post("/api/v1/canteen/pickup/validate", json={"pickup_code": pickup_code}, headers=headers_cantina)
+    assert val_resp.status_code == 200
+    validation = val_resp.json()
+    assert validation["order_id"] == order_id
+    assert validation["status"] == "PAGO"
+    assert validation["status_validacao"] == "DISPONIVEL"
+
+    # 4. Atendente confirma a entrega do salgado
+    conf_resp = client.post(f"/api/v1/canteen/pickup/{order_id}/confirm", headers=headers_cantina)
+    assert conf_resp.status_code == 200
+    conf = conf_resp.json()
+    assert conf["status"] == "UTILIZADO"
+    assert "confirmada" in conf["mensagem"].lower()
+
+    # 5. Tentativa de reutilização do mesmo QR Code pelo aluno deve ser bloqueada
+    re_val_resp = client.post("/api/v1/canteen/pickup/validate", json={"pickup_code": pickup_code}, headers=headers_cantina)
+    assert re_val_resp.status_code == 400
+    assert "já utilizado" in re_val_resp.json()["detail"].lower()
+
+    # 6. QR Code inexistente/inválido deve retornar 404
+    bad_val_resp = client.post("/api/v1/canteen/pickup/validate", json={"pickup_code": "CEEPPLUS-PICKUP-INVALID123"}, headers=headers_cantina)
+    assert bad_val_resp.status_code == 404
+
+
+def test_e2e_management_full_lifecycle_and_rbac():
+    """Validação da Gestão: Dashboard -> Gestão de Cursos, Turmas, Disciplinas, Professores, Grade e Cantina."""
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    # 1. Visão Geral da Gestão
+    overview = client.get("/api/v1/management/overview", headers=headers_gestao).json()
+    assert overview["total_turmas"] >= 3
+    assert overview["total_alunos"] >= 1
+
+    # 2. Gestão cria produto na cantina
+    unique_code = uuid.uuid4().hex[:4].upper()
+    prod = client.post("/api/v1/management/canteen/products", json={
+        "nome": f"Pão de Queijo {unique_code}",
+        "preco": 4.50,
+        "ativo": True
+    }, headers=headers_gestao).json()
+    assert prod["id"] is not None
+
+    # 3. Gestão consulta pedidos
+    orders = client.get("/api/v1/management/canteen/orders", headers=headers_gestao).json()
+    assert isinstance(orders, list)
+
+    # 4. RBAC: Aluno e Cantina bloqueados de acessar endpoints da Gestão
+    token_aluno = get_auth_token("aluno@ceep.demo")
+    token_cantina = get_auth_token("cantina@ceep.demo")
+    headers_aluno = {"Authorization": f"Bearer {token_aluno}"}
+    headers_cantina = {"Authorization": f"Bearer {token_cantina}"}
+
+    for h in [headers_aluno, headers_cantina]:
+        assert client.get("/api/v1/management/overview", headers=h).status_code == 403
+        assert client.get("/api/v1/management/courses", headers=h).status_code == 403
+        assert client.get("/api/v1/management/classes", headers=h).status_code == 403
+        assert client.get("/api/v1/management/disciplines", headers=h).status_code == 403
+        assert client.get("/api/v1/management/professors", headers=h).status_code == 403
+        assert client.get("/api/v1/management/schedules", headers=h).status_code == 403
+        assert client.get("/api/v1/management/canteen/orders", headers=h).status_code == 403
+        assert client.get("/api/v1/management/canteen/products", headers=h).status_code == 403
+
+
+
 
 
 

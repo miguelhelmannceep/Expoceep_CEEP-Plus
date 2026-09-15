@@ -1,4 +1,4 @@
-﻿# CEEP+ — Portal & Aplicação Escolar
+# CEEP+ — Portal & Aplicação Escolar
 
 Aplicação web progressiva (PWA) responsiva e mobile-first projetada para a comunidade escolar do **Centro Estadual de Educação Profissional Pedro Boaretto Neto (CEEP Cascavel)**.
 
@@ -119,6 +119,5 @@ Expoceep_CEEP-Plus/
 │   │   └── types/        # Definições TypeScript compartilhadas
 │   ├── package.json
 │   └── vite.config.ts
-├── bd/                   # Scripts SQL de referência inicial
 └── README.md
 ```

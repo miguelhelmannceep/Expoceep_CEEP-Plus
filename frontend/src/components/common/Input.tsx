@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -27,12 +27,12 @@ export const Input: React.FC<InputProps> = ({
         id={inputId}
         className={`w-full px-3.5 py-2.5 text-sm bg-white border rounded-xl text-slate-900 placeholder:text-slate-400 transition-all focus:outline-none focus:ring-2 ${
           error
-            ? "border-rose-300 focus:border-rose-500 focus:ring-rose-200 bg-rose-50/20"
-            : "border-slate-200 focus:border-emerald-500 focus:ring-emerald-100 hover:border-slate-300"
+            ? "border-red-300 focus:border-red-500 focus:ring-red-100 bg-red-50/20"
+            : "border-slate-200 focus:border-[#2d3661] focus:ring-[#2d3661]/10 hover:border-slate-300"
         } ${className}`}
         {...props}
       />
-      {error && <p className="text-xs text-rose-600">{error}</p>}
+      {error && <p className="text-xs text-red-600">{error}</p>}
       {helperText && !error && <p className="text-xs text-slate-500">{helperText}</p>}
     </div>
   );

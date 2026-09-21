@@ -87,7 +87,7 @@ export const ManagementDashboardPage: React.FC<ManagementDashboardPageProps> = (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <div>
               <div className="flex items-center space-x-2">
-                <span className="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200/60 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                <span className="text-xs font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
                   Gestão Escolar
                 </span>
                 <span className="text-xs text-slate-400 font-medium">| CEEP Pedro Boaretto Neto</span>
@@ -100,8 +100,8 @@ export const ManagementDashboardPage: React.FC<ManagementDashboardPageProps> = (
               </p>
             </div>
 
-            <div className="inline-flex items-center space-x-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200/80 self-start sm:self-auto">
-              <Activity className="w-4 h-4 text-emerald-600" />
+            <div className="inline-flex items-center space-x-2 text-xs font-semibold text-[#4aaa3c] bg-[#4aaa3c]/10 px-3.5 py-2 rounded-xl border border-[#4aaa3c]/30 self-start sm:self-auto">
+              <Activity className="w-4 h-4 text-[#4aaa3c]" />
               <span>Sistema {overview.status_sistema}</span>
             </div>
           </div>
@@ -112,7 +112,7 @@ export const ManagementDashboardPage: React.FC<ManagementDashboardPageProps> = (
             <Card className="p-5 space-y-2 border-slate-200 shadow-sm hover:border-slate-300 transition-all">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total de Alunos</span>
-                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+                <div className="p-2 rounded-xl bg-[#4aaa3c]/10 text-[#4aaa3c]">
                   <Layers className="w-5 h-5" />
                 </div>
               </div>
@@ -124,7 +124,7 @@ export const ManagementDashboardPage: React.FC<ManagementDashboardPageProps> = (
             <Card className="p-5 space-y-2 border-slate-200 shadow-sm hover:border-slate-300 transition-all">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Turmas Ativas</span>
-                <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                <div className="p-2 rounded-xl bg-[#2d3661]/10 text-[#2d3661]">
                   <Users className="w-5 h-5" />
                 </div>
               </div>
@@ -136,7 +136,7 @@ export const ManagementDashboardPage: React.FC<ManagementDashboardPageProps> = (
             <Card className="p-5 space-y-2 border-slate-200 shadow-sm hover:border-slate-300 transition-all">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Avisos no Mural</span>
-                <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
+                <div className="p-2 rounded-xl bg-[#2d3661]/10 text-[#2d3661]">
                   <Bell className="w-5 h-5" />
                 </div>
               </div>
@@ -148,7 +148,7 @@ export const ManagementDashboardPage: React.FC<ManagementDashboardPageProps> = (
             <Card className="p-5 space-y-2 border-slate-200 shadow-sm hover:border-slate-300 transition-all">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pedidos Cantina</span>
-                <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+                <div className="p-2 rounded-xl bg-[#4aaa3c]/10 text-[#4aaa3c]">
                   <Coffee className="w-5 h-5" />
                 </div>
               </div>
@@ -161,7 +161,7 @@ export const ManagementDashboardPage: React.FC<ManagementDashboardPageProps> = (
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center space-x-2">
-                <Coffee className="w-4 h-4 text-amber-600" />
+                <Coffee className="w-4 h-4 text-[#2d3661]" />
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
                   Resumo Operacional da Cantina
                 </h3>
@@ -169,7 +169,7 @@ export const ManagementDashboardPage: React.FC<ManagementDashboardPageProps> = (
               {onTabChange && (
                 <button
                   onClick={() => onTabChange("cantina")}
-                  className="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center space-x-1 transition-colors"
+                  className="text-xs font-bold text-[#2d3661] hover:text-[#4aaa3c] flex items-center space-x-1 transition-colors"
                 >
                   <span>Gerenciar cantina</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -190,21 +190,21 @@ export const ManagementDashboardPage: React.FC<ManagementDashboardPageProps> = (
 
               {/* Aguardando Pagamento */}
               <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-1">
-                <div className="flex items-center space-x-1.5 text-xs text-amber-700 font-medium">
-                  <Clock className="w-3.5 h-3.5 text-amber-500" />
+                <div className="flex items-center space-x-1.5 text-xs text-slate-600 font-medium">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
                   <span>Pendentes</span>
                 </div>
-                <p className="text-xl font-bold text-amber-600">{overview.cantina_resumo.pedidos_pendentes}</p>
+                <p className="text-xl font-bold text-slate-800">{overview.cantina_resumo.pedidos_pendentes}</p>
                 <p className="text-[10px] text-slate-400">Aguardando PIX</p>
               </div>
 
               {/* Pagos / Prontos para Retirada */}
               <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-1">
-                <div className="flex items-center space-x-1.5 text-xs text-emerald-700 font-medium">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <div className="flex items-center space-x-1.5 text-xs text-[#4aaa3c] font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#4aaa3c]" />
                   <span>Pagos / Balcão</span>
                 </div>
-                <p className="text-xl font-bold text-emerald-600">{overview.cantina_resumo.pedidos_pagos}</p>
+                <p className="text-xl font-bold text-[#4aaa3c]">{overview.cantina_resumo.pedidos_pagos}</p>
                 <p className="text-[10px] text-slate-400">Disponíveis para retirada</p>
               </div>
 
@@ -219,15 +219,15 @@ export const ManagementDashboardPage: React.FC<ManagementDashboardPageProps> = (
               </div>
 
               {/* Faturamento Confirmado */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-4 shadow-sm space-y-1 col-span-2 sm:col-span-2 lg:col-span-1 border border-slate-800">
-                <div className="flex items-center space-x-1.5 text-xs text-emerald-400 font-semibold">
+              <div className="bg-[#2d3661] text-white rounded-2xl p-4 shadow-sm space-y-1 col-span-2 sm:col-span-2 lg:col-span-1 border border-[#232b4e]">
+                <div className="flex items-center space-x-1.5 text-xs text-[#7de06f] font-semibold">
                   <DollarSign className="w-3.5 h-3.5" />
                   <span>Receita</span>
                 </div>
-                <p className="text-lg font-black text-emerald-400">
+                <p className="text-lg font-black text-white">
                   {formatCurrency(overview.cantina_resumo.receita_confirmada)}
                 </p>
-                <p className="text-[10px] text-slate-400">Faturamento confirmado</p>
+                <p className="text-[10px] text-slate-300">Faturamento confirmado</p>
               </div>
             </div>
           </div>
@@ -236,7 +236,7 @@ export const ManagementDashboardPage: React.FC<ManagementDashboardPageProps> = (
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center space-x-2">
-                <Bell className="w-4 h-4 text-amber-600" />
+                <Bell className="w-4 h-4 text-[#2d3661]" />
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
                   Comunicados Recentes
                 </h3>
@@ -244,7 +244,7 @@ export const ManagementDashboardPage: React.FC<ManagementDashboardPageProps> = (
               {onTabChange && (
                 <button
                   onClick={() => onTabChange("avisos")}
-                  className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center space-x-1 transition-colors"
+                  className="text-xs font-bold text-[#2d3661] hover:text-[#232b4d] flex items-center space-x-1 transition-colors"
                 >
                   <span>Gerenciar avisos</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -287,7 +287,7 @@ export const ManagementDashboardPage: React.FC<ManagementDashboardPageProps> = (
 
           {/* Card Informativo Institucional */}
           <Card className="p-5 bg-slate-900 text-white space-y-2 border border-slate-800">
-            <div className="flex items-center space-x-2.5 text-blue-400">
+            <div className="flex items-center space-x-2.5 text-[#4aaa3c]">
               <ShieldCheck className="w-5 h-5" />
               <h4 className="text-sm font-bold">Painel de Demonstração — ExpoCEEP 2026</h4>
             </div>

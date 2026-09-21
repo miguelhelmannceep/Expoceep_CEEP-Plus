@@ -29,31 +29,31 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
       {/* Top Header */}
-      <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
+      <header className="bg-[#2d3661] text-white border-b border-[#222a4d] sticky top-0 z-30 shadow-md">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-white shadow-sm">
+            <div className="w-9 h-9 rounded-xl bg-white text-[#2d3661] flex items-center justify-center font-bold shadow-sm">
               <Shield className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-bold text-base">CEEP+</span>
-                <span className="text-xs bg-blue-500/20 text-blue-300 font-semibold px-2 py-0.5 rounded">
+                <span className="text-xs bg-[#4aaa3c]/20 text-[#7de06f] font-semibold px-2 py-0.5 rounded">
                   Painel de Gestão
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Coordenação & Direção Escolar</p>
+              <p className="text-xs text-slate-300">Coordenação & Direção Escolar</p>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
             <div className="hidden sm:block text-right">
               <p className="text-xs font-semibold text-white">{user?.nome}</p>
-              <p className="text-[11px] text-slate-400">{user?.email}</p>
+              <p className="text-[11px] text-slate-300">{user?.email}</p>
             </div>
             <button
               onClick={logout}
-              className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-rose-400 hover:bg-slate-700 text-xs font-medium transition-all"
+              className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-[#1f2647] text-slate-200 hover:text-red-400 hover:bg-[#181f3b] text-xs font-medium transition-all"
             >
               <LogOut className="w-4 h-4" />
               <span>Sair</span>
@@ -62,7 +62,7 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="max-w-6xl mx-auto px-4 overflow-x-auto no-scrollbar flex space-x-1 border-t border-slate-800">
+        <div className="max-w-6xl mx-auto px-4 overflow-x-auto no-scrollbar flex space-x-1 border-t border-[#3c4779]/60">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -70,13 +70,13 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
               <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
-                className={`flex items-center space-x-2 px-4 py-3 text-xs font-medium whitespace-nowrap transition-all border-b-2 ${
+                className={`flex items-center space-x-2 px-4 py-3 text-xs font-semibold whitespace-nowrap transition-all border-b-2 ${
                   isActive
-                    ? "border-blue-500 text-blue-400 bg-slate-800/60"
-                    : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+                    ? "border-[#4aaa3c] text-white bg-[#1f2647]"
+                    : "border-transparent text-slate-300 hover:text-white hover:bg-[#1f2647]/50"
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className={`w-4 h-4 ${isActive ? "text-[#7de06f]" : "text-slate-400"}`} />
                 <span>{item.label}</span>
               </button>
             );

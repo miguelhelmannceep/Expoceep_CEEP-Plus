@@ -240,7 +240,7 @@ export const ManagementSchedulesPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200/60 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
               Quadro & Grade Horária
             </span>
             <span className="text-xs text-slate-400 font-medium">| CEEP Pedro Boaretto Neto</span>
@@ -254,7 +254,7 @@ export const ManagementSchedulesPage: React.FC = () => {
         <div className="flex items-center space-x-2">
           <button
             onClick={handleOpenNewModal}
-            className="inline-flex items-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+            className="inline-flex items-center space-x-2 px-4 py-2.5 bg-[#2d3661] hover:bg-[#232b4d] text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Nova Aula</span>
@@ -278,15 +278,15 @@ export const ManagementSchedulesPage: React.FC = () => {
         <div
           className={`p-4 rounded-xl text-xs font-semibold flex items-center justify-between border ${
             feedback.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-              : "bg-rose-50 text-rose-800 border-rose-200"
+              ? "bg-[#4aaa3c]/10 text-[#2d3661] border-[#4aaa3c]/30"
+              : "bg-red-50 text-red-800 border-red-200"
           }`}
         >
           <div className="flex items-center space-x-2">
             {feedback.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-[#4aaa3c] shrink-0" />
             ) : (
-              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
             )}
             <span>{feedback.text}</span>
           </div>
@@ -311,7 +311,7 @@ export const ManagementSchedulesPage: React.FC = () => {
           <select
             value={selectedClassId || ""}
             onChange={(e) => setSelectedClassId(Number(e.target.value))}
-            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
           >
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
@@ -332,7 +332,7 @@ export const ManagementSchedulesPage: React.FC = () => {
               onClick={() => setSelectedDay(day.full)}
               className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                 isSelected
-                  ? "bg-blue-600 text-white shadow-sm"
+                  ? "bg-[#2d3661] text-white shadow-sm"
                   : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
               }`}
             >
@@ -356,7 +356,7 @@ export const ManagementSchedulesPage: React.FC = () => {
             </p>
             <button
               onClick={handleOpenNewModal}
-              className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-all"
+              className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-[#2d3661] hover:bg-[#232b4d] text-white rounded-xl text-xs font-semibold transition-all"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Cadastrar Aula neste Dia</span>
@@ -371,7 +371,7 @@ export const ManagementSchedulesPage: React.FC = () => {
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center space-x-1.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-1 rounded-lg">
+                    <span className="inline-flex items-center space-x-1.5 text-xs font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2.5 py-1 rounded-lg">
                       <Clock className="w-3.5 h-3.5" />
                       <span>
                         {item.horario_inicio} – {item.horario_fim}
@@ -410,7 +410,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                         title: `${item.disciplina} (${item.horario_inicio} às ${item.horario_fim})`,
                       })
                     }
-                    className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-medium transition-colors"
+                    className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Excluir</span>
@@ -427,7 +427,7 @@ export const ManagementSchedulesPage: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2 text-blue-600">
+              <div className="flex items-center space-x-2 text-[#2d3661]">
                 <Calendar className="w-5 h-5" />
                 <h3 className="font-bold text-base text-slate-900">
                   {editingSchedule ? "Editar Aula na Grade" : "Nova Aula na Grade"}
@@ -448,7 +448,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                   value={formData.turma_id}
                   onChange={(e) => setFormData({ ...formData, turma_id: Number(e.target.value) })}
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 >
                   {classes.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -464,7 +464,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                   value={formData.dia_semana}
                   onChange={(e) => setFormData({ ...formData, dia_semana: e.target.value })}
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 >
                   <option value="Segunda-feira">Segunda-feira</option>
                   <option value="Terça-feira">Terça-feira</option>
@@ -483,7 +483,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                       setFormData({ ...formData, disciplina_id: Number(e.target.value) })
                     }
                     required
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                   >
                     <option value={0} disabled>
                       Selecione a disciplina...
@@ -504,7 +504,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                       setFormData({ ...formData, professor_id: Number(e.target.value) })
                     }
                     required
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                   >
                     <option value={0} disabled>
                       Selecione o professor...
@@ -527,7 +527,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                     value={formData.horario_inicio}
                     onChange={(e) => setFormData({ ...formData, horario_inicio: e.target.value })}
                     required
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                   />
                 </div>
 
@@ -539,7 +539,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                     value={formData.horario_fim}
                     onChange={(e) => setFormData({ ...formData, horario_fim: e.target.value })}
                     required
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                   />
                 </div>
               </div>
@@ -556,7 +556,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5"
+                  className="px-5 py-2 bg-[#2d3661] hover:bg-[#232b4d] text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5"
                 >
                   {isSubmitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                   <span>{editingSchedule ? "Salvar Alterações" : "Cadastrar Aula"}</span>
@@ -571,8 +571,8 @@ export const ManagementSchedulesPage: React.FC = () => {
       {deletingId && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center space-x-3 text-rose-600">
-              <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/60">
+            <div className="flex items-center space-x-3 text-red-600">
+              <div className="p-2 rounded-xl bg-red-50 border border-red-200/60">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
@@ -600,7 +600,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={isSubmitting}
-                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5"
+                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5"
               >
                 {isSubmitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                 <span>Confirmar Exclusão</span>

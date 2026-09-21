@@ -18,5 +18,11 @@ export const taskService = {
       method: "PATCH",
     });
   },
+
+  async deleteTask(taskId: number): Promise<void> {
+    return request<void>(`/tasks/${taskId}`, {
+      method: "DELETE",
+    });
+  },
 };
 

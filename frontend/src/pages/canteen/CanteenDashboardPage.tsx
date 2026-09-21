@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { canteenService } from "../../services/canteen.service";
-import type { CanteenTerminalStatus, PickupValidationResponse, ConfirmPickupResponse, Order } from "../../types";
+import type {
+  CanteenTerminalStatus,
+  PickupValidationResponse,
+  ConfirmPickupResponse,
+  Order,
+} from "../../types";
 import type { CanteenTab } from "../../components/layout/CanteenLayout";
-import { Card } from "../../components/common/Card";
-import { Button } from "../../components/common/Button";
-import { Badge } from "../../components/common/Badge";
 import { LoadingSpinner } from "../../components/common/LoadingSpinner";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
 import {
   QrCode,
   ClipboardList,
-  CheckCircle2,
   AlertCircle,
   Camera,
   CameraOff,
@@ -20,17 +21,25 @@ import {
   ShieldCheck,
   User,
   ShoppingBag,
-  Keyboard
+  Keyboard,
+  RefreshCw,
+  UtensilsCrossed,
+  Clock,
+  PackageCheck,
+  ArrowRight,
 } from "lucide-react";
-
 
 interface CanteenDashboardPageProps {
   activeTab: CanteenTab;
+  onTabChange?: (tab: CanteenTab) => void;
 }
 
 type ScannerState = "IDLE" | "SCANNING" | "VALIDATING" | "VALID_ORDER" | "ERROR" | "CONFIRMED";
 
-export const CanteenDashboardPage: React.FC<CanteenDashboardPageProps> = ({ activeTab }) => {
+export const CanteenDashboardPage: React.FC<CanteenDashboardPageProps> = ({
+  activeTab,
+  onTabChange,
+}) => {
   const [terminalStatus, setTerminalStatus] = useState<CanteenTerminalStatus | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +54,10 @@ export const CanteenDashboardPage: React.FC<CanteenDashboardPageProps> = ({ acti
   const [manualCode, setManualCode] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+
+  // Filtros de fila de pedidos
+  const [orderFilter, setOrderFilter] = useState<"TODOS" | "PAGOS" | "UTILIZADOS">("TODOS");
+  const [isRefreshingOrders, setIsRefreshingOrders] = useState(false);
 
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
 
@@ -61,6 +74,18 @@ export const CanteenDashboardPage: React.FC<CanteenDashboardPageProps> = ({ acti
       setError(err.message || "Erro ao conectar terminal da cantina.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const refreshOrders = async () => {
+    setIsRefreshingOrders(true);
+    try {
+      const myOrders = await canteenService.getOrders();
+      setOrders(myOrders);
+    } catch (err: any) {
+      // Ignora erro suave
+    } finally {
+      setIsRefreshingOrders(false);
     }
   };
 
@@ -104,19 +129,19 @@ export const CanteenDashboardPage: React.FC<CanteenDashboardPageProps> = ({ acti
         { facingMode: "environment" },
         {
           fps: 10,
-          qrbox: { width: 220, height: 220 },
+          qrbox: { width: 240, height: 240 },
         },
         async (decodedText) => {
           await stopCameraScanner();
           handleValidateCode(decodedText);
         },
         () => {
-          // Frame sem detecção - ignore
+          // Frame sem detecção
         }
       );
     } catch (err: any) {
       setCameraError(
-        "Câmera indisponível ou permissão negada. Você pode utilizar a validação manual logo abaixo."
+        "Câmera indisponível ou permissão não concedida. Utilize a validação por código manual abaixo."
       );
       setScannerState("IDLE");
       setShowManualInput(true);
@@ -134,7 +159,7 @@ export const CanteenDashboardPage: React.FC<CanteenDashboardPageProps> = ({ acti
       setValidationData(result);
       setScannerState("VALID_ORDER");
     } catch (err: any) {
-      setScanErrorMessage(err.message || "QR Code inválido ou não encontrado.");
+      setScanErrorMessage(err.message || "QR Code inválido ou pedido já retirado.");
       setScannerState("ERROR");
     }
   };
@@ -149,10 +174,10 @@ export const CanteenDashboardPage: React.FC<CanteenDashboardPageProps> = ({ acti
       const conf = await canteenService.confirmPickup(validationData.order_id);
       setConfirmedData(conf);
       setScannerState("CONFIRMED");
-      // Atualiza pedidos
+      // Atualiza lista de pedidos em background
       canteenService.getOrders().then(setOrders).catch(() => {});
     } catch (err: any) {
-      setScanErrorMessage(err.message || "Não foi possível confirmar a retirada.");
+      setScanErrorMessage(err.message || "Não foi possível confirmar a retirada do pedido.");
       setScannerState("ERROR");
     } finally {
       setIsConfirming(false);
@@ -180,267 +205,339 @@ export const CanteenDashboardPage: React.FC<CanteenDashboardPageProps> = ({ acti
     return <ErrorMessage message={error || "Erro ao conectar terminal"} onRetry={loadData} />;
   }
 
+  // Métricas para a aba início
+  const readyOrdersCount = orders.filter((o) => o.status === "PAGO").length;
+  const completedOrdersCount = orders.filter((o) => o.status === "UTILIZADO").length;
+
+  // Filtragem para a fila de pedidos
+  const filteredOrders = orders.filter((o) => {
+    if (orderFilter === "PAGOS") return o.status === "PAGO";
+    if (orderFilter === "UTILIZADOS") return o.status === "UTILIZADO";
+    return true;
+  });
+
   return (
     <div className="space-y-4">
-      {/* ABA 1: INÍCIO OPERACIONAL */}
+      {/* ========================================================================= */}
+      {/* ABA 1: PAINEL PRINCIPAL / VISÃO OPERACIONAL */}
+      {/* ========================================================================= */}
       {activeTab === "inicio" && (
         <div className="space-y-4">
-          <Card className="bg-slate-950 border-slate-800 text-white p-5 space-y-3">
+          {/* Card de Status do Terminal */}
+          <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-lg space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                Status Operacional
+              <span className="text-xs font-bold text-[#4aaa3c] bg-[#4aaa3c]/10 border border-[#4aaa3c]/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                Operação em Tempo Real
               </span>
-              <span className="inline-flex items-center space-x-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{terminalStatus.status}</span>
+              <span className="inline-flex items-center space-x-1.5 text-xs font-semibold text-[#4aaa3c] bg-[#4aaa3c]/10 px-2.5 py-1 rounded-full border border-[#4aaa3c]/30">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4aaa3c] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4aaa3c]"></span>
+                </span>
+                <span>Sistema {terminalStatus.status}</span>
               </span>
             </div>
 
             <div>
-              <h3 className="text-lg font-bold">{terminalStatus.terminal}</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Operador autenticado: {terminalStatus.atendente}
+              <h3 className="text-lg font-black text-white">{terminalStatus.terminal}</h3>
+              <p className="text-xs text-slate-400 mt-0.5 font-medium">
+                Atendente responsável: <span className="text-slate-200">{terminalStatus.atendente}</span>
               </p>
             </div>
-          </Card>
+          </div>
 
-          <Card className="bg-slate-950 border-slate-800 text-white p-5 space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              Fluxo de Atendimento Rápido
-            </h4>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              O terminal da cantina foi projetado para operações de alta velocidade durante o intervalo escolar.
-            </p>
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 space-y-2">
-              <p className="font-semibold text-amber-400">1. Aluno apresenta QR Code no smartphone</p>
-              <p className="font-semibold text-amber-400">2. Leitor valida autenticidade e status</p>
-              <p className="font-semibold text-amber-400">3. Confirmação imediata da entrega</p>
+          {/* Cards de Métricas Operacionais */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Prontos para Retirada */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm space-y-1">
+              <div className="flex items-center space-x-1.5 text-xs text-[#4aaa3c] font-bold">
+                <Clock className="w-4 h-4 text-[#4aaa3c]" />
+                <span>Prontos no Balcão</span>
+              </div>
+              <p className="text-3xl font-black text-white">{readyOrdersCount}</p>
+              <p className="text-[11px] text-slate-400 font-medium">Aguardando apresentação do QR</p>
             </div>
-          </Card>
+
+            {/* Retiradas Concluídas */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm space-y-1">
+              <div className="flex items-center space-x-1.5 text-xs text-slate-400 font-bold">
+                <PackageCheck className="w-4 h-4 text-slate-400" />
+                <span>Entregues Hoje</span>
+              </div>
+              <p className="text-3xl font-black text-slate-200">{completedOrdersCount}</p>
+              <p className="text-[11px] text-slate-400 font-medium">Fichas confirmadas</p>
+            </div>
+          </div>
+
+          {/* Botão de Ação Rápida para o Scanner */}
+          <button
+            onClick={() => onTabChange?.("scanner")}
+            className="w-full py-4 px-5 bg-[#2d3661] hover:bg-[#232b4d] border border-[#4aaa3c]/40 text-white rounded-2xl font-black text-sm flex items-center justify-between shadow-lg shadow-black/40 transition-all active:scale-[0.99]"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-[#4aaa3c]/20 text-[#4aaa3c] flex items-center justify-center">
+                <QrCode className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-sm leading-tight">Iniciar Atendimento QR</p>
+                <p className="text-xs text-slate-400 font-normal">Escanear ficha digital do aluno</p>
+              </div>
+            </div>
+            <ArrowRight className="w-5 h-5 text-[#4aaa3c]" />
+          </button>
+
+          {/* Card com Guia Rápido Institucional */}
+          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 space-y-2.5">
+            <h4 className="font-bold text-slate-200 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+              <ShieldCheck className="w-4 h-4 text-[#4aaa3c]" />
+              <span>Protocolo de Entrega Rápida</span>
+            </h4>
+            <div className="space-y-1.5 text-[11px] text-slate-400">
+              <p className="flex items-center space-x-2">
+                <span className="w-4 h-4 rounded-full bg-[#2d3661] text-[#4aaa3c] font-bold flex items-center justify-center text-[10px] shrink-0">1</span>
+                <span>O estudante apresenta o QR Code de retirada na tela do celular.</span>
+              </p>
+              <p className="flex items-center space-x-2">
+                <span className="w-4 h-4 rounded-full bg-[#2d3661] text-[#4aaa3c] font-bold flex items-center justify-center text-[10px] shrink-0">2</span>
+                <span>O leitor valida a autenticidade e status do pagamento instantaneamente.</span>
+              </p>
+              <p className="flex items-center space-x-2">
+                <span className="w-4 h-4 rounded-full bg-[#2d3661] text-[#4aaa3c] font-bold flex items-center justify-center text-[10px] shrink-0">3</span>
+                <span>O atendente clica em <strong>Confirmar Retirada</strong> e entrega o item.</span>
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* ABA 2: SCANNER DE QR CODE & CONFIRMAÇÃO DE RETIRADA */}
+      {/* ========================================================================= */}
+      {/* ABA 2: SCANNER DE QR CODE & VALIDAÇÃO DE RETIRADA */}
+      {/* ========================================================================= */}
       {activeTab === "scanner" && (
         <div className="space-y-4">
-          <Card className="bg-slate-950 border-slate-800 text-white p-5 space-y-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
             {/* Cabeçalho do Leitor */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center space-x-2">
-                <QrCode className="w-5 h-5 text-amber-400" />
-                <h3 className="text-base font-bold text-white">Scanner de Retirada</h3>
+                <div className="p-1.5 rounded-lg bg-[#2d3661] text-[#4aaa3c]">
+                  <QrCode className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
+                  Validação de Retirada
+                </h3>
               </div>
               {scannerState !== "IDLE" && (
                 <button
                   onClick={handleResetScanner}
-                  className="text-xs text-slate-400 hover:text-white flex items-center space-x-1"
+                  className="text-xs text-slate-400 hover:text-white flex items-center space-x-1 transition-colors px-2 py-1 rounded-lg hover:bg-slate-800"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reiniciar</span>
+                  <span>Nova Leitura</span>
                 </button>
               )}
             </div>
 
-            {/* ESTADO 1: INATIVO / PRONTO PARA ABRIR SCANNER */}
+            {/* ESTADO 1: IDLE / PRONTO PARA ATIVAR O SCANNER */}
             {scannerState === "IDLE" && (
-              <div className="text-center py-6 space-y-4">
-                <div className="w-16 h-16 rounded-3xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto ring-8 ring-amber-500/5">
-                  <Camera className="w-8 h-8" />
+              <div className="text-center py-4 sm:py-6 space-y-4">
+                <div className="w-20 h-20 rounded-3xl bg-[#2d3661]/40 text-[#4aaa3c] border border-[#4aaa3c]/30 flex items-center justify-center mx-auto shadow-inner ring-8 ring-[#4aaa3c]/5">
+                  <Camera className="w-10 h-10" />
                 </div>
                 <div className="space-y-1 max-w-xs mx-auto">
-                  <h4 className="text-sm font-bold text-white">Pronto para Ler Pedido</h4>
+                  <h4 className="text-base font-bold text-white">Pronto para Ler Pedido</h4>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Ative a câmera para escanear o QR Code de retirada apresentado pelo aluno.
+                    Aponte a câmera para o QR Code de retirada no celular do estudante.
                   </p>
                 </div>
 
                 {cameraError && (
-                  <div className="p-3 bg-red-950/60 border border-red-800/80 rounded-xl text-xs text-red-300 flex items-start space-x-2 text-left">
+                  <div className="p-3.5 bg-red-950/60 border border-red-800/80 rounded-xl text-xs text-red-300 flex items-start space-x-2.5 text-left animate-in fade-in">
                     <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    <span>{cameraError}</span>
+                    <span className="leading-relaxed">{cameraError}</span>
                   </div>
                 )}
 
-                <Button
-                  variant="primary"
-                  size="lg"
+                {/* Botão Principal Grande e Confortável */}
+                <button
                   onClick={startCameraScanner}
-                  className="w-full font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-md shadow-amber-500/20"
+                  className="w-full py-4 px-6 font-extrabold bg-[#4aaa3c] hover:bg-[#3d8c32] text-white rounded-xl text-sm shadow-lg shadow-[#4aaa3c]/20 transition-all flex items-center justify-center space-x-2 active:scale-[0.99]"
                 >
-                  <Camera className="w-5 h-5 mr-2" />
-                  Abrir Scanner
-                </Button>
+                  <Camera className="w-5 h-5" />
+                  <span>ABRIR CÂMERA DO SCANNER</span>
+                </button>
               </div>
             )}
 
-            {/* ESTADO 2: CÂMERA ATIVA & ESCANEANDO */}
+            {/* ESTADO 2: SCANNING / CÂMERA ATIVA */}
             {scannerState === "SCANNING" && (
-              <div className="space-y-4 text-center">
-                <div className="relative rounded-2xl overflow-hidden bg-black border border-slate-800 min-h-[260px] flex items-center justify-center">
+              <div className="space-y-4 text-center animate-in fade-in duration-200">
+                <div className="relative rounded-2xl overflow-hidden bg-black border-2 border-[#4aaa3c]/70 shadow-2xl min-h-[260px] flex items-center justify-center">
                   <div id="canteen-qr-reader" className="w-full" />
                 </div>
 
-                <div className="flex items-center justify-center space-x-2 text-xs text-amber-400">
+                <div className="flex items-center justify-center space-x-2 text-xs text-[#4aaa3c] bg-[#4aaa3c]/10 py-2 px-3 rounded-xl border border-[#4aaa3c]/20">
                   <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4aaa3c] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#4aaa3c]"></span>
                   </span>
-                  <span className="font-semibold">Câmera ativa: aponte para o QR Code do aluno</span>
+                  <span className="font-bold">Aponte a câmera para o QR Code</span>
                 </div>
 
-                <Button
-                  variant="outline"
-                  size="md"
+                <button
                   onClick={() => {
                     stopCameraScanner();
                     setScannerState("IDLE");
                   }}
-                  className="w-full font-bold text-slate-300 border-slate-700 hover:bg-slate-800"
+                  className="w-full py-3 font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs border border-slate-700 transition-colors flex items-center justify-center space-x-2"
                 >
-                  <CameraOff className="w-4 h-4 mr-2" />
-                  Parar Câmera
-                </Button>
+                  <CameraOff className="w-4 h-4" />
+                  <span>Parar Câmera</span>
+                </button>
               </div>
             )}
 
-            {/* ESTADO 3: VALIDANDO TOKEN */}
+            {/* ESTADO 3: VALIDATING / CONSULTANDO NO BACKEND */}
             {scannerState === "VALIDATING" && (
               <div className="text-center py-10 space-y-3">
                 <LoadingSpinner message="Consultando e autenticando pedido no backend..." />
               </div>
             )}
 
-            {/* ESTADO 4: PEDIDO VÁLIDO ENCONTRADO */}
+            {/* ESTADO 4: VALID_ORDER / PEDIDO ENCONTRADO E VÁLIDO */}
             {scannerState === "VALID_ORDER" && validationData && (
-              <div className="space-y-4">
-                <div className="p-3 bg-emerald-950/60 border border-emerald-800/80 rounded-2xl flex items-center space-x-3 text-emerald-300">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-6 h-6" />
+              <div className="space-y-4 animate-in zoom-in-95 duration-200">
+                {/* Banner de Validação com Sucesso */}
+                <div className="p-4 bg-[#4aaa3c]/15 border border-[#4aaa3c]/40 rounded-2xl flex items-center space-x-3 text-[#4aaa3c]">
+                  <div className="w-11 h-11 rounded-xl bg-[#4aaa3c]/20 text-[#4aaa3c] flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-7 h-7" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-black text-white">✓ PEDIDO VÁLIDO</h4>
-                    <p className="text-xs text-emerald-400">Pagamento confirmado e disponível para retirada.</p>
+                    <h4 className="text-sm font-black text-white tracking-wide">✓ PEDIDO VÁLIDO — PRONTO</h4>
+                    <p className="text-xs text-[#4aaa3c] font-medium">Pagamento verificado. Disponível para entrega.</p>
                   </div>
                 </div>
 
-                {/* Detalhes do Pedido Validado */}
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5 text-xs">
-                  <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                    <span className="text-slate-400 flex items-center space-x-1.5">
-                      <ShoppingBag className="w-3.5 h-3.5" />
+                {/* Detalhes Estruturados do Pedido */}
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3 text-xs">
+                  <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/80">
+                    <span className="text-slate-400 flex items-center space-x-1.5 font-medium">
+                      <ShoppingBag className="w-4 h-4 text-slate-400" />
                       <span>Identificador</span>
                     </span>
-                    <span className="font-bold text-white text-sm">
+                    <span className="font-extrabold text-white text-sm">
                       Pedido {formatOrderId(validationData.order_id)}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                    <span className="text-slate-400 flex items-center space-x-1.5">
-                      <User className="w-3.5 h-3.5" />
-                      <span>Aluno</span>
+                  <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/80">
+                    <span className="text-slate-400 flex items-center space-x-1.5 font-medium">
+                      <User className="w-4 h-4 text-slate-400" />
+                      <span>Estudante</span>
                     </span>
-                    <span className="font-semibold text-slate-200">
+                    <span className="font-bold text-slate-100 text-sm">
                       {validationData.aluno_nome}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                    <span className="text-slate-400">Item & Quantidade</span>
-                    <span className="font-bold text-amber-400">
+                  <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/80">
+                    <span className="text-slate-400 font-medium">Item & Quantidade</span>
+                    <span className="font-extrabold text-white text-sm bg-slate-800/80 px-2.5 py-1 rounded-lg">
                       {validationData.produto_nome} (x{validationData.quantidade})
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                    <span className="text-slate-400">Valor Pago</span>
-                    <span className="font-black text-emerald-400 text-sm">
+                  <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/80">
+                    <span className="text-slate-400 font-medium">Valor Pago</span>
+                    <span className="font-black text-[#4aaa3c] text-base">
                       {formatCurrency(validationData.valor_total)}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center pt-1">
-                    <span className="text-slate-400">Status Atual</span>
-                    <Badge variant="success" size="sm">
-                      DISPONÍVEL
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="flex space-x-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="md"
-                    onClick={handleResetScanner}
-                    disabled={isConfirming}
-                    className="w-1/3 border-slate-700 text-slate-300"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="md"
-                    onClick={handleConfirmPickup}
-                    isLoading={isConfirming}
-                    className="w-2/3 font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20"
-                  >
-                    <Check className="w-4 h-4 mr-1.5" />
-                    CONFIRMAR RETIRADA
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* ESTADO 5: RETIRADA CONFIRMADA */}
-            {scannerState === "CONFIRMED" && confirmedData && (
-              <div className="text-center py-4 space-y-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto ring-8 ring-emerald-500/10">
-                  <Check className="w-9 h-9 stroke-[3]" />
-                </div>
-
-                <div className="space-y-1">
-                  <h4 className="text-lg font-black text-white">✓ RETIRADA CONFIRMADA</h4>
-                  <p className="text-xs text-slate-400">
-                    Pedido {formatOrderId(confirmedData.order_id)} registrado como utilizado.
-                  </p>
-                </div>
-
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-xs space-y-2 text-slate-300">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Status final</span>
-                    <Badge variant="neutral" size="sm">
-                      UTILIZADO
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Horário da entrega</span>
-                    <span className="font-semibold text-slate-200">
-                      {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  <div className="flex justify-between items-center pt-0.5">
+                    <span className="text-slate-400 font-medium">Status</span>
+                    <span className="text-xs font-bold text-[#4aaa3c] bg-[#4aaa3c]/15 px-2.5 py-0.5 rounded-md border border-[#4aaa3c]/30">
+                      PAGO / BALCÃO
                     </span>
                   </div>
                 </div>
 
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={handleResetScanner}
-                  className="w-full font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-md shadow-amber-500/20"
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  NOVA LEITURA
-                </Button>
+                {/* Botões de Ação: Confirmar Retirada (Touch Target Grande) */}
+                <div className="space-y-2 pt-1">
+                  <button
+                    onClick={handleConfirmPickup}
+                    disabled={isConfirming}
+                    className="w-full py-4 px-6 font-black bg-[#4aaa3c] hover:bg-[#3d8c32] text-white rounded-xl text-sm shadow-xl shadow-[#4aaa3c]/20 transition-all flex items-center justify-center space-x-2 active:scale-[0.99] disabled:opacity-50"
+                  >
+                    {isConfirming ? (
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Check className="w-5 h-5 stroke-[3]" />
+                    )}
+                    <span>{isConfirming ? "CONFIRMANDO RETIRADA..." : "CONFIRMAR RETIRADA DO ITEM"}</span>
+                  </button>
+
+                  <button
+                    onClick={handleResetScanner}
+                    disabled={isConfirming}
+                    className="w-full py-2.5 text-xs font-bold text-slate-400 hover:text-slate-200 transition-colors"
+                  >
+                    Cancelar / Ler Outro Pedido
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* ESTADO 6: ERRO DE LEITURA OU DUPLICIDADE */}
-            {scannerState === "ERROR" && (
-              <div className="text-center py-4 space-y-4">
-                <div className="w-14 h-14 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto ring-8 ring-rose-500/10">
-                  <AlertCircle className="w-8 h-8" />
+            {/* ESTADO 5: CONFIRMED / RETIRADA CONCLUÍDA */}
+            {scannerState === "CONFIRMED" && confirmedData && (
+              <div className="text-center py-4 space-y-4 animate-in zoom-in-95 duration-200">
+                <div className="w-20 h-20 rounded-full bg-[#4aaa3c]/20 text-[#4aaa3c] flex items-center justify-center mx-auto ring-8 ring-[#4aaa3c]/10">
+                  <Check className="w-10 h-10 stroke-[3]" />
                 </div>
 
                 <div className="space-y-1">
-                  <h4 className="text-base font-black text-rose-400 uppercase tracking-wide">
+                  <h4 className="text-lg font-black text-white">✓ RETIRADA CONCLUÍDA</h4>
+                  <p className="text-xs text-slate-400">
+                    Pedido {formatOrderId(confirmedData.order_id)} registrado como entregue.
+                  </p>
+                </div>
+
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs space-y-2.5 text-slate-300">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 font-medium">Status final</span>
+                    <span className="text-xs font-bold text-slate-400 bg-slate-800 px-2.5 py-0.5 rounded-md">
+                      UTILIZADO
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 font-medium">Horário da entrega</span>
+                    <span className="font-bold text-slate-100">
+                      {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-400">
+                    O QR Code foi invalidado e protegido contra qualquer tentativa de reuso.
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleResetScanner}
+                  className="w-full py-4 font-black bg-[#2d3661] hover:bg-[#232b4d] border border-[#4aaa3c]/40 text-white rounded-xl text-sm shadow-lg shadow-black/40 transition-all flex items-center justify-center space-x-2 active:scale-[0.99]"
+                >
+                  <RotateCcw className="w-4 h-4 mr-1 text-[#4aaa3c]" />
+                  <span>PRÓXIMO ATENDIMENTO / NOVA LEITURA</span>
+                </button>
+              </div>
+            )}
+
+            {/* ESTADO 6: ERROR / ERRO DE VALIDAÇÃO OU DUPLICIDADE */}
+            {scannerState === "ERROR" && (
+              <div className="text-center py-4 space-y-4 animate-in zoom-in-95 duration-200">
+                <div className="w-16 h-16 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mx-auto ring-8 ring-red-500/10">
+                  <AlertCircle className="w-9 h-9" />
+                </div>
+
+                <div className="space-y-1">
+                  <h4 className="text-sm font-black text-red-400 uppercase tracking-wide">
                     {scanErrorMessage || "Erro na Validação"}
                   </h4>
                   <p className="text-xs text-slate-400">
@@ -448,119 +545,182 @@ export const CanteenDashboardPage: React.FC<CanteenDashboardPageProps> = ({ acti
                   </p>
                 </div>
 
-                <Button
-                  variant="primary"
-                  size="md"
+                <button
                   onClick={handleResetScanner}
-                  className="w-full font-bold bg-slate-800 hover:bg-slate-700 text-white"
+                  className="w-full py-3.5 font-bold bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs transition-colors flex items-center justify-center space-x-2"
                 >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Tentar novamente
-                </Button>
+                  <RotateCcw className="w-4 h-4 mr-1 text-slate-400" />
+                  <span>Tentar Novamente</span>
+                </button>
               </div>
             )}
 
-            {/* ENTRADA MANUAL DE FALLBACK (Para testes ou quando a câmera estiver indisponível) */}
+            {/* ENTRADA MANUAL DE FALLBACK */}
             <div className="pt-3 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowManualInput(!showManualInput)}
-                className="text-[11px] text-slate-400 hover:text-amber-400 flex items-center space-x-1 mx-auto transition-colors"
+                className="text-[11px] text-slate-400 hover:text-[#4aaa3c] flex items-center space-x-1.5 mx-auto transition-colors font-medium py-1 px-2 rounded"
               >
                 <Keyboard className="w-3.5 h-3.5" />
-                <span>{showManualInput ? "Ocultar digitação manual" : "Digitar código manualmente (Fallback de Teste)"}</span>
+                <span>
+                  {showManualInput ? "Ocultar digitação manual" : "Digitar código manualmente (Fallback)"}
+                </span>
               </button>
 
               {showManualInput && (
-                <div className="mt-3 p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-2">
+                <div className="mt-3 p-3.5 bg-slate-950 border border-slate-800 rounded-2xl space-y-2.5 animate-in fade-in">
                   <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    Código do QR (ex: CEEPPLUS-PICKUP-...)
+                    Código de Retirada (ex: CEEPPLUS-PICKUP-...)
                   </label>
-                  <div className="flex space-x-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
                       value={manualCode}
                       onChange={(e) => setManualCode(e.target.value)}
                       placeholder="Cole ou digite o código de retirada"
-                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-500"
+                      className="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/40 focus:border-[#4aaa3c] font-mono transition-all"
                     />
-                    <Button
-                      variant="primary"
-                      size="sm"
+                    <button
                       onClick={() => handleValidateCode(manualCode)}
                       disabled={!manualCode.trim() || scannerState === "VALIDATING"}
-                      className="font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 shrink-0"
+                      className="px-5 py-2.5 font-bold bg-[#2d3661] hover:bg-[#232b4d] text-white rounded-xl text-xs shrink-0 transition-all disabled:opacity-50 active:scale-95"
                     >
                       Validar
-                    </Button>
+                    </button>
                   </div>
                 </div>
               )}
             </div>
-          </Card>
+          </div>
         </div>
       )}
 
-      {/* ABA 3: HISTÓRICO / FILA DE PEDIDOS */}
+      {/* ========================================================================= */}
+      {/* ABA 3: FILA DE PEDIDOS DO BALCÃO */}
+      {/* ========================================================================= */}
       {activeTab === "pedidos" && (
-        <Card className="bg-slate-950 border-slate-800 text-white p-5 space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
             <div className="flex items-center space-x-2">
-              <ClipboardList className="w-5 h-5 text-amber-400" />
-              <h3 className="text-base font-bold text-white">Fila de Pedidos</h3>
+              <div className="p-1.5 rounded-lg bg-[#2d3661] text-[#4aaa3c]">
+                <ClipboardList className="w-4 h-4" />
+              </div>
+              <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
+                Fila de Pedidos
+              </h3>
             </div>
-            <span className="text-xs text-slate-400">Total: {orders.length}</span>
+            <button
+              onClick={refreshOrders}
+              disabled={isRefreshingOrders}
+              className="text-xs text-slate-400 hover:text-white flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60 hover:bg-slate-700 transition-all"
+              title="Atualizar lista"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingOrders ? "animate-spin" : ""}`} />
+              <span>Atualizar</span>
+            </button>
           </div>
 
-          {orders.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center py-6">
-              Nenhum pedido registrado no terminal no momento.
-            </p>
+          {/* Filtro Rápido de Status */}
+          <div className="flex space-x-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setOrderFilter("TODOS")}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
+                orderFilter === "TODOS"
+                  ? "bg-[#2d3661] text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              Todos ({orders.length})
+            </button>
+            <button
+              onClick={() => setOrderFilter("PAGOS")}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
+                orderFilter === "PAGOS"
+                  ? "bg-[#4aaa3c] text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              Prontos ({readyOrdersCount})
+            </button>
+            <button
+              onClick={() => setOrderFilter("UTILIZADOS")}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
+                orderFilter === "UTILIZADOS"
+                  ? "bg-slate-700 text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              Entregues ({completedOrdersCount})
+            </button>
+          </div>
+
+          {/* Lista de Pedidos */}
+          {filteredOrders.length === 0 ? (
+            <div className="text-center py-8 space-y-2">
+              <UtensilsCrossed className="w-8 h-8 text-slate-600 mx-auto" />
+              <p className="text-xs text-slate-500">
+                Nenhum pedido encontrado no momento.
+              </p>
+            </div>
           ) : (
             <div className="space-y-2.5">
-              {orders.map((o) => {
+              {filteredOrders.map((o) => {
                 const isPaid = o.status === "PAGO";
                 const isUsed = o.status === "UTILIZADO";
                 return (
                   <div
                     key={o.id}
-                    className="p-3 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between text-xs"
+                    className="p-3.5 bg-slate-950 border border-slate-800/90 rounded-xl flex items-center justify-between text-xs gap-3 hover:border-slate-700 transition-colors"
                   >
-                    <div className="space-y-0.5">
+                    <div className="space-y-1">
                       <div className="flex items-center space-x-2">
-                        <span className="font-bold text-white">Pedido {formatOrderId(o.id)}</span>
-                        {isPaid && <Badge variant="success" size="sm">DISPONÍVEL</Badge>}
-                        {isUsed && <Badge variant="neutral" size="sm">RETIRADO</Badge>}
-                        {!isPaid && !isUsed && <Badge variant="warning" size="sm">PENDENTE</Badge>}
+                        <span className="font-extrabold text-white">Pedido {formatOrderId(o.id)}</span>
+                        {isPaid && (
+                          <span className="text-[10px] font-bold text-[#4aaa3c] bg-[#4aaa3c]/15 px-2 py-0.5 rounded border border-[#4aaa3c]/30">
+                            PRONTO
+                          </span>
+                        )}
+                        {isUsed && (
+                          <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+                            RETIRADO
+                          </span>
+                        )}
+                        {!isPaid && !isUsed && (
+                          <span className="text-[10px] font-bold text-slate-300 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                            PENDENTE
+                          </span>
+                        )}
                       </div>
                       <p className="text-slate-400">
-                        {o.itens[0]?.produto_nome || "Salgado"} (x{o.itens[0]?.quantidade || 1}) — {formatCurrency(o.valor_total)}
+                        {o.itens[0]?.produto_nome || "Salgado"} (x{o.itens[0]?.quantidade || 1}) •{" "}
+                        <span className="font-semibold text-slate-200">{formatCurrency(o.valor_total)}</span>
                       </p>
                     </div>
 
                     {isPaid && (
-                      <Button
-                        variant="primary"
-                        size="sm"
+                      <button
                         onClick={() => {
+                          onTabChange?.("scanner");
                           if (o.pickup_code) {
                             handleValidateCode(o.pickup_code);
                           } else {
                             handleValidateCode(`CEEPPLUS-PICKUP-${o.pickup_token}`);
                           }
                         }}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold"
+                        className="px-3 py-2 bg-[#4aaa3c] hover:bg-[#3d8c32] text-white text-xs font-bold rounded-lg shrink-0 shadow-sm transition-all active:scale-95"
                       >
-                        Validar
-                      </Button>
+                        Atender
+                      </button>
                     )}
                   </div>
                 );
               })}
             </div>
           )}
-        </Card>
+        </div>
       )}
     </div>
   );
 };
+

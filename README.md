@@ -14,13 +14,13 @@ Aplicação web progressiva (PWA) responsiva e mobile-first projetada para a com
 
 ## 🔑 Contas de Demonstração (ExpoCEEP)
 
-Para testar os 3 perfis da aplicação, utilize as credenciais pré-configuradas (ou clique nos botões de atalho na tela de login):
+Para testar os 3 perfis da aplicação, utilize as seguintes credenciais na tela de login institucional:
 
-| Perfil | E-mail Demo | Senha | Descrição |
+| Perfil | E-mail | Senha | Descrição |
 | :--- | :--- | :--- | :--- |
-| **Aluno** | `aluno@ceep.demo` | `demo123` | Dashboard, Horários da Turma (3º C DS), Avisos, Tarefas, Cantina e Perfil. |
-| **Gestão** | `gestao@ceep.demo` | `demo123` | Painel administrativo com KPIs, Avisos, Turmas e Relatórios de Demanda. |
-| **Cantina** | `cantina@ceep.demo` | `demo123` | Terminal simplificado de atendimento e validação rápida no balcão. |
+| **Aluno** | `aluno@escola.pr.gov.br` (ou qualquer `@escola.pr.gov.br`) | `demo123` | Dashboard do estudante, Horários da Turma (3º C DS), Avisos, Tarefas e Cantina. |
+| **Gestão** | `gestao@ceep.demo` | `demo123` | Painel administrativo institucional com Avisos, Turmas, Disciplinas, Grade e Cantina. |
+| **Cantina** | `cantina@ceep.demo` | `demo123` | Terminal de atendimento, scanner e validação de retiradas por QR Code. |
 
 ---
 

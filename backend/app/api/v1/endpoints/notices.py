@@ -1,4 +1,4 @@
-﻿from typing import List, Optional
+from typing import List, Optional
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -10,6 +10,50 @@ from app.models.turma import Curso, Turma
 from app.schemas.aviso import AvisoOut, AvisoCreate, AvisoUpdate
 
 router = APIRouter()
+
+def validate_image_payload(image_str: Optional[str]) -> Optional[str]:
+    if not image_str:
+        return None
+    val = image_str.strip()
+    if not val:
+        return None
+    
+    # 1. Base64 Data URI
+    if val.startswith("data:image/"):
+        header, _, b64_data = val.partition(",")
+        if not b64_data:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Formato de imagem inválido (data URI incompleto)."
+            )
+        valid_mimes = ["data:image/png;base64", "data:image/jpeg;base64", "data:image/jpg;base64", "data:image/webp;base64", "data:image/gif;base64", "data:image/svg+xml;base64"]
+        if not any(header.startswith(m) for m in valid_mimes):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Formato de imagem não suportado. Use PNG, JPEG, WEBP, GIF ou SVG."
+            )
+        if len(val) > 7 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="A imagem excede o tamanho máximo permitido de 5MB."
+            )
+        return val
+
+    # 2. HTTP/HTTPS ou URL relativa
+    if val.startswith("http://") or val.startswith("https://") or val.startswith("/"):
+        valid_extensions = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg")
+        url_path = val.split("?")[0].lower()
+        if not any(url_path.endswith(ext) for ext in valid_extensions) and not (val.startswith("http://") or val.startswith("https://")):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="URL de imagem deve ter extensão válida (.png, .jpg, .jpeg, .webp, .gif, .svg)."
+            )
+        return val
+
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail="A imagem fornecida deve ser uma URL válida (http/https) ou dados em formato base64."
+    )
 
 def format_aviso_out(aviso: Aviso, db: Session) -> AvisoOut:
     target_name = None
@@ -31,9 +75,11 @@ def format_aviso_out(aviso: Aviso, db: Session) -> AvisoOut:
         publico_alvo_id=aviso.publico_alvo_id,
         publico_alvo_nome=target_name,
         status=getattr(aviso, "status", "PUBLICADO"),
+        imagem_url=getattr(aviso, "imagem_url", None),
         data_publicacao=aviso.data_publicacao,
         autor_nome=aviso.autor_rel.nome if aviso.autor_rel else "Coordenação"
     )
+
 
 @router.get("/", response_model=List[AvisoOut], summary="Lista comunicados escolares destinados ao usuário autenticado")
 def list_notices(
@@ -131,6 +177,7 @@ def create_notice(
         publico_alvo_tipo=payload.publico_alvo_tipo,
         publico_alvo_id=target_id,
         status=payload.status,
+        imagem_url=validate_image_payload(payload.imagem_url),
         data_publicacao=datetime.now(timezone.utc),
         autor_id=current_user.id
     )
@@ -195,9 +242,21 @@ def update_notice(
     if payload.status is not None:
         aviso.status = payload.status
 
+    fields_set = getattr(payload, "model_fields_set", None)
+    if fields_set is None:
+        fields_set = getattr(payload, "__fields_set__", set())
+    if "imagem_url" in fields_set:
+        if payload.imagem_url:
+            aviso.imagem_url = validate_image_payload(payload.imagem_url)
+        else:
+            aviso.imagem_url = None
+    elif payload.imagem_url is not None:
+        aviso.imagem_url = validate_image_payload(payload.imagem_url)
+
     db.commit()
     db.refresh(aviso)
     return format_aviso_out(aviso, db)
+
 
 @router.patch("/{notice_id}/publish", response_model=AvisoOut, summary="Publica um comunicado que estava em rascunho")
 def publish_notice(

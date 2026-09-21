@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -14,10 +14,10 @@ export const Badge: React.FC<BadgeProps> = ({
   className = "",
 }) => {
   const styles = {
-    success: "bg-emerald-50 text-emerald-700 border-emerald-200/80 font-semibold",
-    warning: "bg-amber-50 text-amber-700 border-amber-200/80 font-semibold",
-    danger: "bg-rose-50 text-rose-700 border-rose-200/80 font-semibold",
-    info: "bg-sky-50 text-sky-700 border-sky-200/80 font-semibold",
+    success: "bg-[#4aaa3c]/10 text-[#4aaa3c] border-[#4aaa3c]/30 font-semibold",
+    warning: "bg-[#2d3661]/10 text-[#2d3661] border-[#2d3661]/25 font-semibold",
+    danger: "bg-red-50 text-red-700 border-red-200 font-semibold",
+    info: "bg-[#2d3661]/10 text-[#2d3661] border-[#2d3661]/20 font-semibold",
     neutral: "bg-slate-100 text-slate-700 border-slate-200 font-medium",
   };
 

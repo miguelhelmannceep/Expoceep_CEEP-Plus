@@ -75,7 +75,7 @@ const AppContent: React.FC = () => {
     return (
       <ProtectedRoute allowedRoles={["CANTINA"]}>
         <CanteenLayout activeTab={canteenTab} onTabChange={setCanteenTab}>
-          <CanteenDashboardPage activeTab={canteenTab} />
+          <CanteenDashboardPage activeTab={canteenTab} onTabChange={setCanteenTab} />
         </CanteenLayout>
       </ProtectedRoute>
     );

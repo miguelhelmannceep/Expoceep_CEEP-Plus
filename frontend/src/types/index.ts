@@ -50,6 +50,7 @@ export interface Notice {
   publico_alvo_id?: number | null;
   publico_alvo_nome?: string | null;
   status: "RASCUNHO" | "PUBLICADO";
+  imagem_url?: string | null;
   data_publicacao: string;
   autor_nome?: string | null;
 }
@@ -61,6 +62,7 @@ export interface CreateNoticePayload {
   publico_alvo_tipo: "GERAL" | "CURSO" | "TURMA";
   publico_alvo_id?: number | null;
   status: "RASCUNHO" | "PUBLICADO";
+  imagem_url?: string | null;
 }
 
 export interface UpdateNoticePayload {
@@ -70,6 +72,7 @@ export interface UpdateNoticePayload {
   publico_alvo_tipo?: "GERAL" | "CURSO" | "TURMA";
   publico_alvo_id?: number | null;
   status?: "RASCUNHO" | "PUBLICADO";
+  imagem_url?: string | null;
 }
 
 

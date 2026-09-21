@@ -235,15 +235,15 @@ export const ManagementCanteenPage: React.FC = () => {
         <div
           className={`p-4 rounded-xl flex items-center justify-between text-xs font-medium border shadow-sm transition-all ${
             feedback.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-              : "bg-rose-50 border-rose-200 text-rose-800"
+              ? "bg-[#4aaa3c]/10 border-[#4aaa3c]/30 text-[#2d3661]"
+              : "bg-red-50 border-red-200 text-red-800"
           }`}
         >
           <div className="flex items-center space-x-2">
             {feedback.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-[#4aaa3c] flex-shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
             )}
             <span>{feedback.text}</span>
           </div>
@@ -260,7 +260,7 @@ export const ManagementCanteenPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
               Gestão Escolar
             </span>
             <span className="text-xs text-slate-400 font-medium">| Cantina & Demanda</span>
@@ -326,21 +326,21 @@ export const ManagementCanteenPage: React.FC = () => {
 
             {/* Pendentes */}
             <Card className="p-4 bg-white border-slate-200 shadow-sm space-y-1">
-              <div className="flex items-center space-x-1.5 text-xs text-amber-700 font-medium">
-                <Clock className="w-3.5 h-3.5 text-amber-500" />
+              <div className="flex items-center space-x-1.5 text-xs text-slate-600 font-medium">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
                 <span>Aguardando PIX</span>
               </div>
-              <p className="text-2xl font-bold text-amber-600">{pendingOrdersCount}</p>
+              <p className="text-2xl font-bold text-slate-800">{pendingOrdersCount}</p>
               <p className="text-[10px] text-slate-400">Pagamento pendente</p>
             </Card>
 
             {/* Pagos / Prontos */}
             <Card className="p-4 bg-white border-slate-200 shadow-sm space-y-1">
-              <div className="flex items-center space-x-1.5 text-xs text-emerald-700 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="flex items-center space-x-1.5 text-xs text-[#4aaa3c] font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#4aaa3c]" />
                 <span>Pagos / Balcão</span>
               </div>
-              <p className="text-2xl font-bold text-emerald-600">{paidOrdersCount}</p>
+              <p className="text-2xl font-bold text-[#4aaa3c]">{paidOrdersCount}</p>
               <p className="text-[10px] text-slate-400">Prontos para retirada</p>
             </Card>
 
@@ -355,15 +355,15 @@ export const ManagementCanteenPage: React.FC = () => {
             </Card>
 
             {/* Faturamento Confirmado */}
-            <Card className="p-4 bg-slate-900 text-white border-slate-800 shadow-sm space-y-1 col-span-2 sm:col-span-2 lg:col-span-1">
-              <div className="flex items-center space-x-1.5 text-xs text-emerald-400 font-semibold">
+            <Card className="p-4 bg-[#2d3661] text-white border-[#232b4e] shadow-sm space-y-1 col-span-2 sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center space-x-1.5 text-xs text-[#7de06f] font-semibold">
                 <DollarSign className="w-3.5 h-3.5" />
                 <span>Receita Confirmada</span>
               </div>
-              <p className="text-xl font-black text-emerald-400">
+              <p className="text-xl font-black text-white">
                 {formatCurrency(confirmedRevenue)}
               </p>
-              <p className="text-[10px] text-slate-400">Faturamento consolidado</p>
+              <p className="text-[10px] text-slate-300">Faturamento consolidado</p>
             </Card>
           </div>
 
@@ -375,7 +375,7 @@ export const ManagementCanteenPage: React.FC = () => {
                 onClick={() => setOrderStatusFilter("TODOS")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   orderStatusFilter === "TODOS"
-                    ? "bg-slate-900 text-white shadow-sm"
+                    ? "bg-[#2d3661] text-white shadow-sm shadow-[#2d3661]/20"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
@@ -386,8 +386,8 @@ export const ManagementCanteenPage: React.FC = () => {
                 onClick={() => setOrderStatusFilter("PENDENTE_PAGAMENTO")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   orderStatusFilter === "PENDENTE_PAGAMENTO"
-                    ? "bg-amber-600 text-white shadow-sm"
-                    : "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200/60"
+                    ? "bg-[#2d3661] text-white shadow-sm"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200"
                 }`}
               >
                 Pendentes ({pendingOrdersCount})
@@ -397,8 +397,8 @@ export const ManagementCanteenPage: React.FC = () => {
                 onClick={() => setOrderStatusFilter("PAGO")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   orderStatusFilter === "PAGO"
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60"
+                    ? "bg-[#4aaa3c] text-white shadow-sm shadow-[#4aaa3c]/20"
+                    : "bg-[#4aaa3c]/10 text-[#4aaa3c] hover:bg-[#4aaa3c]/20 border border-[#4aaa3c]/30"
                 }`}
               >
                 Pagos ({paidOrdersCount})
@@ -470,7 +470,7 @@ export const ManagementCanteenPage: React.FC = () => {
                           })}
                         </span>
                         {order.paid_at && (
-                          <span className="text-emerald-600 font-medium">
+                          <span className="text-[#4aaa3c] font-medium">
                             • Pago em {new Date(order.paid_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </span>
                         )}
@@ -522,7 +522,7 @@ export const ManagementCanteenPage: React.FC = () => {
 
             <button
               onClick={handleOpenCreateProduct}
-              className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+              className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 bg-[#2d3661] hover:bg-[#232b4d] text-white rounded-xl text-xs font-bold shadow-sm transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>Novo Produto</span>
@@ -545,12 +545,12 @@ export const ManagementCanteenPage: React.FC = () => {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center space-x-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 border border-amber-200/60 flex items-center justify-center font-bold text-sm">
+                      <div className="w-9 h-9 rounded-xl bg-[#4aaa3c]/10 text-[#4aaa3c] border border-[#4aaa3c]/20 flex items-center justify-center font-bold text-sm">
                         <Coffee className="w-4 h-4" />
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-slate-900 line-clamp-1">{prod.nome}</h4>
-                        <span className="text-xs font-extrabold text-emerald-600">
+                        <span className="text-xs font-extrabold text-[#4aaa3c]">
                           {formatCurrency(prod.preco)}
                         </span>
                       </div>
@@ -573,7 +573,7 @@ export const ManagementCanteenPage: React.FC = () => {
                       className={`inline-flex items-center space-x-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-all ${
                         prod.ativo
                           ? "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                          : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                          : "bg-[#4aaa3c]/10 text-[#4aaa3c] border-[#4aaa3c]/30 hover:bg-[#4aaa3c]/20"
                       }`}
                     >
                       <Power className="w-3.5 h-3.5" />
@@ -582,7 +582,7 @@ export const ManagementCanteenPage: React.FC = () => {
 
                     <button
                       onClick={() => handleOpenEditProduct(prod)}
-                      className="inline-flex items-center space-x-1 text-xs font-semibold text-blue-600 hover:text-blue-800 px-2.5 py-1.5 rounded-lg hover:bg-blue-50 transition-all"
+                      className="inline-flex items-center space-x-1 text-xs font-semibold text-[#2d3661] hover:text-[#232b4d] px-2.5 py-1.5 rounded-lg hover:bg-[#2d3661]/10 transition-all"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                       <span>Editar</span>
@@ -659,19 +659,19 @@ export const ManagementCanteenPage: React.FC = () => {
               </div>
               <div className="flex items-center justify-between font-bold text-slate-900 pt-1 border-t border-slate-200">
                 <span>Valor Total:</span>
-                <span className="text-sm text-emerald-600 font-black">
+                <span className="text-sm text-[#4aaa3c] font-black">
                   {formatCurrency(selectedOrder.valor_total)}
                 </span>
               </div>
               <div className="pt-2 border-t border-slate-200 space-y-1 text-[11px] text-slate-500">
                 <p>• Criado em: {new Date(selectedOrder.created_at).toLocaleString("pt-BR")}</p>
                 {selectedOrder.paid_at && (
-                  <p className="text-emerald-700 font-medium">
+                  <p className="text-[#4aaa3c] font-medium">
                     • Pago via PIX Simulado em: {new Date(selectedOrder.paid_at).toLocaleString("pt-BR")}
                   </p>
                 )}
                 {selectedOrder.used_at && (
-                  <p className="text-blue-700 font-medium">
+                  <p className="text-[#2d3661] font-medium">
                     • Retirado no balcão em: {new Date(selectedOrder.used_at).toLocaleString("pt-BR")}
                   </p>
                 )}
@@ -703,7 +703,7 @@ export const ManagementCanteenPage: React.FC = () => {
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
-                <Tag className="w-5 h-5 text-blue-600" />
+                <Tag className="w-5 h-5 text-[#2d3661]" />
                 <h3 className="text-base font-bold text-slate-900">
                   {editingProduct ? "Editar Produto" : "Novo Produto"}
                 </h3>
@@ -726,7 +726,7 @@ export const ManagementCanteenPage: React.FC = () => {
                   placeholder="Ex: Salgado Assado de Frango"
                   value={productFormData.nome}
                   onChange={(e) => setProductFormData({ ...productFormData, nome: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661]"
                 />
               </div>
 
@@ -741,7 +741,7 @@ export const ManagementCanteenPage: React.FC = () => {
                   placeholder="8.00"
                   value={productFormData.preco}
                   onChange={(e) => setProductFormData({ ...productFormData, preco: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661]"
                 />
               </div>
 
@@ -755,7 +755,7 @@ export const ManagementCanteenPage: React.FC = () => {
                   onChange={(e) =>
                     setProductFormData({ ...productFormData, descricao: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661]"
                 />
               </div>
 
@@ -768,7 +768,7 @@ export const ManagementCanteenPage: React.FC = () => {
                   onChange={(e) =>
                     setProductFormData({ ...productFormData, ativo: e.target.checked })
                   }
-                  className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                  className="w-4 h-4 text-[#2d3661] rounded border-slate-300 focus:ring-[#2d3661]"
                 />
                 <label htmlFor="ativoCheckbox" className="font-medium text-slate-700 cursor-pointer">
                   Produto ativo e disponível no cardápio
@@ -787,7 +787,7 @@ export const ManagementCanteenPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmittingProduct}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-sm transition-all disabled:opacity-50"
+                  className="px-4 py-2 bg-[#2d3661] hover:bg-[#232b4d] text-white rounded-xl font-bold shadow-sm transition-all disabled:opacity-50"
                 >
                   {isSubmittingProduct ? "Salvando..." : editingProduct ? "Salvar Alterações" : "Criar Produto"}
                 </button>

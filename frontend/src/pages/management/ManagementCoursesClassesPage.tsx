@@ -275,7 +275,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200/60 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
               Estrutura Acadêmica
             </span>
             <span className="text-xs text-slate-400 font-medium">| CEEP Pedro Boaretto Neto</span>
@@ -290,7 +290,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
           {subTab === "cursos" ? (
             <button
               onClick={handleOpenNewCourseModal}
-              className="inline-flex items-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+              className="inline-flex items-center space-x-2 px-4 py-2.5 bg-[#2d3661] hover:bg-[#232b4d] text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>Novo Curso</span>
@@ -298,7 +298,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
           ) : (
             <button
               onClick={handleOpenNewClassModal}
-              className="inline-flex items-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+              className="inline-flex items-center space-x-2 px-4 py-2.5 bg-[#2d3661] hover:bg-[#232b4d] text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>Nova Turma</span>
@@ -320,15 +320,15 @@ export const ManagementCoursesClassesPage: React.FC = () => {
         <div
           className={`p-4 rounded-xl text-xs font-semibold flex items-center justify-between border ${
             feedback.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-              : "bg-rose-50 text-rose-800 border-rose-200"
+              ? "bg-[#4aaa3c]/10 text-[#2d3661] border-[#4aaa3c]/30"
+              : "bg-red-50 text-red-800 border-red-200"
           }`}
         >
           <div className="flex items-center space-x-2">
             {feedback.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-[#4aaa3c] shrink-0" />
             ) : (
-              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
             )}
             <span>{feedback.text}</span>
           </div>
@@ -347,7 +347,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
           }}
           className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             subTab === "cursos"
-              ? "bg-blue-600 text-white shadow-sm"
+              ? "bg-[#2d3661] text-white shadow-sm"
               : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
           }`}
         >
@@ -362,7 +362,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
           }}
           className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             subTab === "turmas"
-              ? "bg-blue-600 text-white shadow-sm"
+              ? "bg-[#2d3661] text-white shadow-sm"
               : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
           }`}
         >
@@ -384,7 +384,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
             }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
           />
         </div>
 
@@ -393,7 +393,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
             <select
               value={selectedCourseFilter}
               onChange={(e) => setSelectedCourseFilter(e.target.value)}
-              className="w-full sm:w-56 px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full sm:w-56 px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
             >
               <option value="TODOS">Todos os Cursos</option>
               {courses.map((c) => (
@@ -418,7 +418,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
               </p>
               <button
                 onClick={handleOpenNewCourseModal}
-                className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-all"
+                className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-[#2d3661] hover:bg-[#232b4d] text-white rounded-xl text-xs font-semibold transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Cadastrar Primeiro Curso</span>
@@ -433,7 +433,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-lg uppercase tracking-wider">
+                      <span className="text-xs font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2.5 py-0.5 rounded-lg uppercase tracking-wider">
                         {c.sigla}
                       </span>
                       <Badge variant={c.ativo ? "success" : "neutral"}>
@@ -468,7 +468,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                           title: c.nome,
                         })
                       }
-                      className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-medium transition-colors"
+                      className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Excluir</span>
@@ -493,7 +493,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
               </p>
               <button
                 onClick={handleOpenNewClassModal}
-                className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-all"
+                className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-[#2d3661] hover:bg-[#232b4d] text-white rounded-xl text-xs font-semibold transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Cadastrar Nova Turma</span>
@@ -509,7 +509,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-1.5">
-                        <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-md">
+                        <span className="text-[11px] font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2 py-0.5 rounded-md">
                           {t.curso_sigla || "CURSO"}
                         </span>
                         <span className="text-xs text-slate-400 font-medium">
@@ -551,7 +551,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                           title: t.nome_turma,
                         })
                       }
-                      className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-medium transition-colors"
+                      className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Excluir</span>
@@ -569,7 +569,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2 text-blue-600">
+              <div className="flex items-center space-x-2 text-[#2d3661]">
                 <GraduationCap className="w-5 h-5" />
                 <h3 className="font-bold text-base text-slate-900">
                   {editingCourse ? "Editar Curso Técnico" : "Novo Curso Técnico"}
@@ -592,7 +592,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                   value={courseFormData.nome}
                   onChange={(e) => setCourseFormData({ ...courseFormData, nome: e.target.value })}
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 />
               </div>
 
@@ -607,7 +607,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                   }
                   required
                   maxLength={10}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 uppercase font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 uppercase font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 />
               </div>
 
@@ -619,7 +619,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                   onChange={(e) =>
                     setCourseFormData({ ...courseFormData, ativo: e.target.checked })
                   }
-                  className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                  className="w-4 h-4 text-[#2d3661] rounded border-slate-300 focus:ring-[#2d3661]"
                 />
                 <label htmlFor="courseAtivo" className="text-xs font-semibold text-slate-700 cursor-pointer">
                   Curso Ativo na Instituição
@@ -638,7 +638,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5"
+                  className="px-5 py-2 bg-[#2d3661] hover:bg-[#232b4d] text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5"
                 >
                   {isSubmitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                   <span>{editingCourse ? "Salvar Alterações" : "Criar Curso"}</span>
@@ -654,7 +654,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2 text-indigo-600">
+              <div className="flex items-center space-x-2 text-[#2d3661]">
                 <Users className="w-5 h-5" />
                 <h3 className="font-bold text-base text-slate-900">
                   {editingClass ? "Editar Turma" : "Nova Turma"}
@@ -677,7 +677,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                     setClassFormData({ ...classFormData, curso_id: Number(e.target.value) })
                   }
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 >
                   <option value={0} disabled>
                     Selecione um curso...
@@ -700,7 +700,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                     setClassFormData({ ...classFormData, nome_turma: e.target.value })
                   }
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 />
               </div>
 
@@ -712,7 +712,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                     onChange={(e) =>
                       setClassFormData({ ...classFormData, ano: e.target.value })
                     }
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                   >
                     <option value="1º Ano">1º Ano</option>
                     <option value="2º Ano">2º Ano</option>
@@ -728,7 +728,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                     onChange={(e) =>
                       setClassFormData({ ...classFormData, periodo: e.target.value })
                     }
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                   >
                     <option value="Manhã">Manhã</option>
                     <option value="Tarde">Tarde</option>
@@ -746,7 +746,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                   onChange={(e) =>
                     setClassFormData({ ...classFormData, ativo: e.target.checked })
                   }
-                  className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                  className="w-4 h-4 text-[#2d3661] rounded border-slate-300 focus:ring-[#2d3661]"
                 />
                 <label htmlFor="classAtivo" className="text-xs font-semibold text-slate-700 cursor-pointer">
                   Turma Ativa para Matrícula e Horários
@@ -765,7 +765,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5"
+                  className="px-5 py-2 bg-[#2d3661] hover:bg-[#232b4d] text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5"
                 >
                   {isSubmitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                   <span>{editingClass ? "Salvar Alterações" : "Criar Turma"}</span>
@@ -780,8 +780,8 @@ export const ManagementCoursesClassesPage: React.FC = () => {
       {deletingTarget && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center space-x-3 text-rose-600">
-              <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/60">
+            <div className="flex items-center space-x-3 text-red-600">
+              <div className="p-2 rounded-xl bg-red-50 border border-red-200/60">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
@@ -811,7 +811,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={isSubmitting}
-                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5"
+                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5"
               >
                 {isSubmitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                 <span>Confirmar Exclusão</span>

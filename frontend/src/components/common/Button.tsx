@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Loader2 } from "lucide-react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -25,10 +25,10 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const variantStyles = {
-    primary: "bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500 shadow-sm shadow-emerald-700/20",
-    secondary: "bg-slate-800 text-white hover:bg-slate-900 focus:ring-slate-700",
+    primary: "bg-[#2d3661] text-white hover:bg-[#222949] focus:ring-[#2d3661]/40 shadow-sm shadow-[#2d3661]/20",
+    secondary: "bg-[#4aaa3c] text-white hover:bg-[#3d9131] focus:ring-[#4aaa3c]/40 shadow-sm shadow-[#4aaa3c]/20",
     outline: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 focus:ring-slate-400",
-    danger: "bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500",
+    danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm shadow-red-600/20",
     ghost: "text-slate-600 hover:bg-slate-100 focus:ring-slate-400",
   };
 

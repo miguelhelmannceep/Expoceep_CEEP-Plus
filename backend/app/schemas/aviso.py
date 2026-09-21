@@ -1,4 +1,4 @@
-﻿from typing import Optional
+from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -9,6 +9,7 @@ class AvisoCreate(BaseModel):
     publico_alvo_tipo: str = Field(default="GERAL", pattern="^(GERAL|CURSO|TURMA)$")
     publico_alvo_id: Optional[int] = None
     status: str = Field(default="PUBLICADO", pattern="^(RASCUNHO|PUBLICADO)$")
+    imagem_url: Optional[str] = None
 
 class AvisoUpdate(BaseModel):
     titulo: Optional[str] = Field(None, min_length=1, max_length=150)
@@ -17,6 +18,7 @@ class AvisoUpdate(BaseModel):
     publico_alvo_tipo: Optional[str] = Field(None, pattern="^(GERAL|CURSO|TURMA)$")
     publico_alvo_id: Optional[int] = None
     status: Optional[str] = Field(None, pattern="^(RASCUNHO|PUBLICADO)$")
+    imagem_url: Optional[str] = None
 
 class AvisoOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -29,5 +31,7 @@ class AvisoOut(BaseModel):
     publico_alvo_id: Optional[int] = None
     publico_alvo_nome: Optional[str] = None
     status: str = "PUBLICADO"
+    imagem_url: Optional[str] = None
     data_publicacao: datetime
     autor_nome: Optional[str] = None
+

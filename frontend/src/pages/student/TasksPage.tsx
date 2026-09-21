@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { taskService } from "../../services/task.service";
 import type { Task } from "../../types";
 import { Card } from "../../components/common/Card";
@@ -15,7 +15,9 @@ import {
   Circle,
   Clock,
   Plus,
-  AlertCircle
+  AlertCircle,
+  Trash2,
+  Check
 } from "lucide-react";
 
 type TaskFilter = "TODAS" | "PENDENTES" | "CONCLUIDAS";
@@ -26,6 +28,7 @@ export const TasksPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Estados do Modal de Criação de Tarefa
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,6 +38,11 @@ export const TasksPage: React.FC = () => {
   const [newDescription, setNewDescription] = useState("");
   const [newDueDate, setNewDueDate] = useState("");
   const [newPriority, setNewPriority] = useState<"BAIXA" | "MEDIA" | "ALTA">("MEDIA");
+
+  // Estados do Modal de Exclusão de Tarefa
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const loadTasks = () => {
     setIsLoading(true);
@@ -101,6 +109,8 @@ export const TasksPage: React.FC = () => {
       // Adiciona a nova tarefa na lista
       setTasks((prev) => [created, ...prev]);
       setIsModalOpen(false);
+      setSuccessMessage("Tarefa criada com sucesso.");
+      setTimeout(() => setSuccessMessage(null), 3000);
       // Garante que o filtro mostre a tarefa criada
       if (filter === "CONCLUIDAS") {
         setFilter("PENDENTES");
@@ -109,6 +119,24 @@ export const TasksPage: React.FC = () => {
       setFormError(err.message || "Erro ao criar nova tarefa.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!taskToDelete || isDeleting) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await taskService.deleteTask(taskToDelete.id);
+      setTasks((prev) => prev.filter((t) => t.id !== taskToDelete.id));
+      setTaskToDelete(null);
+      setSuccessMessage("Tarefa excluída com sucesso.");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err: any) {
+      setDeleteError(err.message || "Não foi possível excluir a tarefa. Tente novamente.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -146,7 +174,7 @@ export const TasksPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-            <CheckSquare className="w-5 h-5 text-emerald-600" />
+            <CheckSquare className="w-5 h-5 text-[#2d3661]" />
             <span>Minhas Tarefas</span>
           </h2>
           <p className="text-xs text-slate-500">
@@ -158,12 +186,20 @@ export const TasksPage: React.FC = () => {
           variant="primary"
           size="sm"
           onClick={handleOpenCreateModal}
-          className="font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shrink-0"
+          className="font-bold bg-[#2d3661] hover:bg-[#222a4d] text-white shadow-sm shrink-0"
         >
-          <Plus className="w-4 h-4 mr-1" />
+          <Plus className="w-4 h-4 mr-1 text-[#7de06f]" />
           <span>Nova tarefa</span>
         </Button>
       </div>
+
+      {/* Alerta de Sucesso */}
+      {successMessage && (
+        <div className="p-3 bg-[#4aaa3c]/10 border border-[#4aaa3c]/30 rounded-xl text-xs text-[#2d3661] flex items-center space-x-2 animate-in fade-in duration-200">
+          <Check className="w-4 h-4 text-[#4aaa3c] shrink-0" />
+          <span className="font-semibold">{successMessage}</span>
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="flex space-x-2">
@@ -171,7 +207,7 @@ export const TasksPage: React.FC = () => {
           onClick={() => setFilter("PENDENTES")}
           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
             filter === "PENDENTES"
-              ? "bg-emerald-600 text-white shadow-sm shadow-emerald-700/20"
+              ? "bg-[#2d3661] text-white shadow-sm shadow-[#2d3661]/20"
               : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
           }`}
         >
@@ -231,12 +267,12 @@ export const TasksPage: React.FC = () => {
                       onClick={() => handleToggleTask(t.id)}
                       disabled={togglingId === t.id}
                       aria-label={isCompleted ? "Marcar como pendente" : "Marcar como concluída"}
-                      className="mt-0.5 text-slate-400 hover:text-emerald-600 transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded-full"
+                      className="mt-0.5 text-slate-400 hover:text-[#4aaa3c] transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-[#4aaa3c] rounded-full"
                     >
                       {isCompleted ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100" />
+                        <CheckCircle2 className="w-5 h-5 text-[#4aaa3c] fill-[#4aaa3c]/10" />
                       ) : (
-                        <Circle className="w-5 h-5 text-slate-300 hover:text-emerald-500" />
+                        <Circle className="w-5 h-5 text-slate-300 hover:text-[#4aaa3c]" />
                       )}
                     </button>
 
@@ -262,7 +298,23 @@ export const TasksPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="shrink-0">{getPriorityBadge(t.prioridade)}</div>
+                  <div className="flex items-center space-x-1.5 shrink-0">
+                    <div>{getPriorityBadge(t.prioridade)}</div>
+                    
+                    {/* Botão de Excluir Tarefa */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteError(null);
+                        setTaskToDelete(t);
+                      }}
+                      title="Excluir tarefa"
+                      aria-label="Excluir tarefa"
+                      className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-200"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Rodapé da Tarefa */}
@@ -311,7 +363,7 @@ export const TasksPage: React.FC = () => {
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="Ex: Trabalho de Banco de Dados"
-              className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+              className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10"
             />
           </div>
 
@@ -326,7 +378,7 @@ export const TasksPage: React.FC = () => {
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               placeholder="Detalhes ou anotações sobre a entrega..."
-              className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 resize-none"
+              className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10 resize-none"
             />
           </div>
 
@@ -341,7 +393,7 @@ export const TasksPage: React.FC = () => {
                 type="date"
                 value={newDueDate}
                 onChange={(e) => setNewDueDate(e.target.value)}
-                className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10"
               />
             </div>
 
@@ -353,7 +405,7 @@ export const TasksPage: React.FC = () => {
                 id="task-priority"
                 value={newPriority}
                 onChange={(e) => setNewPriority(e.target.value as "BAIXA" | "MEDIA" | "ALTA")}
-                className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10"
               >
                 <option value="BAIXA">Baixa</option>
                 <option value="MEDIA">Média</option>
@@ -380,12 +432,65 @@ export const TasksPage: React.FC = () => {
               size="md"
               isLoading={isSubmitting}
               disabled={isSubmitting || !newTitle.trim()}
-              className="w-2/3 font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="w-2/3 font-bold bg-[#2d3661] hover:bg-[#222a4d] text-white"
             >
               Criar tarefa
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
+      <Modal
+        isOpen={taskToDelete !== null}
+        onClose={() => !isDeleting && setTaskToDelete(null)}
+        title="Excluir Tarefa"
+      >
+        <div className="space-y-4 text-center">
+          {deleteError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start space-x-2 text-left">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <span>{deleteError}</span>
+            </div>
+          )}
+
+          <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto">
+            <Trash2 className="w-6 h-6" />
+          </div>
+
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-slate-900">
+              Confirmar exclusão desta atividade?
+            </h4>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-xs mx-auto">
+              A tarefa <strong>&ldquo;{taskToDelete?.titulo}&rdquo;</strong> será removida permanentemente.
+            </p>
+          </div>
+
+          <div className="flex space-x-2 pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              size="md"
+              onClick={() => setTaskToDelete(null)}
+              disabled={isDeleting}
+              className="w-1/2 font-semibold"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="md"
+              onClick={handleDeleteTask}
+              isLoading={isDeleting}
+              disabled={isDeleting}
+              className="w-1/2 font-bold"
+            >
+              Sim, excluir
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

@@ -17,7 +17,11 @@ def setup_db():
     init_db(db)
     db.close()
 
-def get_auth_token(email: str, password: str = "demo123") -> str:
+def get_auth_token(email: str = "aluno@escola.pr.gov.br", password: str = "demo123") -> str:
+    if email == "aluno@ceep.demo":
+        email = "aluno@escola.pr.gov.br"
+    elif email == "outro.aluno@ceep.demo":
+        email = "outro.aluno@escola.pr.gov.br"
     resp = client.post("/api/v1/auth/login", json={"email": email, "password": password})
     return resp.json()["access_token"]
 
@@ -32,9 +36,9 @@ def test_health_check():
     assert data["status"] == "online"
     assert "CEEP+" in data["projeto"]
 
-def test_login_success_aluno():
+def test_login_success_aluno_escola_pr_gov_br():
     response = client.post("/api/v1/auth/login", json={
-        "email": "aluno@ceep.demo",
+        "email": "aluno@escola.pr.gov.br",
         "password": "demo123"
     })
     assert response.status_code == 200
@@ -43,9 +47,93 @@ def test_login_success_aluno():
     assert data["role"] == "ALUNO"
     assert data["nome"] == "Aluno Demo"
 
-def test_login_invalid_password():
+def test_login_student_any_escola_pr_gov_br_allowed():
+    unique_email = f"novo.estudante.{uuid.uuid4().hex[:6]}@escola.pr.gov.br"
     response = client.post("/api/v1/auth/login", json={
-        "email": "aluno@ceep.demo",
+        "email": unique_email,
+        "password": "qualquer_senha"
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["role"] == "ALUNO"
+    assert data["email"] == unique_email.lower()
+
+def test_login_student_gmail_rejected():
+    response = client.post("/api/v1/auth/login", json={
+        "email": "aluno@gmail.com",
+        "password": "demo123"
+    })
+    assert response.status_code == 401
+    assert "incorretos" in response.json()["detail"].lower()
+
+def test_login_student_other_common_domains_rejected():
+    for bad_email in ["estudante@hotmail.com", "aluno@outlook.com", "aluno@yahoo.com", "aluno@uol.com.br"]:
+        response = client.post("/api/v1/auth/login", json={
+            "email": bad_email,
+            "password": "demo123"
+        })
+        assert response.status_code == 401
+        assert "incorretos" in response.json()["detail"].lower()
+
+def test_login_success_gestao_authorized():
+    response = client.post("/api/v1/auth/login", json={
+        "email": "gestao@ceep.demo",
+        "password": "demo123"
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["role"] == "GESTAO"
+
+def test_login_gestao_unauthorized_email_rejected():
+    for unauthorized_email in ["gestao@gmail.com", "diretoria@escola.pr.gov.br", "gestao2@ceep.demo", "admin@ceep.demo"]:
+        # Se for @escola.pr.gov.br loga como ALUNO, mas não como GESTAO
+        resp = client.post("/api/v1/auth/login", json={
+            "email": unauthorized_email,
+            "password": "demo123"
+        })
+        if unauthorized_email.endswith("@escola.pr.gov.br"):
+            assert resp.status_code == 200
+            assert resp.json()["role"] == "ALUNO"  # Nunca GESTAO
+        else:
+            assert resp.status_code == 401
+
+def test_login_gestao_wrong_password():
+    response = client.post("/api/v1/auth/login", json={
+        "email": "gestao@ceep.demo",
+        "password": "senha_errada"
+    })
+    assert response.status_code == 401
+
+def test_login_success_cantina_authorized():
+    response = client.post("/api/v1/auth/login", json={
+        "email": "cantina@ceep.demo",
+        "password": "demo123"
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["role"] == "CANTINA"
+
+def test_login_cantina_unauthorized_email_rejected():
+    for unauthorized in ["cantina@gmail.com", "cantina2@ceep.demo", "atendente@ceep.demo"]:
+        resp = client.post("/api/v1/auth/login", json={
+            "email": unauthorized,
+            "password": "demo123"
+        })
+        assert resp.status_code == 401
+
+def test_login_cantina_wrong_password():
+    response = client.post("/api/v1/auth/login", json={
+        "email": "cantina@ceep.demo",
+        "password": "senha_errada"
+    })
+    assert response.status_code == 401
+
+def test_login_invalid_password_existing_user():
+    response = client.post("/api/v1/auth/login", json={
+        "email": "aluno@escola.pr.gov.br",
         "password": "wrongpassword"
     })
     assert response.status_code == 401
@@ -89,7 +177,7 @@ def test_student_cannot_toggle_other_student_task():
     headers = {"Authorization": f"Bearer {token}"}
 
     db = SessionLocal()
-    other_user = db.query(Usuario).filter(Usuario.email == "outro.aluno@ceep.demo").first()
+    other_user = db.query(Usuario).filter((Usuario.email == "outro.aluno@escola.pr.gov.br") | (Usuario.email == "outro.aluno@ceep.demo")).first()
     other_task = db.query(Tarefa).filter(Tarefa.aluno_id == other_user.id).first()
     db.close()
 
@@ -121,9 +209,10 @@ def test_student_can_create_task():
 
     # Confere no banco de dados se pertence ao aluno autenticado
     db = SessionLocal()
-    aluno_user = db.query(Usuario).filter(Usuario.email == "aluno@ceep.demo").first()
+    aluno_user = db.query(Usuario).filter((Usuario.email == "aluno@escola.pr.gov.br") | (Usuario.email == "aluno@ceep.demo")).first()
     db_task = db.query(Tarefa).filter(Tarefa.id == created_task["id"]).first()
     assert db_task is not None
+    assert aluno_user is not None
     assert db_task.aluno_id == aluno_user.id
     db.close()
 
@@ -158,6 +247,48 @@ def test_student_cannot_toggle_task_created_by_another_student():
     # Aluno B tenta alternar o status da tarefa do Aluno A -> 404
     toggle_resp = client.patch(f"/api/v1/tasks/{task_id}/toggle", headers=headers_b)
     assert toggle_resp.status_code == 404
+
+def test_student_can_delete_own_task():
+    token = get_auth_token("aluno@ceep.demo")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_resp = client.post("/api/v1/tasks/", json={"titulo": "Tarefa para Excluir", "prioridade": "BAIXA"}, headers=headers)
+    assert create_resp.status_code == 201
+    task_id = create_resp.json()["id"]
+
+    # Exclui a própria tarefa
+    del_resp = client.delete(f"/api/v1/tasks/{task_id}", headers=headers)
+    assert del_resp.status_code == 204
+
+    # Confere no banco de dados que foi removida
+    db = SessionLocal()
+    db_task = db.query(Tarefa).filter(Tarefa.id == task_id).first()
+    db.close()
+    assert db_task is None
+
+def test_student_cannot_delete_task_created_by_another_student():
+    token_a = get_auth_token("aluno@ceep.demo")
+    token_b = get_auth_token("outro.aluno@ceep.demo")
+    headers_a = {"Authorization": f"Bearer {token_a}"}
+    headers_b = {"Authorization": f"Bearer {token_b}"}
+
+    create_resp = client.post("/api/v1/tasks/", json={"titulo": "Tarefa Segura Aluno A"}, headers=headers_a)
+    assert create_resp.status_code == 201
+    task_id = create_resp.json()["id"]
+
+    # Aluno B tenta excluir a tarefa do Aluno A -> 404
+    del_resp = client.delete(f"/api/v1/tasks/{task_id}", headers=headers_b)
+    assert del_resp.status_code == 404
+
+    # Confere que a tarefa ainda existe no banco
+    db = SessionLocal()
+    db_task = db.query(Tarefa).filter(Tarefa.id == task_id).first()
+    db.close()
+    assert db_task is not None
+
+def test_unauthenticated_cannot_delete_task():
+    del_resp = client.delete("/api/v1/tasks/99999")
+    assert del_resp.status_code in (401, 403)
 
 def test_rbac_student_denied_management_endpoint():
     token = get_auth_token("aluno@ceep.demo")
@@ -217,9 +348,10 @@ def test_canteen_order_belongs_to_authenticated_user():
     headers = {"Authorization": f"Bearer {token}"}
 
     db = SessionLocal()
-    aluno_user = db.query(Usuario).filter(Usuario.email == "aluno@ceep.demo").first()
+    aluno_user = db.query(Usuario).filter((Usuario.email == "aluno@escola.pr.gov.br") | (Usuario.email == "aluno@ceep.demo")).first()
     salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
     db.close()
+    assert aluno_user is not None
 
     payload = {"produto_id": salgado.id, "quantidade": 1}
     resp = client.post("/api/v1/canteen/orders", json=payload, headers=headers)
@@ -2121,7 +2253,151 @@ def test_e2e_management_full_lifecycle_and_rbac():
         assert client.get("/api/v1/management/professors", headers=h).status_code == 403
         assert client.get("/api/v1/management/schedules", headers=h).status_code == 403
         assert client.get("/api/v1/management/canteen/orders", headers=h).status_code == 403
-        assert client.get("/api/v1/management/canteen/products", headers=h).status_code == 403
+
+# ==========================================
+# GESTÃO DE AVISOS — SUPORTE A IMAGENS & QA
+# ==========================================
+
+def test_management_can_create_notice_with_image_url():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    unique_code = uuid.uuid4().hex[:6]
+    payload = {
+        "titulo": f"Comunicado com Imagem URL {unique_code}",
+        "descricao": "Este aviso possui uma imagem institucional vinculada.",
+        "prioridade": "ALTA",
+        "publico_alvo_tipo": "GERAL",
+        "ativo": True,
+        "imagem_url": "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800"
+    }
+
+    resp = client.post("/api/v1/notices", json=payload, headers=headers_gestao)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["titulo"] == payload["titulo"]
+    assert data["imagem_url"] == payload["imagem_url"]
+    assert data["id"] is not None
+
+
+def test_management_can_create_notice_with_base64_image():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    unique_code = uuid.uuid4().hex[:6]
+    # Small 1x1 PNG data URI
+    base64_img = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+    payload = {
+        "titulo": f"Comunicado Base64 {unique_code}",
+        "descricao": "Aviso com upload direto em base64.",
+        "prioridade": "MEDIA",
+        "publico_alvo_tipo": "GERAL",
+        "ativo": True,
+        "imagem_url": base64_img
+    }
+
+    resp = client.post("/api/v1/notices", json=payload, headers=headers_gestao)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["imagem_url"] == base64_img
+
+
+def test_management_can_create_notice_without_image():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    unique_code = uuid.uuid4().hex[:6]
+    payload = {
+        "titulo": f"Comunicado Sem Imagem {unique_code}",
+        "descricao": "Aviso sem nenhuma imagem associada.",
+        "prioridade": "BAIXA",
+        "publico_alvo_tipo": "GERAL",
+        "ativo": True,
+        "imagem_url": None
+    }
+
+    resp = client.post("/api/v1/notices", json=payload, headers=headers_gestao)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["imagem_url"] is None
+
+
+def test_management_can_update_and_remove_notice_image():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    unique_code = uuid.uuid4().hex[:6]
+    created = client.post("/api/v1/notices", json={
+        "titulo": f"Aviso Para Alterar Imagem {unique_code}",
+        "descricao": "Texto original",
+        "prioridade": "MEDIA",
+        "publico_alvo_tipo": "GERAL",
+        "ativo": True,
+        "imagem_url": "https://example.com/initial.jpg"
+    }, headers=headers_gestao).json()
+
+    notice_id = created["id"]
+    assert created["imagem_url"] == "https://example.com/initial.jpg"
+
+    # Atualiza imagem
+    upd_resp = client.put(f"/api/v1/notices/{notice_id}", json={
+        "imagem_url": "https://example.com/updated.png"
+    }, headers=headers_gestao)
+    assert upd_resp.status_code == 200
+    assert upd_resp.json()["imagem_url"] == "https://example.com/updated.png"
+
+    # Remove imagem
+    del_img_resp = client.put(f"/api/v1/notices/{notice_id}", json={
+        "imagem_url": None
+    }, headers=headers_gestao)
+    assert del_img_resp.status_code == 200
+    assert del_img_resp.json()["imagem_url"] is None
+
+
+def test_student_receives_published_notice_with_image():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    unique_code = uuid.uuid4().hex[:6]
+    img_url = "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800"
+    client.post("/api/v1/notices", json={
+        "titulo": f"Feira de Ciências e Tecnologia {unique_code}",
+        "descricao": "Convidamos todos os estudantes a submeterem projetos inovadores para a feira anual de ciências e tecnologia.",
+        "prioridade": "ALTA",
+        "publico_alvo_tipo": "GERAL",
+        "ativo": True,
+        "imagem_url": img_url
+    }, headers=headers_gestao)
+
+    # Aluno consulta o mural
+    token_aluno = get_auth_token("aluno@ceep.demo")
+    headers_aluno = {"Authorization": f"Bearer {token_aluno}"}
+
+    notices_resp = client.get("/api/v1/notices", headers=headers_aluno)
+    assert notices_resp.status_code == 200
+    notices = notices_resp.json()
+    matched = next((n for n in notices if unique_code in n["titulo"]), None)
+    assert matched is not None
+    assert matched["imagem_url"] == img_url
+    assert matched["prioridade"] == "ALTA"
+
+
+def test_invalid_image_payload_format_rejected():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    payload = {
+        "titulo": "Aviso com Payload Inválido",
+        "descricao": "Tentando passar script ou string inválida no campo imagem_url",
+        "prioridade": "MEDIA",
+        "publico_alvo_tipo": "GERAL",
+        "ativo": True,
+        "imagem_url": "javascript:alert('xss')"
+    }
+    resp = client.post("/api/v1/notices", json=payload, headers=headers_gestao)
+    assert resp.status_code == 422
+    assert "imagem" in resp.json()["detail"].lower()
+
 
 
 

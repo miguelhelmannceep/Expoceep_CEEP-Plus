@@ -69,3 +69,26 @@ def toggle_task_status(
     db.commit()
     db.refresh(tarefa)
     return tarefa
+
+
+@router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Exclui uma tarefa pertencente ao aluno logado")
+def delete_task(
+    task_id: int,
+    current_user: Usuario = Depends(require_roles(["ALUNO"])),
+    db: Session = Depends(get_db)
+):
+    tarefa = db.query(Tarefa).filter(
+        Tarefa.id == task_id,
+        Tarefa.aluno_id == current_user.id
+    ).first()
+
+    if not tarefa:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tarefa não encontrada ou não pertence ao aluno autenticado."
+        )
+
+    db.delete(tarefa)
+    db.commit()
+    return None
+

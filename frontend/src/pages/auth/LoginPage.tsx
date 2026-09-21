@@ -1,9 +1,6 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { authService } from "../../services/auth.service";
-import type { DemoAccount } from "../../types";
-import { Button } from "../../components/common/Button";
-import { Sparkles, AlertCircle, ArrowRight } from "lucide-react";
+import { AlertCircle, Lock, Mail, Loader2 } from "lucide-react";
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -11,20 +8,6 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [demoAccounts, setDemoAccounts] = useState<DemoAccount[]>([]);
-
-  useEffect(() => {
-    authService
-      .getDemoAccounts()
-      .then(setDemoAccounts)
-      .catch(() => {
-        setDemoAccounts([
-          { label: "Aluno Demo", email: "aluno@ceep.demo", role: "ALUNO", descricao: "Acesso como estudante", turma: "3º C — DS" },
-          { label: "Gestão Demo", email: "gestao@ceep.demo", role: "GESTAO", descricao: "Acesso administrativo" },
-          { label: "Cantina Demo", email: "cantina@ceep.demo", role: "CANTINA", descricao: "Terminal de balcão" },
-        ]);
-      });
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,118 +22,118 @@ export const LoginPage: React.FC = () => {
     try {
       await login(email, password);
     } catch (err: any) {
-      setErrorMessage(err.message || "E-mail ou senha inválidos.");
+      setErrorMessage(err.message || "E-mail ou senha incorretos.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleQuickLogin = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword("demo123");
-    setErrorMessage(null);
-  };
-
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center items-center p-4 sm:p-6">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 shadow-xl shadow-emerald-500/20 mb-2">
-            <span className="text-2xl font-black tracking-wider text-slate-950">C+</span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">CEEP+</h1>
-          <p className="text-xs text-slate-400 max-w-xs mx-auto">
-            Centro Estadual de Educação Profissional Pedro Boaretto Neto
+    <div className="min-h-screen bg-slate-100 flex flex-col justify-between items-center px-4 py-8 antialiased">
+      {/* Top Header Bar Accent */}
+      <div className="w-full max-w-md pt-6 sm:pt-12">
+        <div className="text-center space-y-1 mb-6">
+          <h1 className="text-lg font-bold text-[#2d3661] tracking-tight">
+            Portal de Acesso Institucional
+          </h1>
+          <p className="text-xs text-slate-500">
+            Informe suas credenciais para acessar os serviços escolares.
           </p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {errorMessage && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center space-x-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
+        {/* Login Card */}
+        <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200/80 overflow-hidden">
+          {/* Top Institutional Line Accent */}
+          <div className="h-1.5 w-full bg-gradient-to-r from-[#2d3661] via-[#2d3661] to-[#4aaa3c]" />
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                E-mail
-              </label>
-              <input
-                type="email"
-                placeholder="seu.email@ceep.demo"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-sm bg-slate-950 border border-slate-800 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                Senha
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-sm bg-slate-950 border border-slate-800 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="md"
-              isLoading={isLoading}
-              className="w-full mt-2 font-semibold"
-            >
-              Entrar no CEEP+
-            </Button>
-          </form>
-        </div>
-
-        <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 space-y-3">
-          <div className="flex items-center space-x-2 text-slate-400">
-            <Sparkles className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-              Contas de Demonstração
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-400">
-            Clique em uma conta abaixo para preenchimento rápido (senha: <code className="text-emerald-400">demo123</code>):
-          </p>
-
-          <div className="grid grid-cols-1 gap-2 pt-1">
-            {demoAccounts.map((account) => (
-              <button
-                key={account.email}
-                type="button"
-                onClick={() => handleQuickLogin(account.email)}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 text-left transition-all group"
-              >
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-semibold text-white group-hover:text-emerald-400 transition-colors">
-                      {account.label}
-                    </span>
-                    <span className="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">
-                      {account.role}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5">{account.descricao}</p>
+          <div className="p-6 sm:p-8 space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {errorMessage && (
+                <div className="p-3.5 rounded-xl bg-red-50 border border-red-200/80 text-red-700 text-xs flex items-start space-x-2.5 animate-in fade-in duration-150">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed font-medium">{errorMessage}</span>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all" />
+              )}
+
+              {/* Email Input */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="email"
+                  className="block text-xs font-bold text-slate-700 uppercase tracking-wider"
+                >
+                  E-mail
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="usuario@escola.pr.gov.br"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-10 pr-3.5 py-2.5 text-xs text-slate-900 bg-slate-50/50 border border-slate-300 rounded-xl placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/15 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Password Input */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="password"
+                  className="block text-xs font-bold text-slate-700 uppercase tracking-wider"
+                >
+                  Senha
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    id="password"
+                    type="password"
+                    required
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-10 pr-3.5 py-2.5 text-xs text-slate-900 bg-slate-50/50 border border-slate-300 rounded-xl placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/15 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full mt-2 py-2.5 px-4 bg-[#2d3661] hover:bg-[#222949] active:bg-[#1b203a] text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Entrando...</span>
+                  </>
+                ) : (
+                  <span>Entrar</span>
+                )}
               </button>
-            ))}
+            </form>
           </div>
         </div>
-
-        <p className="text-center text-[11px] text-slate-500">
-          Protótipo CEEP+ — Desenvolvido para a ExpoCEEP
-        </p>
       </div>
+
+      {/* Institutional Footer */}
+      <footer className="text-center space-y-1 pt-6 pb-2 text-[11px] text-slate-400 max-w-xs mx-auto">
+        <p className="font-medium text-slate-500">
+          Centro Estadual de Educação Profissional Pedro Boaretto Neto
+        </p>
+        <p className="text-[10px] text-slate-400">
+          Ambiente institucional autenticado e protegido.
+        </p>
+      </footer>
     </div>
   );
 };

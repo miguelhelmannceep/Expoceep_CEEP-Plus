@@ -49,7 +49,11 @@ export const CanteenPage: React.FC = () => {
         canteenService.getProducts(),
         canteenService.getOrders(),
       ]);
-      setProducts(prods);
+      // Filtra catálogo do aluno para exibir exclusivamente o Salgado (R$ 8,00)
+      const salgadoProducts = prods.filter(
+        (p) => p.ativo && p.nome.trim().toLowerCase().includes("salgado")
+      );
+      setProducts(salgadoProducts.length > 0 ? [salgadoProducts[0]] : prods.slice(0, 1));
       setOrders(myOrders);
     } catch (err: any) {
       setError(err.message || "Erro ao carregar informações da cantina.");
@@ -148,7 +152,7 @@ export const CanteenPage: React.FC = () => {
       {/* Cabeçalho */}
       <div className="space-y-1">
         <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-          <Coffee className="w-5 h-5 text-amber-600" />
+          <Coffee className="w-5 h-5 text-[#2d3661]" />
           <span>Cantina Escolar</span>
         </h2>
         <p className="text-xs text-slate-500">
@@ -162,7 +166,7 @@ export const CanteenPage: React.FC = () => {
           <Card key={p.id} className="p-5 space-y-4 border-slate-200 shadow-sm">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
-                <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
                   Ficha Padrão
                 </span>
                 <h3 className="text-xl font-bold text-slate-900">{p.nome}</h3>
@@ -171,7 +175,7 @@ export const CanteenPage: React.FC = () => {
                 </p>
               </div>
               <div className="text-right">
-                <span className="text-2xl font-black text-emerald-600">
+                <span className="text-2xl font-black text-[#4aaa3c]">
                   {formatCurrency(p.preco)}
                 </span>
                 <span className="block text-[11px] text-slate-400 font-medium">unitário</span>
@@ -181,11 +185,11 @@ export const CanteenPage: React.FC = () => {
             {/* Destaques do produto */}
             <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 space-y-2 text-xs text-slate-600">
               <div className="flex items-center space-x-2">
-                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <Check className="w-3.5 h-3.5 text-[#4aaa3c] shrink-0" />
                 <span>Válido para qualquer opção de salgado (assado ou frito).</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <Check className="w-3.5 h-3.5 text-[#4aaa3c] shrink-0" />
                 <span>Sem filas no caixa: apresentação direta no balcão com QR Code.</span>
               </div>
             </div>
@@ -195,9 +199,9 @@ export const CanteenPage: React.FC = () => {
               variant="primary"
               size="lg"
               onClick={() => handleStartPurchase(p)}
-              className="w-full font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-600/20"
+              className="w-full font-bold bg-[#2d3661] hover:bg-[#232b4e] text-white shadow-md shadow-[#2d3661]/20"
             >
-              <UtensilsCrossed className="w-4 h-4 mr-2" />
+              <UtensilsCrossed className="w-4 h-4 mr-2 text-[#7de06f]" />
               Comprar {p.nome} — {formatCurrency(p.preco)}
             </Button>
           </Card>
@@ -254,9 +258,9 @@ export const CanteenPage: React.FC = () => {
                       {isUsed ? (
                         <PackageCheck className="w-3.5 h-3.5 text-slate-400" />
                       ) : isPaid ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#4aaa3c]" />
                       ) : (
-                        <Clock className="w-3.5 h-3.5 text-amber-500" />
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
                       )}
                       <span>
                         {order.itens[0]?.produto_nome || "Salgado"} (x{order.itens[0]?.quantidade || 1})
@@ -266,7 +270,7 @@ export const CanteenPage: React.FC = () => {
                     {isPaid && (
                       <button
                         onClick={() => handleOpenPickupQR(order.id)}
-                        className="inline-flex items-center space-x-1 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200/60 transition-colors"
+                        className="inline-flex items-center space-x-1 text-xs font-bold text-[#4aaa3c] bg-[#4aaa3c]/10 hover:bg-[#4aaa3c]/20 px-2.5 py-1 rounded-lg border border-[#4aaa3c]/30 transition-colors"
                       >
                         <QrCode className="w-3.5 h-3.5" />
                         <span>Ver QR de Retirada</span>
@@ -280,7 +284,7 @@ export const CanteenPage: React.FC = () => {
                           setSelectedProduct(products[0] || null);
                           setCheckoutStep("PAYMENT");
                         }}
-                        className="text-xs font-semibold text-amber-600 hover:text-amber-700 underline"
+                        className="text-xs font-bold text-[#2d3661] hover:underline"
                       >
                         Pagar PIX
                       </button>
@@ -336,7 +340,7 @@ export const CanteenPage: React.FC = () => {
               </div>
               <div className="flex justify-between items-center pt-1">
                 <span className="text-sm font-bold text-slate-700">Total</span>
-                <span className="text-lg font-black text-emerald-600">
+                <span className="text-lg font-black text-[#4aaa3c]">
                   {formatCurrency(selectedProduct.preco * quantity)}
                 </span>
               </div>
@@ -361,7 +365,7 @@ export const CanteenPage: React.FC = () => {
                 size="md"
                 onClick={handleProceedToPayment}
                 isLoading={isProcessing}
-                className="w-2/3 font-bold bg-amber-600 hover:bg-amber-700 text-white"
+                className="w-2/3 font-bold bg-[#2d3661] hover:bg-[#232b4e] text-white"
               >
                 <span>Continuar para pagamento</span>
                 <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -388,7 +392,7 @@ export const CanteenPage: React.FC = () => {
               <h4 className="text-base font-bold text-slate-900">
                 {currentOrder.itens[0]?.produto_nome || "Salgado"}
               </h4>
-              <p className="text-2xl font-black text-emerald-600">
+              <p className="text-2xl font-black text-[#4aaa3c]">
                 {formatCurrency(currentOrder.valor_total)}
               </p>
             </div>
@@ -436,8 +440,8 @@ export const CanteenPage: React.FC = () => {
                 >
                   {copiedPix ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span className="text-emerald-700 font-bold">Código copiado!</span>
+                      <Check className="w-3.5 h-3.5 text-[#4aaa3c]" />
+                      <span className="text-[#4aaa3c] font-bold">Código copiado!</span>
                     </>
                   ) : (
                     <>
@@ -456,7 +460,7 @@ export const CanteenPage: React.FC = () => {
               onClick={handleSimulatePayment}
               isLoading={isProcessing}
               disabled={isProcessing}
-              className="w-full font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+              className="w-full font-bold bg-[#4aaa3c] hover:bg-[#3d9131] text-white shadow-md shadow-[#4aaa3c]/20"
             >
               <ShieldCheck className="w-5 h-5 mr-2" />
               Simular pagamento
@@ -469,7 +473,7 @@ export const CanteenPage: React.FC = () => {
         {checkoutStep === "SUCCESS" && currentOrder && (
           <div className="space-y-4 text-center py-2">
             {/* Ícone de Sucesso */}
-            <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto ring-8 ring-emerald-50">
+            <div className="w-14 h-14 rounded-full bg-[#4aaa3c]/10 text-[#4aaa3c] flex items-center justify-center mx-auto ring-8 ring-[#4aaa3c]/5">
               <Check className="w-7 h-7 stroke-[2.5]" />
             </div>
 
@@ -498,7 +502,7 @@ export const CanteenPage: React.FC = () => {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs font-medium text-slate-500">Total</span>
-                <span className="text-sm font-bold text-emerald-600">
+                <span className="text-sm font-bold text-[#4aaa3c]">
                   {formatCurrency(currentOrder.valor_total)}
                 </span>
               </div>
@@ -516,7 +520,7 @@ export const CanteenPage: React.FC = () => {
               size="lg"
               onClick={() => handleOpenPickupQR(currentOrder.id)}
               isLoading={isProcessing}
-              className="w-full font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+              className="w-full font-bold bg-[#4aaa3c] hover:bg-[#3d9131] text-white shadow-md shadow-[#4aaa3c]/20"
             >
               <QrCode className="w-5 h-5 mr-2" />
               VER QR DE RETIRADA
@@ -545,7 +549,7 @@ export const CanteenPage: React.FC = () => {
             </div>
 
             {/* QR Code de Retirada */}
-            <div className="bg-slate-50 border-2 border-emerald-500/40 rounded-3xl p-6 flex flex-col items-center justify-center space-y-3 shadow-inner">
+            <div className="bg-slate-50 border-2 border-[#4aaa3c]/30 rounded-3xl p-6 flex flex-col items-center justify-center space-y-3 shadow-inner">
               <div className="p-4 bg-white rounded-2xl shadow-md border border-slate-100">
                 <QRCodeSVG
                   value={pickupQRData.pickup_code}

@@ -30,6 +30,15 @@ def ensure_schema_migrations(db: Session) -> None:
         except Exception as e:
             print(f"Migration warning horarios: {e}")
 
+        # 2. Avisos
+        try:
+            a_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(avisos)")).fetchall()]
+            if a_cols and "imagem_url" not in a_cols:
+                conn.execute(text("ALTER TABLE avisos ADD COLUMN imagem_url TEXT"))
+                conn.commit()
+        except Exception as e:
+            print(f"Migration warning avisos: {e}")
+
 def init_db(db: Session) -> None:
     Base.metadata.create_all(bind=engine)
     ensure_schema_migrations(db)
@@ -50,6 +59,18 @@ def init_db(db: Session) -> None:
             db.commit()
     except Exception as e:
         print(f"Backfill warning: {e}")
+
+    # Migra e-mails de alunos legados para @escola.pr.gov.br se existirem
+    try:
+        aluno_legado = db.query(Usuario).filter(Usuario.email == "aluno@ceep.demo").first()
+        if aluno_legado:
+            aluno_legado.email = "aluno@escola.pr.gov.br"
+        outro_legado = db.query(Usuario).filter(Usuario.email == "outro.aluno@ceep.demo").first()
+        if outro_legado:
+            outro_legado.email = "outro.aluno@escola.pr.gov.br"
+        db.commit()
+    except Exception as e:
+        print(f"Email migration warning: {e}")
 
     # Se já existirem dados, não duplica
     if db.query(Usuario).first():
@@ -118,7 +139,7 @@ def init_db(db: Session) -> None:
 
     aluno_demo = Usuario(
         nome="Aluno Demo",
-        email="aluno@ceep.demo",
+        email="aluno@escola.pr.gov.br",
         senha_hash=senha_hash_padrao,
         perfil="ALUNO",
         turma_id=turma_3c.id,
@@ -128,7 +149,7 @@ def init_db(db: Session) -> None:
     # Segundo aluno para testes de isolamento de tarefas
     aluno_outro = Usuario(
         nome="Outro Aluno Demo",
-        email="outro.aluno@ceep.demo",
+        email="outro.aluno@escola.pr.gov.br",
         senha_hash=senha_hash_padrao,
         perfil="ALUNO",
         turma_id=turma_2a.id,

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { LoginPage } from "./pages/auth/LoginPage";
+
 import { StudentLayout } from "./components/layout/StudentLayout";
 import type { StudentTab } from "./components/layout/StudentLayout";
 import { ManagementLayout } from "./components/layout/ManagementLayout";
@@ -85,9 +87,13 @@ const AppContent: React.FC = () => {
 };
 
 export default function App() {
+
   return (
     <AuthProvider>
-      <AppContent />
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </AuthProvider>
   );
 }
+

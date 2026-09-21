@@ -1,6 +1,7 @@
 import React from "react";
 import { Home, Calendar, Coffee, Bell, CheckSquare, User as UserIcon } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 
 export type StudentTab = "inicio" | "horarios" | "cantina" | "avisos" | "tarefas" | "perfil";
 
@@ -16,6 +17,7 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
   children,
 }) => {
   const { user } = useAuth();
+  const { theme } = useTheme();
 
   const navItems: { id: StudentTab; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: "inicio", label: "Início", icon: Home },
@@ -26,14 +28,18 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-start antialiased">
+    <div className={`${theme === "dark" ? "dark" : ""} min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-start antialiased`}>
       {/* Container responsivo mobile-first */}
-      <div className="w-full max-w-md min-h-screen bg-slate-50 flex flex-col relative shadow-2xl border-x border-slate-200/80">
+      <div className="w-full max-w-md min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col relative shadow-2xl border-x border-slate-200/80 dark:border-slate-800 transition-colors duration-200">
         {/* Header Superior Mobile */}
-        <header className="sticky top-0 z-30 bg-[#2d3661] text-white px-4 py-3 shadow-sm flex items-center justify-between border-b border-[#232b4e]">
+        <header className="sticky top-0 z-30 bg-[#2d3661] dark:bg-[#1a203a] text-white px-4 py-3 shadow-sm flex items-center justify-between border-b border-[#232b4e] dark:border-slate-800 transition-colors">
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white text-[#2d3661] flex items-center justify-center font-black text-xs shadow-md border border-slate-200">
-              C+
+            <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center p-0.5 shadow-md border border-slate-200 shrink-0 overflow-hidden">
+              <img
+                src="/logo-ceep.png"
+                alt="CEEP Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <div className="flex items-center space-x-1.5">
@@ -42,7 +48,7 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
                   Aluno
                 </span>
               </div>
-              <p className="text-[11px] text-slate-300 font-medium truncate max-w-[180px]">
+              <p className="text-[11px] text-slate-300 dark:text-slate-400 font-medium truncate max-w-[180px]">
                 {user?.turma_nome || "CEEP Pedro Boaretto Neto"}
               </p>
             </div>
@@ -56,7 +62,7 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
               className={`p-2 rounded-xl transition-all flex items-center space-x-1.5 ${
                 activeTab === "perfil"
                   ? "bg-[#4aaa3c] text-white shadow-sm shadow-[#4aaa3c]/30"
-                  : "bg-[#1f2647] text-slate-300 hover:text-white hover:bg-[#181f3b] active:scale-95"
+                  : "bg-[#1f2647] dark:bg-slate-800 text-slate-300 hover:text-white hover:bg-[#181f3b] dark:hover:bg-slate-700 active:scale-95"
               }`}
             >
               <UserIcon className="w-4 h-4" />
@@ -72,7 +78,7 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
         <nav
           role="navigation"
           aria-label="Navegação Principal do Aluno"
-          className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 max-w-md mx-auto safe-bottom shadow-lg"
+          className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 max-w-md mx-auto safe-bottom shadow-lg transition-colors"
         >
           <div className="flex items-center justify-around px-1 py-1.5">
             {navItems.map((item) => {
@@ -86,11 +92,11 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
                   aria-current={isActive ? "page" : undefined}
                   className={`flex flex-col items-center justify-center flex-1 py-1.5 min-h-[48px] rounded-xl transition-all duration-150 ${
                     isActive
-                      ? "text-[#2d3661] font-bold scale-[1.03]"
-                      : "text-slate-400 hover:text-slate-600 active:scale-95"
+                      ? "text-[#2d3661] dark:text-[#7de06f] font-bold scale-[1.03]"
+                      : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 active:scale-95"
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5] text-[#2d3661]" : "stroke-2"}`} />
+                  <Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5] text-[#2d3661] dark:text-[#7de06f]" : "stroke-2"}`} />
                   <span className="text-[10px] mt-1 tracking-tight">{item.label}</span>
                   {isActive && (
                     <span className="w-1.5 h-1.5 bg-[#4aaa3c] rounded-full mt-0.5"></span>
@@ -104,3 +110,4 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
     </div>
   );
 };
+

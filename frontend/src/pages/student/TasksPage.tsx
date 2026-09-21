@@ -17,7 +17,8 @@ import {
   Plus,
   AlertCircle,
   Trash2,
-  Check
+  Check,
+  CalendarOff
 } from "lucide-react";
 
 type TaskFilter = "TODAS" | "PENDENTES" | "CONCLUIDAS";
@@ -37,6 +38,7 @@ export const TasksPage: React.FC = () => {
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newDueDate, setNewDueDate] = useState("");
+  const [noDueDate, setNoDueDate] = useState(false);
   const [newPriority, setNewPriority] = useState<"BAIXA" | "MEDIA" | "ALTA">("MEDIA");
 
   // Estados do Modal de Exclusão de Tarefa
@@ -82,6 +84,7 @@ export const TasksPage: React.FC = () => {
     setNewTitle("");
     setNewDescription("");
     setNewDueDate("");
+    setNoDueDate(false);
     setNewPriority("MEDIA");
     setFormError(null);
     setIsModalOpen(true);
@@ -102,7 +105,7 @@ export const TasksPage: React.FC = () => {
       const created = await taskService.createTask({
         titulo: cleanTitle,
         descricao: newDescription.trim() || undefined,
-        data_entrega: newDueDate || undefined,
+        data_entrega: noDueDate ? undefined : (newDueDate || undefined),
         prioridade: newPriority,
       });
 
@@ -173,11 +176,11 @@ export const TasksPage: React.FC = () => {
       {/* Cabeçalho com Ação de Nova Tarefa */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-            <CheckSquare className="w-5 h-5 text-[#2d3661]" />
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+            <CheckSquare className="w-5 h-5 text-[#2d3661] dark:text-[#7de06f]" />
             <span>Minhas Tarefas</span>
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Acompanhe prazos e marque atividades concluídas.
           </p>
         </div>
@@ -195,7 +198,7 @@ export const TasksPage: React.FC = () => {
 
       {/* Alerta de Sucesso */}
       {successMessage && (
-        <div className="p-3 bg-[#4aaa3c]/10 border border-[#4aaa3c]/30 rounded-xl text-xs text-[#2d3661] flex items-center space-x-2 animate-in fade-in duration-200">
+        <div className="p-3 bg-[#4aaa3c]/10 dark:bg-[#4aaa3c]/20 border border-[#4aaa3c]/30 rounded-xl text-xs text-[#2d3661] dark:text-[#7de06f] flex items-center space-x-2 animate-in fade-in duration-200">
           <Check className="w-4 h-4 text-[#4aaa3c] shrink-0" />
           <span className="font-semibold">{successMessage}</span>
         </div>
@@ -208,7 +211,7 @@ export const TasksPage: React.FC = () => {
           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
             filter === "PENDENTES"
               ? "bg-[#2d3661] text-white shadow-sm shadow-[#2d3661]/20"
-              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
           }`}
         >
           Pendentes ({pendingTasks.length})
@@ -217,8 +220,8 @@ export const TasksPage: React.FC = () => {
           onClick={() => setFilter("CONCLUIDAS")}
           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
             filter === "CONCLUIDAS"
-              ? "bg-slate-900 text-white shadow-sm"
-              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              ? "bg-slate-900 dark:bg-[#4aaa3c] text-white shadow-sm"
+              : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
           }`}
         >
           Concluídas ({completedTasks.length})
@@ -228,7 +231,7 @@ export const TasksPage: React.FC = () => {
           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
             filter === "TODAS"
               ? "bg-slate-700 text-white shadow-sm"
-              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
           }`}
         >
           Todas ({tasks.length})
@@ -257,8 +260,8 @@ export const TasksPage: React.FC = () => {
                 key={t.id}
                 className={`p-3.5 space-y-2.5 border transition-all ${
                   isCompleted
-                    ? "bg-slate-50/60 border-slate-200/80 opacity-80"
-                    : "bg-white border-slate-100 hover:border-slate-200"
+                    ? "bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800 opacity-80"
+                    : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700/80 hover:border-slate-200 dark:hover:border-slate-600"
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -272,7 +275,7 @@ export const TasksPage: React.FC = () => {
                       {isCompleted ? (
                         <CheckCircle2 className="w-5 h-5 text-[#4aaa3c] fill-[#4aaa3c]/10" />
                       ) : (
-                        <Circle className="w-5 h-5 text-slate-300 hover:text-[#4aaa3c]" />
+                        <Circle className="w-5 h-5 text-slate-300 dark:text-slate-600 hover:text-[#4aaa3c]" />
                       )}
                     </button>
 
@@ -280,8 +283,8 @@ export const TasksPage: React.FC = () => {
                       <h3
                         className={`text-sm font-bold tracking-tight leading-snug transition-all ${
                           isCompleted
-                            ? "line-through text-slate-400"
-                            : "text-slate-900"
+                            ? "line-through text-slate-400 dark:text-slate-500"
+                            : "text-slate-900 dark:text-slate-100"
                         }`}
                       >
                         {t.titulo}
@@ -289,7 +292,7 @@ export const TasksPage: React.FC = () => {
                       {t.descricao && (
                         <p
                           className={`text-xs mt-1 leading-relaxed ${
-                            isCompleted ? "text-slate-400" : "text-slate-600"
+                            isCompleted ? "text-slate-400 dark:text-slate-500" : "text-slate-600 dark:text-slate-300"
                           }`}
                         >
                           {t.descricao}
@@ -310,7 +313,7 @@ export const TasksPage: React.FC = () => {
                       }}
                       title="Excluir tarefa"
                       aria-label="Excluir tarefa"
-                      className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-200"
+                      className="p-1 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-200"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -318,15 +321,21 @@ export const TasksPage: React.FC = () => {
                 </div>
 
                 {/* Rodapé da Tarefa */}
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                   <span className="flex items-center">
-                    <Calendar className="w-3 h-3 mr-1 text-slate-400" />
-                    Entrega:{" "}
-                    {t.data_entrega
-                      ? new Date(t.data_entrega).toLocaleDateString("pt-BR")
-                      : "Sem data definida"}
+                    {t.data_entrega ? (
+                      <>
+                        <Calendar className="w-3 h-3 mr-1 text-slate-400" />
+                        Entrega: {new Date(t.data_entrega + "T00:00:00").toLocaleDateString("pt-BR")}
+                      </>
+                    ) : (
+                      <>
+                        <CalendarOff className="w-3 h-3 mr-1 text-slate-400" />
+                        <span className="italic text-slate-400 dark:text-slate-500">Sem prazo</span>
+                      </>
+                    )}
                   </span>
-                  <span className="font-semibold text-slate-600 flex items-center">
+                  <span className="font-semibold text-slate-600 dark:text-slate-300 flex items-center">
                     <Clock className="w-3 h-3 mr-1 text-slate-400" />
                     {isCompleted ? "Concluída" : "Pendente"}
                   </span>
@@ -345,7 +354,7 @@ export const TasksPage: React.FC = () => {
       >
         <form onSubmit={handleCreateTask} className="space-y-4">
           {formError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start space-x-2">
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-400 flex items-start space-x-2">
               <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
               <span>{formError}</span>
             </div>
@@ -353,7 +362,7 @@ export const TasksPage: React.FC = () => {
 
           {/* Campo Título */}
           <div className="space-y-1.5">
-            <label htmlFor="task-title" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <label htmlFor="task-title" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
               Título <span className="text-red-500">*</span>
             </label>
             <input
@@ -363,13 +372,13 @@ export const TasksPage: React.FC = () => {
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="Ex: Trabalho de Banco de Dados"
-              className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10"
+              className="w-full px-3.5 py-2.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-[#2d3661] dark:focus:border-[#4aaa3c] focus:ring-2 focus:ring-[#2d3661]/10"
             />
           </div>
 
           {/* Campo Descrição */}
           <div className="space-y-1.5">
-            <label htmlFor="task-desc" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <label htmlFor="task-desc" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
               Descrição (opcional)
             </label>
             <textarea
@@ -378,34 +387,60 @@ export const TasksPage: React.FC = () => {
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               placeholder="Detalhes ou anotações sobre a entrega..."
-              className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10 resize-none"
+              className="w-full px-3.5 py-2.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-[#2d3661] dark:focus:border-[#4aaa3c] focus:ring-2 focus:ring-[#2d3661]/10 resize-none"
             />
           </div>
 
           {/* Grid: Data de Entrega e Prioridade */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label htmlFor="task-date" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Data de Entrega
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="task-date" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Data de Entrega
+                </label>
+              </div>
+
               <input
                 id="task-date"
                 type="date"
-                value={newDueDate}
+                disabled={noDueDate}
+                value={noDueDate ? "" : newDueDate}
                 onChange={(e) => setNewDueDate(e.target.value)}
-                className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10"
+                className={`w-full px-3.5 py-2 text-xs rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-[#2d3661]/10 ${
+                  noDueDate
+                    ? "bg-slate-100 dark:bg-slate-800/40 text-slate-400 border border-slate-200 dark:border-slate-700 cursor-not-allowed"
+                    : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-[#2d3661] dark:focus:border-[#4aaa3c]"
+                }`}
               />
+
+              {/* Checkbox Sem Prazo de Entrega */}
+              <label className="flex items-center space-x-2 pt-1 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={noDueDate}
+                  onChange={(e) => {
+                    setNoDueDate(e.target.checked);
+                    if (e.target.checked) {
+                      setNewDueDate("");
+                    }
+                  }}
+                  className="rounded border-slate-300 dark:border-slate-600 text-[#4aaa3c] focus:ring-[#4aaa3c] w-3.5 h-3.5"
+                />
+                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                  Sem prazo de entrega
+                </span>
+              </label>
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="task-priority" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+              <label htmlFor="task-priority" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Prioridade
               </label>
               <select
                 id="task-priority"
                 value={newPriority}
                 onChange={(e) => setNewPriority(e.target.value as "BAIXA" | "MEDIA" | "ALTA")}
-                className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10"
+                className="w-full px-3.5 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:border-[#2d3661] dark:focus:border-[#4aaa3c] focus:ring-2 focus:ring-[#2d3661]/10"
               >
                 <option value="BAIXA">Baixa</option>
                 <option value="MEDIA">Média</option>
@@ -415,7 +450,7 @@ export const TasksPage: React.FC = () => {
           </div>
 
           {/* Botões do Formulário */}
-          <div className="flex space-x-2 pt-3 border-t border-slate-100">
+          <div className="flex space-x-2 pt-3 border-t border-slate-100 dark:border-slate-700">
             <Button
               type="button"
               variant="ghost"
@@ -448,26 +483,26 @@ export const TasksPage: React.FC = () => {
       >
         <div className="space-y-4 text-center">
           {deleteError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start space-x-2 text-left">
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-400 flex items-start space-x-2 text-left">
               <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
               <span>{deleteError}</span>
             </div>
           )}
 
-          <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-950/40 text-red-600 flex items-center justify-center mx-auto">
             <Trash2 className="w-6 h-6" />
           </div>
 
           <div className="space-y-1">
-            <h4 className="text-sm font-bold text-slate-900">
+            <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
               Confirmar exclusão desta atividade?
             </h4>
-            <p className="text-xs text-slate-600 leading-relaxed max-w-xs mx-auto">
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs mx-auto">
               A tarefa <strong>&ldquo;{taskToDelete?.titulo}&rdquo;</strong> será removida permanentemente.
             </p>
           </div>
 
-          <div className="flex space-x-2 pt-2 border-t border-slate-100">
+          <div className="flex space-x-2 pt-2 border-t border-slate-100 dark:border-slate-700">
             <Button
               type="button"
               variant="outline"
@@ -495,3 +530,4 @@ export const TasksPage: React.FC = () => {
     </div>
   );
 };
+

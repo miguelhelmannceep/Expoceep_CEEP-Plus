@@ -13,8 +13,9 @@ def list_my_tasks(
     current_user: Usuario = Depends(require_roles(["ALUNO"])),
     db: Session = Depends(get_db)
 ):
-    tarefas = db.query(Tarefa).filter(Tarefa.aluno_id == current_user.id).order_by(Tarefa.data_entrega.asc()).all()
+    tarefas = db.query(Tarefa).filter(Tarefa.aluno_id == current_user.id).order_by(Tarefa.data_entrega.asc().nulls_last(), Tarefa.id.desc()).all()
     return tarefas
+
 
 @router.post("/", response_model=TarefaOut, status_code=status.HTTP_201_CREATED, summary="Cria uma nova tarefa para o aluno logado")
 def create_task(

@@ -28,29 +28,30 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, maxWidth =
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className={`bg-white rounded-3xl p-6 ${maxWidth} w-full max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl relative animate-in zoom-in-95 duration-200`}
+        className={`bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-3xl p-6 ${maxWidth} w-full max-h-[88vh] overflow-y-auto overflow-x-hidden min-w-0 space-y-4 shadow-2xl relative animate-in zoom-in-95 duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
           aria-label="Fechar janela"
-          className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
 
         {title && (
-          <h3 className="text-base font-bold text-slate-900 pr-8">{title}</h3>
+          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 pr-8 break-words [overflow-wrap:anywhere]">{title}</h3>
         )}
 
-        <div>{children}</div>
+        <div className="w-full min-w-0 overflow-x-hidden break-words">{children}</div>
       </div>
     </div>
   );
 };
+

@@ -151,11 +151,11 @@ export const CanteenPage: React.FC = () => {
     <div className="space-y-6">
       {/* Cabeçalho */}
       <div className="space-y-1">
-        <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-          <Coffee className="w-5 h-5 text-[#2d3661]" />
+        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+          <Coffee className="w-5 h-5 text-[#2d3661] dark:text-[#7de06f]" />
           <span>Cantina Escolar</span>
         </h2>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Adquira sua ficha antecipada e retire seu salgado no balcão da cantina.
         </p>
       </div>
@@ -163,19 +163,19 @@ export const CanteenPage: React.FC = () => {
       {/* Cardápio / Produtos Ativos */}
       <div className="space-y-4">
         {products.map((p) => (
-          <Card key={p.id} className="p-5 space-y-4 border-slate-200 shadow-sm">
+          <Card key={p.id} className="p-5 space-y-4 border-slate-200 dark:border-slate-700/80 shadow-sm">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
-                <span className="text-[11px] font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-[#2d3661] dark:text-[#7de06f] bg-[#2d3661]/10 dark:bg-[#2d3661]/30 border border-[#2d3661]/20 dark:border-[#2d3661]/40 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
                   Ficha Padrão
                 </span>
-                <h3 className="text-xl font-bold text-slate-900">{p.nome}</h3>
-                <p className="text-xs text-slate-600 leading-relaxed max-w-xs">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">{p.nome}</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs">
                   {p.descricao || "Escolha seu salgado e retire na cantina após a confirmação do pedido."}
                 </p>
               </div>
               <div className="text-right">
-                <span className="text-2xl font-black text-[#4aaa3c]">
+                <span className="text-2xl font-black text-[#4aaa3c] dark:text-[#7de06f]">
                   {formatCurrency(p.preco)}
                 </span>
                 <span className="block text-[11px] text-slate-400 font-medium">unitário</span>
@@ -183,7 +183,7 @@ export const CanteenPage: React.FC = () => {
             </div>
 
             {/* Destaques do produto */}
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 space-y-2 text-xs text-slate-600">
+            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 rounded-2xl p-3 space-y-2 text-xs text-slate-600 dark:text-slate-300">
               <div className="flex items-center space-x-2">
                 <Check className="w-3.5 h-3.5 text-[#4aaa3c] shrink-0" />
                 <span>Válido para qualquer opção de salgado (assado ou frito).</span>
@@ -211,7 +211,7 @@ export const CanteenPage: React.FC = () => {
       {/* Histórico de Pedidos do Aluno */}
       {orders.length > 0 && (
         <div className="space-y-3 pt-2">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1.5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center space-x-1.5">
             <Receipt className="w-3.5 h-3.5 text-slate-400" />
             <span>Seus Pedidos</span>
           </h3>
@@ -225,11 +225,11 @@ export const CanteenPage: React.FC = () => {
               return (
                 <div
                   key={order.id}
-                  className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2.5"
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm space-y-2.5"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs font-black text-slate-800">
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-100">
                         Pedido {formatOrderId(order.id)}
                       </span>
                       {isPaid && (
@@ -248,12 +248,12 @@ export const CanteenPage: React.FC = () => {
                         </Badge>
                       )}
                     </div>
-                    <span className="text-xs font-bold text-slate-900">
+                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
                       {formatCurrency(order.valor_total)}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-100">
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-700">
                     <div className="flex items-center space-x-1">
                       {isUsed ? (
                         <PackageCheck className="w-3.5 h-3.5 text-slate-400" />
@@ -284,7 +284,7 @@ export const CanteenPage: React.FC = () => {
                           setSelectedProduct(products[0] || null);
                           setCheckoutStep("PAYMENT");
                         }}
-                        className="text-xs font-bold text-[#2d3661] hover:underline"
+                        className="text-xs font-bold text-[#2d3661] dark:text-[#7de06f] hover:underline"
                       >
                         Pagar PIX
                       </button>
@@ -302,6 +302,7 @@ export const CanteenPage: React.FC = () => {
           </div>
         </div>
       )}
+
 
       {/* ========================================================= */}
       {/* MODAL TRANSAÇÃO DE CHECKOUT / PAGAMENTO / QR DE RETIRADA */}
@@ -323,30 +324,30 @@ export const CanteenPage: React.FC = () => {
         {checkoutStep === "SUMMARY" && selectedProduct && (
           <div className="space-y-4">
             {checkoutError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start space-x-2">
+              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl text-xs text-red-700 dark:text-red-300 flex items-start space-x-2">
                 <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                 <span>{checkoutError}</span>
               </div>
             )}
 
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3">
-              <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
-                <span className="text-xs font-medium text-slate-500">Item</span>
-                <span className="text-sm font-bold text-slate-900">{selectedProduct.nome}</span>
+            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 space-y-3">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Item</span>
+                <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{selectedProduct.nome}</span>
               </div>
-              <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
-                <span className="text-xs font-medium text-slate-500">Quantidade</span>
-                <span className="text-sm font-semibold text-slate-800">{quantity}</span>
+              <div className="flex justify-between items-center pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Quantidade</span>
+                <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{quantity}</span>
               </div>
               <div className="flex justify-between items-center pt-1">
-                <span className="text-sm font-bold text-slate-700">Total</span>
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Total</span>
                 <span className="text-lg font-black text-[#4aaa3c]">
                   {formatCurrency(selectedProduct.preco * quantity)}
                 </span>
               </div>
             </div>
 
-            <p className="text-[11px] text-slate-500 text-center leading-relaxed">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center leading-relaxed">
               O pedido será criado e vinculado à sua conta de aluno para pagamento via PIX demonstrativo.
             </p>
 
@@ -378,7 +379,7 @@ export const CanteenPage: React.FC = () => {
         {checkoutStep === "PAYMENT" && currentOrder && (
           <div className="space-y-4 text-center">
             {checkoutError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start space-x-2 text-left">
+              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl text-xs text-red-700 dark:text-red-300 flex items-start space-x-2 text-left">
                 <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                 <span>{checkoutError}</span>
               </div>
@@ -386,10 +387,10 @@ export const CanteenPage: React.FC = () => {
 
             {/* Cabeçalho do Pagamento */}
             <div className="space-y-1">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Pedido {formatOrderId(currentOrder.id)}
               </span>
-              <h4 className="text-base font-bold text-slate-900">
+              <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
                 {currentOrder.itens[0]?.produto_nome || "Salgado"}
               </h4>
               <p className="text-2xl font-black text-[#4aaa3c]">
@@ -398,7 +399,7 @@ export const CanteenPage: React.FC = () => {
             </div>
 
             {/* Container do QR Code Fictício de Pagamento */}
-            <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-5 flex flex-col items-center justify-center space-y-3">
+            <div className="bg-slate-50 dark:bg-slate-800/60 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-5 flex flex-col items-center justify-center space-y-3">
               <div className="p-3 bg-white rounded-xl shadow-sm border border-slate-100">
                 <QRCodeSVG
                   value={currentOrder.pix_code || `CEEPPLUS-DEMO-PAYMENT-${currentOrder.id.toString().padStart(5, '0')}`}
@@ -408,23 +409,23 @@ export const CanteenPage: React.FC = () => {
               </div>
 
               <div className="space-y-0.5">
-                <div className="inline-flex items-center space-x-1 text-xs font-bold text-slate-700">
-                  <QrCode className="w-3.5 h-3.5 text-slate-500" />
+                <div className="inline-flex items-center space-x-1 text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <QrCode className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                   <span>PIX — Pagamento demonstrativo</span>
                 </div>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
                   Ambiente de simulação para a ExpoCEEP
                 </p>
               </div>
             </div>
 
             {/* Código PIX Copiável */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2 text-left">
-              <span className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 space-y-2 text-left">
+              <span className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Código PIX demonstrativo
               </span>
-              <div className="flex items-center space-x-2 bg-white border border-slate-200 rounded-xl px-3 py-2">
-                <code className="flex-1 font-mono text-xs text-slate-800 break-all select-all font-semibold">
+              <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                <code className="flex-1 font-mono text-xs text-slate-800 dark:text-slate-200 break-all select-all font-semibold">
                   {currentOrder.pix_code || `CEEPPLUS-DEMO-PAYMENT-${currentOrder.id.toString().padStart(5, '0')}`}
                 </code>
                 <button
@@ -435,7 +436,7 @@ export const CanteenPage: React.FC = () => {
                     setCopiedPix(true);
                     setTimeout(() => setCopiedPix(false), 2500);
                   }}
-                  className="px-2.5 py-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 border border-slate-300/60 rounded-lg text-slate-700 shadow-sm flex items-center space-x-1 shrink-0 transition-colors"
+                  className="px-2.5 py-1 text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300/60 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 shadow-sm flex items-center space-x-1 shrink-0 transition-colors"
                   title="Copiar código PIX"
                 >
                   {copiedPix ? (
@@ -445,7 +446,7 @@ export const CanteenPage: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <Copy className="w-3.5 h-3.5 text-slate-600" />
+                      <Copy className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
                       <span>Copiar código</span>
                     </>
                   )}
@@ -478,36 +479,36 @@ export const CanteenPage: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <h4 className="text-lg font-bold text-slate-900">
+              <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                 ✓ Pagamento aprovado
               </h4>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Seu pedido foi confirmado.
               </p>
             </div>
 
             {/* Card de Detalhes do Pedido Confirmado */}
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-left space-y-2.5">
+            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 text-left space-y-2.5">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-medium text-slate-500">Identificador</span>
-                <span className="text-xs font-bold text-slate-800">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Identificador</span>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                   Pedido {formatOrderId(currentOrder.id)}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs font-medium text-slate-500">Item</span>
-                <span className="text-xs font-bold text-slate-800">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Item</span>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                   {currentOrder.itens[0]?.produto_nome || "Salgado"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs font-medium text-slate-500">Total</span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total</span>
                 <span className="text-sm font-bold text-[#4aaa3c]">
                   {formatCurrency(currentOrder.valor_total)}
                 </span>
               </div>
-              <div className="flex justify-between items-center pt-2 border-t border-slate-200/60">
-                <span className="text-xs font-medium text-slate-500">Status</span>
+              <div className="flex justify-between items-center pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Status</span>
                 <Badge variant="success" size="sm">
                   DISPONÍVEL
                 </Badge>
@@ -532,24 +533,24 @@ export const CanteenPage: React.FC = () => {
         {checkoutStep === "PICKUP_QR" && pickupQRData && (
           <div className="space-y-4 text-center py-1">
             <div className="space-y-1">
-              <span className="text-xs font-black text-slate-700 tracking-wider">
+              <span className="text-xs font-black text-slate-700 dark:text-slate-300 tracking-wider">
                 Pedido {formatOrderId(pickupQRData.order_id)}
               </span>
-              <h4 className="text-base font-bold text-slate-900">
+              <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
                 {pickupQRData.produto_nome} (x{pickupQRData.quantidade})
               </h4>
               <div className="flex items-center justify-center space-x-2 pt-0.5">
                 <Badge variant="success" size="sm">
                   DISPONÍVEL
                 </Badge>
-                <span className="text-xs font-bold text-slate-600">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
                   {formatCurrency(pickupQRData.valor_total)}
                 </span>
               </div>
             </div>
 
             {/* QR Code de Retirada */}
-            <div className="bg-slate-50 border-2 border-[#4aaa3c]/30 rounded-3xl p-6 flex flex-col items-center justify-center space-y-3 shadow-inner">
+            <div className="bg-slate-50 dark:bg-slate-800/60 border-2 border-[#4aaa3c]/30 dark:border-[#4aaa3c]/40 rounded-3xl p-6 flex flex-col items-center justify-center space-y-3 shadow-inner">
               <div className="p-4 bg-white rounded-2xl shadow-md border border-slate-100">
                 <QRCodeSVG
                   value={pickupQRData.pickup_code}
@@ -560,10 +561,10 @@ export const CanteenPage: React.FC = () => {
               </div>
 
               <div className="space-y-1 text-center max-w-xs">
-                <p className="text-xs font-bold text-slate-800">
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
                   Apresente este QR Code na cantina
                 </p>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                   O operador fará a leitura para entrega imediata do seu salgado.
                 </p>
               </div>
@@ -573,7 +574,7 @@ export const CanteenPage: React.FC = () => {
               variant="outline"
               size="md"
               onClick={handleCloseModal}
-              className="w-full font-bold text-slate-700"
+              className="w-full font-bold text-slate-700 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800"
             >
               Fechar
             </Button>

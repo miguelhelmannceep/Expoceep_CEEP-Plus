@@ -2399,6 +2399,84 @@ def test_invalid_image_payload_format_rejected():
     assert "imagem" in resp.json()["detail"].lower()
 
 
+# ==========================================
+# POLIMENTO 2: TESTES DE PERFIL E TAREFAS SEM PRAZO
+# ==========================================
+
+def test_student_can_update_own_display_name():
+    token = get_auth_token("aluno@escola.pr.gov.br")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Atualiza o nome do aluno
+    resp = client.patch("/api/v1/student/profile", json={"nome": "Aluno Demo Atualizado"}, headers=headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["nome"] == "Aluno Demo Atualizado"
+    assert data["email"] == "aluno@escola.pr.gov.br"
+
+    # Confere no get_me
+    me_resp = client.get("/api/v1/auth/me", headers=headers)
+    assert me_resp.status_code == 200
+    assert me_resp.json()["nome"] == "Aluno Demo Atualizado"
+
+    # Restaura o nome original
+    restore_resp = client.patch("/api/v1/student/profile", json={"nome": "Aluno Demo"}, headers=headers)
+    assert restore_resp.status_code == 200
+    assert restore_resp.json()["nome"] == "Aluno Demo"
+
+def test_student_update_name_validation():
+    token = get_auth_token("aluno@escola.pr.gov.br")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Nome vazio ou apenas espaços -> 422
+    resp_empty = client.patch("/api/v1/student/profile", json={"nome": "   "}, headers=headers)
+    assert resp_empty.status_code == 422
+
+    # Nome de 1 caractere -> 422
+    resp_short = client.patch("/api/v1/student/profile", json={"nome": "A"}, headers=headers)
+    assert resp_short.status_code == 422
+
+def test_gestao_cannot_access_student_profile_update():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers = {"Authorization": f"Bearer {token_gestao}"}
+
+    resp = client.patch("/api/v1/student/profile", json={"nome": "Tentativa Gestao"}, headers=headers)
+    assert resp.status_code == 403
+
+def test_unauthenticated_cannot_update_student_profile():
+    resp = client.patch("/api/v1/student/profile", json={"nome": "Tentativa Anônima"})
+    assert resp.status_code in (401, 403)
+
+def test_student_can_create_task_without_due_date():
+    token = get_auth_token("aluno@escola.pr.gov.br")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    payload = {
+        "titulo": "Tarefa Sem Prazo Definido",
+        "descricao": "Atividade de leitura contínua",
+        "data_entrega": None,
+        "prioridade": "BAIXA"
+    }
+
+    resp = client.post("/api/v1/tasks/", json=payload, headers=headers)
+    assert resp.status_code == 201
+    task = resp.json()
+    assert task["titulo"] == "Tarefa Sem Prazo Definido"
+    assert task["data_entrega"] is None
+
+    # Lista e confere presença
+    list_resp = client.get("/api/v1/tasks/", headers=headers)
+    assert list_resp.status_code == 200
+    found = [t for t in list_resp.json() if t["id"] == task["id"]]
+    assert len(found) == 1
+    assert found[0]["data_entrega"] is None
+
+    # Limpeza
+    del_resp = client.delete(f"/api/v1/tasks/{task['id']}", headers=headers)
+    assert del_resp.status_code == 204
+
+
+
 
 
 

@@ -78,11 +78,11 @@ export const NoticesPage: React.FC = () => {
     <div className="space-y-4">
       {/* Cabeçalho */}
       <div className="space-y-1">
-        <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-          <Bell className="w-5 h-5 text-[#2d3661]" />
+        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+          <Bell className="w-5 h-5 text-[#2d3661] dark:text-[#7de06f]" />
           <span>Mural de Avisos</span>
         </h2>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Comunicados oficiais publicados pela equipe escolar.
         </p>
       </div>
@@ -94,7 +94,7 @@ export const NoticesPage: React.FC = () => {
           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
             filter === "TODOS"
               ? "bg-[#2d3661] text-white shadow-sm shadow-[#2d3661]/20"
-              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
           }`}
         >
           Todos ({notices.length})
@@ -104,7 +104,7 @@ export const NoticesPage: React.FC = () => {
           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
             filter === "IMPORTANTES"
               ? "bg-[#2d3661] text-white shadow-sm shadow-[#2d3661]/20"
-              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
           }`}
         >
           Importantes
@@ -114,7 +114,7 @@ export const NoticesPage: React.FC = () => {
           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
             filter === "GERAIS"
               ? "bg-[#4aaa3c] text-white shadow-sm shadow-[#4aaa3c]/20"
-              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
           }`}
         >
           Gerais
@@ -137,7 +137,7 @@ export const NoticesPage: React.FC = () => {
             return (
               <Card
                 key={n.id}
-                className="p-4 space-y-3 border-slate-100 hover:border-slate-200 transition-all"
+                className="p-4 space-y-3 border-slate-100 dark:border-slate-700/80 hover:border-slate-200 dark:hover:border-slate-600 transition-all"
               >
                 <div className="flex items-center justify-between">
                   <Badge variant={getBadgeVariant(n.prioridade)}>{n.prioridade}</Badge>
@@ -151,7 +151,7 @@ export const NoticesPage: React.FC = () => {
                 {n.imagem_url && (
                   <div
                     onClick={() => setSelectedNotice(n)}
-                    className="rounded-xl overflow-hidden max-h-48 border border-slate-200 bg-slate-100 cursor-pointer"
+                    className="rounded-xl overflow-hidden max-h-48 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 cursor-pointer"
                   >
                     <img
                       src={n.imagem_url}
@@ -162,15 +162,15 @@ export const NoticesPage: React.FC = () => {
                 )}
 
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 leading-snug">{n.titulo}</h3>
-                  <p className="text-xs text-slate-600 mt-1.5 leading-relaxed whitespace-pre-line">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug">{n.titulo}</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed whitespace-pre-line">
                     {preview.text}
                   </p>
                   {preview.isLong && (
                     <button
                       type="button"
                       onClick={() => setSelectedNotice(n)}
-                      className="mt-2 text-xs font-bold text-[#2d3661] hover:text-[#4aaa3c] flex items-center transition-colors"
+                      className="mt-2 text-xs font-bold text-[#2d3661] dark:text-[#7de06f] hover:text-[#4aaa3c] flex items-center transition-colors"
                     >
                       <span>Ler mais</span>
                       <ArrowRight className="w-3.5 h-3.5 ml-1" />
@@ -178,12 +178,12 @@ export const NoticesPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-between text-[11px] text-slate-400">
                   <span className="flex items-center">
                     <UserIcon className="w-3 h-3 mr-1 text-slate-400" />
                     {n.autor_nome || "Coordenação"}
                   </span>
-                  <span className="inline-flex items-center text-slate-500 font-medium">
+                  <span className="inline-flex items-center text-slate-500 dark:text-slate-400 font-medium">
                     <Tag className="w-3 h-3 mr-1 text-slate-400" />
                     {n.publico_alvo_tipo}
                   </span>
@@ -199,20 +199,21 @@ export const NoticesPage: React.FC = () => {
         isOpen={selectedNotice !== null}
         onClose={() => setSelectedNotice(null)}
         title="Comunicado Escolar"
+        maxWidth="max-w-lg"
       >
         {selectedNotice && (
-          <div className="space-y-4">
+          <div className="space-y-4 w-full min-w-0 overflow-x-hidden">
             {/* Metadados e Badges */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
-              <div className="flex items-center space-x-1.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                 <Badge variant={getBadgeVariant(selectedNotice.prioridade)}>
                   {selectedNotice.prioridade}
                 </Badge>
-                <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 truncate max-w-[200px]">
                   {selectedNotice.publico_alvo_nome || selectedNotice.publico_alvo_tipo}
                 </span>
               </div>
-              <span className="text-xs text-slate-400 flex items-center">
+              <span className="text-xs text-slate-400 flex items-center shrink-0">
                 <Calendar className="w-3.5 h-3.5 mr-1 text-slate-400" />
                 {new Date(selectedNotice.data_publicacao).toLocaleDateString("pt-BR")}
               </span>
@@ -220,37 +221,37 @@ export const NoticesPage: React.FC = () => {
 
             {/* Imagem Completa (se existir) */}
             {selectedNotice.imagem_url && (
-              <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-sm max-h-60">
+              <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 shadow-sm max-h-60 w-full">
                 <img
                   src={selectedNotice.imagem_url}
                   alt={selectedNotice.titulo}
-                  className="w-full h-56 object-cover"
+                  className="w-full h-auto max-h-56 object-cover"
                 />
               </div>
             )}
 
             {/* Título e Texto Integral */}
-            <div className="space-y-2">
-              <h3 className="text-base font-bold text-slate-900 leading-snug">
+            <div className="space-y-2 min-w-0 break-words">
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug break-words [overflow-wrap:anywhere]">
                 {selectedNotice.titulo}
               </h3>
-              <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] break-all sm:break-words">
                 {selectedNotice.descricao}
               </p>
             </div>
 
             {/* Rodapé com autor e botão fechar */}
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-xs text-slate-500 flex items-center">
-                <UserIcon className="w-3.5 h-3.5 mr-1 text-slate-400" />
-                Publicado por: <strong className="ml-1 text-slate-700">{selectedNotice.autor_nome || "Coordenação"}</strong>
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+              <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center min-w-0 truncate">
+                <UserIcon className="w-3.5 h-3.5 mr-1 text-slate-400 shrink-0" />
+                <span className="truncate">Publicado por: <strong className="ml-1 text-slate-700 dark:text-slate-200">{selectedNotice.autor_nome || "Coordenação"}</strong></span>
               </span>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedNotice(null)}
-                className="font-semibold"
+                className="font-semibold shrink-0"
               >
                 Fechar
               </Button>
@@ -261,4 +262,5 @@ export const NoticesPage: React.FC = () => {
     </div>
   );
 };
+
 

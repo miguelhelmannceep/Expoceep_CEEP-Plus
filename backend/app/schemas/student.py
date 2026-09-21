@@ -22,3 +22,7 @@ class StudentDashboardOut(BaseModel):
     tarefas_pendentes_count: int
     tarefas_preview: List[TarefaOut] = []
     cantina_destaque: Optional[ProdutoOut] = None
+
+class StudentProfileUpdate(BaseModel):
+    nome: str
+

@@ -380,13 +380,8 @@ export interface ManagementOrderDetail {
   pagamento_metodo?: string | null;
 }
 
-export interface ManagementProductItem {
-  id: number;
-  nome: string;
-  descricao?: string | null;
-  preco: number;
-  ativo: boolean;
-}
+// Consolidação: ManagementProductItem compartilha a mesma estrutura de Product
+export type ManagementProductItem = Product;
 
 export interface CreateProductPayload {
   nome: string;

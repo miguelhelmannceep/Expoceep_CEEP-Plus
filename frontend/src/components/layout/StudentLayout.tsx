@@ -59,13 +59,25 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
               onClick={() => onTabChange("perfil")}
               aria-label="Acessar meu perfil"
               title="Meu Perfil"
-              className={`p-2 rounded-xl transition-all flex items-center space-x-1.5 ${
+              className={`p-1.5 px-2.5 rounded-xl transition-all flex items-center space-x-1.5 ${
                 activeTab === "perfil"
                   ? "bg-[#4aaa3c] text-white shadow-sm shadow-[#4aaa3c]/30"
                   : "bg-[#1f2647] dark:bg-slate-800 text-slate-300 hover:text-white hover:bg-[#181f3b] dark:hover:bg-slate-700 active:scale-95"
               }`}
             >
-              <UserIcon className="w-4 h-4" />
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt="Foto do Aluno"
+                  className="w-4 h-4 rounded-full object-cover shrink-0"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <UserIcon className="w-4 h-4 shrink-0" />
+              )}
               <span className="text-xs font-semibold hidden sm:inline">{user?.nome.split(" ")[0]}</span>
             </button>
           </div>

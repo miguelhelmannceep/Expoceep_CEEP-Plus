@@ -39,6 +39,16 @@ def ensure_schema_migrations(db: Session) -> None:
         except Exception as e:
             print(f"Migration warning avisos: {e}")
 
+        # 3. Usuários (Google OAuth)
+        try:
+            u_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(usuarios)")).fetchall()]
+            if u_cols and "google_sub" not in u_cols:
+                conn.execute(text("ALTER TABLE usuarios ADD COLUMN google_sub VARCHAR(255)"))
+                conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_usuarios_google_sub ON usuarios (google_sub)"))
+                conn.commit()
+        except Exception as e:
+            print(f"Migration warning usuarios: {e}")
+
 def init_db(db: Session) -> None:
     Base.metadata.create_all(bind=engine)
     ensure_schema_migrations(db)

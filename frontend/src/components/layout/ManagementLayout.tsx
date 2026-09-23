@@ -32,14 +32,19 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
       <header className="bg-[#2d3661] text-white border-b border-[#222a4d] sticky top-0 z-30 shadow-md">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-white text-[#2d3661] flex items-center justify-center font-bold shadow-sm">
-              <Shield className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center p-0.5 shadow-sm border border-slate-200 shrink-0 overflow-hidden">
+              <img
+                src="/logo-ceep.png"
+                alt="CEEP Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-bold text-base">CEEP+</span>
-                <span className="text-xs bg-[#4aaa3c]/20 text-[#7de06f] font-semibold px-2 py-0.5 rounded">
-                  Painel de Gestão
+                <span className="text-xs bg-[#4aaa3c]/20 text-[#7de06f] font-semibold px-2 py-0.5 rounded flex items-center space-x-1">
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>Painel de Gestão</span>
                 </span>
               </div>
               <p className="text-xs text-slate-300">Coordenação & Direção Escolar</p>

@@ -1,4 +1,4 @@
-﻿from typing import Optional
+from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
@@ -12,3 +12,4 @@ class UsuarioOut(BaseModel):
     turma_id: Optional[int] = None
     turma_nome: Optional[str] = None
     curso_nome: Optional[str] = None
+    avatar_url: Optional[str] = None

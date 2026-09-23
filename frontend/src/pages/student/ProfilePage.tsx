@@ -99,8 +99,21 @@ export const ProfilePage: React.FC = () => {
 
       {/* Card Principal com Avatar */}
       <Card className="p-6 text-center space-y-3 border-slate-100 dark:border-slate-800 shadow-sm">
-        <div className="w-16 h-16 rounded-3xl bg-[#2d3661] dark:bg-[#1a203a] text-[#7de06f] flex items-center justify-center font-black text-xl mx-auto shadow-md border border-[#232b4e] dark:border-slate-700">
-          {user ? getInitials(user.nome) : "AL"}
+        <div className="w-16 h-16 rounded-3xl bg-[#2d3661] dark:bg-[#1a203a] text-[#7de06f] flex items-center justify-center font-black text-xl mx-auto shadow-md border border-[#232b4e] dark:border-slate-700 overflow-hidden">
+          {user?.avatar_url ? (
+            <img
+              src={user.avatar_url}
+              alt={user.nome || "Foto do Aluno"}
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                // Em caso de falha de rede ou bloqueio de imagem remota, oculta e exibe iniciais
+                (e.target as HTMLElement).style.display = "none";
+              }}
+            />
+          ) : (
+            <span>{user ? getInitials(user.nome) : "AL"}</span>
+          )}
         </div>
         <div>
           <div className="flex items-center justify-center space-x-2">

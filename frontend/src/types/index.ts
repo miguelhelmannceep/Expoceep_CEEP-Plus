@@ -8,6 +8,7 @@ export interface User {
   turma_id?: number | null;
   turma_nome?: string | null;
   curso_nome?: string | null;
+  avatar_url?: string | null;
 }
 
 export interface AuthResponse {
@@ -17,6 +18,7 @@ export interface AuthResponse {
   nome: string;
   email: string;
   turma?: string | null;
+  avatar_url?: string | null;
 }
 
 export interface DemoAccount {

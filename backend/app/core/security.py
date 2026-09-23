@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Union, Optional
 from jose import jwt
 import bcrypt
@@ -17,7 +17,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except Exception:
         return False
 
-def create_access_token(subject: Union[str, Any], role: str, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(
+    subject: Union[str, Any],
+    role: str,
+    expires_delta: Optional[timedelta] = None,
+    picture: Optional[str] = None
+) -> str:
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
@@ -28,6 +33,9 @@ def create_access_token(subject: Union[str, Any], role: str, expires_delta: Opti
         "sub": str(subject),
         "role": role
     }
+    if picture:
+        to_encode["picture"] = picture
+
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 

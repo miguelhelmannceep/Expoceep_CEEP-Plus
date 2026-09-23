@@ -1,6 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { AlertCircle, Lock, Mail, Loader2, ArrowRight, X, Info } from "lucide-react";
+import { AlertCircle, Lock, Mail, Loader2 } from "lucide-react";
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential: string }) => void;
+            auto_select?: boolean;
+            cancel_on_tap_outside?: boolean;
+          }) => void;
+          renderButton: (
+            parent: HTMLElement,
+            options: {
+              type?: "standard" | "icon";
+              theme?: "outline" | "filled_blue" | "filled_black";
+              size?: "large" | "medium" | "small";
+              text?: "signin_with" | "signup_with" | "continue_with" | "signin";
+              shape?: "rectangular" | "pill" | "circle" | "square";
+              logo_alignment?: "left" | "center";
+              width?: string | number;
+              locale?: string;
+            }
+          ) => void;
+          prompt?: () => void;
+        };
+      };
+    };
+  }
+}
 
 // Ícone Oficial do Google
 const GoogleIcon = () => (
@@ -37,46 +68,119 @@ const OfficialLogo = () => (
   </div>
 );
 
+interface LoginError {
+  title: string;
+  message: string;
+}
+
 export const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [error, setError] = useState<LoginError | null>(null);
 
-  // Estado do Modal Demonstrativo Institucional
-  const [isEscolaModalOpen, setIsEscolaModalOpen] = useState(false);
-  const [isDemoLoggingIn, setIsDemoLoggingIn] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
+  const handleGoogleCredentialResponse = async (response: { credential: string }) => {
+    if (!response.credential) {
+      setError({
+        title: "Não foi possível entrar",
+        message: "Use uma conta institucional @escola.pr.gov.br autorizada para acessar a Área do Aluno.",
+      });
+      return;
+    }
+
+    setError(null);
+    setIsGoogleLoading(true);
+
+    try {
+      await loginWithGoogle(response.credential);
+    } catch {
+      setError({
+        title: "Não foi possível entrar",
+        message: "Use uma conta institucional @escola.pr.gov.br autorizada para acessar a Área do Aluno.",
+      });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!googleClientId) return;
+
+    let isMounted = true;
+    let timerId: any = null;
+
+    const setupGoogleButton = () => {
+      if (!isMounted) return false;
+      if (window.google?.accounts?.id && googleButtonRef.current) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: handleGoogleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+
+          googleButtonRef.current.innerHTML = "";
+          window.google.accounts.id.renderButton(googleButtonRef.current, {
+            type: "standard",
+            theme: "outline",
+            size: "large",
+            text: "signin_with",
+            shape: "rectangular",
+            logo_alignment: "left",
+            width: 320,
+          });
+          return true;
+        } catch (e) {
+          console.error("Erro ao inicializar Google Identity Services:", e);
+        }
+      }
+      return false;
+    };
+
+    if (!setupGoogleButton()) {
+      let attempts = 0;
+      timerId = setInterval(() => {
+        attempts++;
+        if (setupGoogleButton() || attempts > 50) {
+          clearInterval(timerId);
+        }
+      }, 150);
+    }
+
+    return () => {
+      isMounted = false;
+      if (timerId) clearInterval(timerId);
+    };
+  }, [googleClientId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setErrorMessage("Por favor, preencha o e-mail e a senha.");
+      setError({
+        title: "Não foi possível entrar",
+        message: "Por favor, preencha o e-mail e a senha para continuar.",
+      });
       return;
     }
 
-    setErrorMessage(null);
+    setError(null);
     setIsLoading(true);
 
     try {
       await login(email, password);
-    } catch (err: any) {
-      setErrorMessage(err.message || "E-mail ou senha incorretos.");
+    } catch {
+      setError({
+        title: "Não foi possível entrar",
+        message: "Verifique seu e-mail e senha ou utilize uma conta institucional @escola.pr.gov.br.",
+      });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleDemoStudentLogin = async () => {
-    setIsDemoLoggingIn(true);
-    setErrorMessage(null);
-    try {
-      await login("aluno@escola.pr.gov.br", "demo123");
-    } catch (err: any) {
-      setErrorMessage(err.message || "Erro ao autenticar demonstração de aluno.");
-    } finally {
-      setIsDemoLoggingIn(false);
-      setIsEscolaModalOpen(false);
     }
   };
 
@@ -101,16 +205,36 @@ export const LoginPage: React.FC = () => {
           <div className="h-1.5 w-full bg-gradient-to-r from-[#2d3661] via-[#2d3661] to-[#4aaa3c]" />
 
           <div className="p-6 sm:p-7 space-y-5">
-            {/* Bloco de Acesso Institucional Google @escola */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setIsEscolaModalOpen(true)}
-                className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-300 hover:border-slate-400 text-slate-800 text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20"
-              >
-                <GoogleIcon />
-                <span>Entrar com @escola.pr.gov.br</span>
-              </button>
+            {/* Bloco de Acesso Institucional Google (Exclusivo para ALUNO) */}
+            <div className="space-y-2">
+              <div className="w-full flex flex-col items-center justify-center min-h-[44px]">
+                {isGoogleLoading ? (
+                  <div className="flex items-center space-x-2 text-xs text-slate-600 py-2.5">
+                    <Loader2 className="w-4 h-4 animate-spin text-[#2d3661]" />
+                    <span className="font-medium">Validando conta institucional...</span>
+                  </div>
+                ) : googleClientId ? (
+                  <div ref={googleButtonRef} className="flex justify-center w-full min-h-[44px]" />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError({
+                        title: "Não foi possível entrar",
+                        message:
+                          "Google Client ID não configurado no frontend. Configure VITE_GOOGLE_CLIENT_ID no arquivo frontend/.env.",
+                      });
+                    }}
+                    className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-300 hover:border-slate-400 text-slate-800 text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20"
+                  >
+                    <GoogleIcon />
+                    <span>Entrar com Google</span>
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-center text-slate-400 font-medium">
+                Exclusivo para contas institucionais <span className="font-semibold text-slate-600">@escola.pr.gov.br</span>
+              </p>
             </div>
 
             {/* Separador Visual */}
@@ -122,15 +246,23 @@ export const LoginPage: React.FC = () => {
               <div className="border-t border-slate-200 w-full" />
             </div>
 
+            {/* Mensagem de Erro Integrada Institucional */}
+            {error && (
+              <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/80 text-slate-800 text-xs flex items-start space-x-2.5 animate-in fade-in duration-150">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5 text-left">
+                  <p className="font-bold text-amber-900 text-xs">
+                    {error.title}
+                  </p>
+                  <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
+                    {error.message}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Formulário Tradicional */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {errorMessage && (
-                <div className="p-3.5 rounded-xl bg-red-50 border border-red-200/80 text-red-700 text-xs flex items-start space-x-2.5 animate-in fade-in duration-150">
-                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                  <span className="leading-relaxed font-medium">{errorMessage}</span>
-                </div>
-              )}
-
               {/* Input E-mail */}
               <div className="space-y-1.5">
                 <label
@@ -148,7 +280,7 @@ export const LoginPage: React.FC = () => {
                     type="email"
                     required
                     autoComplete="email"
-                    placeholder="usuario@escola.pr.gov.br"
+                    placeholder="usuario@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-10 pr-3.5 py-2.5 text-xs text-slate-900 bg-slate-50/60 border border-slate-300 rounded-xl placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/15 transition-all"
@@ -200,82 +332,6 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Modal Demonstrativo @escola.pr.gov.br */}
-      {isEscolaModalOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl relative animate-in zoom-in-95 duration-150">
-            <button
-              onClick={() => setIsEscolaModalOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-              aria-label="Fechar"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
-                <GoogleIcon />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Acesso Institucional
-                </h3>
-                <p className="text-[11px] text-slate-500 font-medium">
-                  @escola.pr.gov.br
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 space-y-2 text-xs text-slate-600">
-              <div className="flex items-start space-x-2 text-[#2d3661]">
-                <Info className="w-4 h-4 text-[#2d3661] shrink-0 mt-0.5" />
-                <p className="font-semibold text-slate-800 leading-snug">
-                  Fluxo Demonstrativo de Acesso Institucional
-                </p>
-              </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                Este botão está preparado para integração com o Google Workspace Educacional do Governo do Paraná.
-              </p>
-            </div>
-
-            <div className="space-y-2 pt-1">
-              <button
-                type="button"
-                onClick={handleDemoStudentLogin}
-                disabled={isDemoLoggingIn}
-                className="w-full py-2.5 px-4 bg-[#2d3661] hover:bg-[#222949] text-white text-xs font-bold rounded-xl shadow-md flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
-              >
-                {isDemoLoggingIn ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span>Iniciando sessão institucional...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Continuar como Aluno Demo</span>
-                    <ArrowRight className="w-4 h-4 ml-1" />
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsEscolaModalOpen(false)}
-                disabled={isDemoLoggingIn}
-                className="w-full py-2 px-4 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
-              >
-                Voltar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
-

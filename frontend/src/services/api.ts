@@ -1,4 +1,4 @@
-﻿const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
 export class ApiError extends Error {
   status: number;
@@ -45,8 +45,8 @@ export async function request<T>(
 
       const message = errorData.detail || `Erro na requisição (${response.status})`;
       
-      // Auto-logout se 401 não autorizado
-      if (response.status === 401 && !endpoint.includes("/auth/login")) {
+      // Auto-logout se 401 não autorizado em rotas protegidas
+      if (response.status === 401 && !endpoint.startsWith("/auth/")) {
         localStorage.removeItem("ceep_token");
         localStorage.removeItem("ceep_user");
         window.location.reload();

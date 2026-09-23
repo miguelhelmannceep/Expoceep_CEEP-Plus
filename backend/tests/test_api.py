@@ -76,6 +76,23 @@ def test_login_student_other_common_domains_rejected():
         assert response.status_code == 401
         assert "incorretos" in response.json()["detail"].lower()
 
+def test_login_student_prompt_exact_examples_validation():
+    # Exemplos válidos: aluno@escola.pr.gov.br, nome.sobrenome@escola.pr.gov.br
+    resp1 = client.post("/api/v1/auth/login", json={"email": "aluno@escola.pr.gov.br", "password": "demo123"})
+    assert resp1.status_code == 200
+    assert resp1.json()["role"] == "ALUNO"
+
+    novo_email = f"nome.sobrenome.{uuid.uuid4().hex[:4]}@escola.pr.gov.br"
+    resp2 = client.post("/api/v1/auth/login", json={"email": novo_email, "password": "demo123"})
+    assert resp2.status_code == 200
+    assert resp2.json()["role"] == "ALUNO"
+
+    # Exemplos inválidos: usuario@gmail.com, usuario@hotmail.com, usuario@outlook.com
+    for invalid_email in ["usuario@gmail.com", "usuario@hotmail.com", "usuario@outlook.com"]:
+        resp = client.post("/api/v1/auth/login", json={"email": invalid_email, "password": "demo123"})
+        assert resp.status_code == 401
+        assert "incorretos" in resp.json()["detail"].lower()
+
 def test_login_success_gestao_authorized():
     response = client.post("/api/v1/auth/login", json={
         "email": "gestao@ceep.demo",
@@ -2474,6 +2491,285 @@ def test_student_can_create_task_without_due_date():
     # Limpeza
     del_resp = client.delete(f"/api/v1/tasks/{task['id']}", headers=headers)
     assert del_resp.status_code == 204
+
+
+# ==============================================================================
+# MILESTONE 5B: TESTES DE LOGIN GOOGLE REAL PARA ALUNOS
+# ==============================================================================
+from unittest.mock import patch
+from app.core.config import settings
+
+CURRENT_GOOGLE_AUD = settings.GOOGLE_CLIENT_ID or "mock-ceep-client-id"
+
+def test_google_login_valid_institutional_student():
+    """1. Google ID Token válido + @escola.pr.gov.br -> login permitido."""
+    unique_sub = f"google-sub-{uuid.uuid4().hex}"
+    unique_email = f"aluno.teste.{uuid.uuid4().hex[:6]}@escola.pr.gov.br"
+    mock_payload = {
+        "iss": "https://accounts.google.com",
+        "sub": unique_sub,
+        "email": unique_email,
+        "email_verified": True,
+        "name": "Aluno Teste Google",
+        "aud": CURRENT_GOOGLE_AUD,
+    }
+
+    with patch("google.oauth2.id_token.verify_oauth2_token", return_value=mock_payload):
+        resp = client.post("/api/v1/auth/google", json={"credential": "mock_valid_token"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
+        assert data["role"] == "ALUNO"
+        assert data["email"] == unique_email
+        assert data["nome"] == "Aluno Teste Google"
+        assert data["turma"] is not None
+
+def test_google_login_gmail_domain_rejected():
+    """2. Token válido de Gmail -> rejeitado com 403 e mensagem clara."""
+    mock_payload = {
+        "iss": "https://accounts.google.com",
+        "sub": f"google-sub-{uuid.uuid4().hex}",
+        "email": "usuario@gmail.com",
+        "email_verified": True,
+        "name": "Usuario Gmail",
+        "aud": CURRENT_GOOGLE_AUD,
+    }
+
+    with patch("google.oauth2.id_token.verify_oauth2_token", return_value=mock_payload):
+        resp = client.post("/api/v1/auth/google", json={"credential": "mock_gmail_token"})
+        assert resp.status_code == 403
+        detail = resp.json()["detail"].lower()
+        assert "@escola.pr.gov.br" in detail or "institucionais" in detail
+
+def test_google_login_invalid_token_rejected():
+    """3. Token inválido -> rejeitado com 401."""
+    with patch("google.oauth2.id_token.verify_oauth2_token", side_effect=ValueError("Invalid token signature")):
+        resp = client.post("/api/v1/auth/google", json={"credential": "invalid_fake_token"})
+        assert resp.status_code == 401
+        assert "inválido" in resp.json()["detail"].lower()
+
+def test_google_login_expired_token_rejected():
+    """4. Token expirado -> rejeitado com 401."""
+    with patch("google.oauth2.id_token.verify_oauth2_token", side_effect=ValueError("Token has expired")):
+        resp = client.post("/api/v1/auth/google", json={"credential": "expired_token"})
+        assert resp.status_code == 401
+        assert "expirado" in resp.json()["detail"].lower() or "inválido" in resp.json()["detail"].lower()
+
+def test_google_login_aud_mismatch_rejected():
+    """5. aud incorreto -> rejeitado com 401."""
+    old_client_id = settings.GOOGLE_CLIENT_ID
+    try:
+        settings.GOOGLE_CLIENT_ID = "expected-ceep-client-id"
+        mock_payload = {
+            "iss": "https://accounts.google.com",
+            "sub": f"google-sub-{uuid.uuid4().hex}",
+            "email": "aluno.aud@escola.pr.gov.br",
+            "email_verified": True,
+            "name": "Aluno Aud",
+            "aud": "wrong-client-id",
+        }
+        with patch("google.oauth2.id_token.verify_oauth2_token", return_value=mock_payload):
+            resp = client.post("/api/v1/auth/google", json={"credential": "token_wrong_aud"})
+            assert resp.status_code == 401
+            assert "audiência" in resp.json()["detail"].lower() or "aud" in resp.json()["detail"].lower()
+    finally:
+        settings.GOOGLE_CLIENT_ID = old_client_id
+
+def test_google_login_iss_mismatch_rejected():
+    """6. iss incorreto -> rejeitado com 401."""
+    mock_payload = {
+        "iss": "https://attacker.example.com",
+        "sub": f"google-sub-{uuid.uuid4().hex}",
+        "email": "aluno.fakeiss@escola.pr.gov.br",
+        "email_verified": True,
+        "name": "Aluno Fake ISS",
+        "aud": CURRENT_GOOGLE_AUD,
+    }
+    with patch("google.oauth2.id_token.verify_oauth2_token", return_value=mock_payload):
+        resp = client.post("/api/v1/auth/google", json={"credential": "token_wrong_iss"})
+        assert resp.status_code == 401
+        assert "emissor" in resp.json()["detail"].lower() or "iss" in resp.json()["detail"].lower()
+
+def test_google_login_unverified_email_rejected():
+    """7. email_verified inválido (False) -> rejeitado com 401."""
+    mock_payload = {
+        "iss": "https://accounts.google.com",
+        "sub": f"google-sub-{uuid.uuid4().hex}",
+        "email": "aluno.unverified@escola.pr.gov.br",
+        "email_verified": False,
+        "name": "Aluno Não Verificado",
+        "aud": CURRENT_GOOGLE_AUD,
+    }
+    with patch("google.oauth2.id_token.verify_oauth2_token", return_value=mock_payload):
+        resp = client.post("/api/v1/auth/google", json={"credential": "token_unverified"})
+        assert resp.status_code == 401
+        assert "verificado" in resp.json()["detail"].lower()
+
+def test_google_login_existing_google_user_no_duplication():
+    """8. Usuário Google existente -> login sem duplicar usuário na base."""
+    sub_id = f"google-sub-repeat-{uuid.uuid4().hex}"
+    email = f"aluno.repetido.{uuid.uuid4().hex[:6]}@escola.pr.gov.br"
+    mock_payload = {
+        "iss": "https://accounts.google.com",
+        "sub": sub_id,
+        "email": email,
+        "email_verified": True,
+        "name": "Aluno Repetido",
+        "aud": CURRENT_GOOGLE_AUD,
+    }
+
+    with patch("google.oauth2.id_token.verify_oauth2_token", return_value=mock_payload):
+        # Primeiro login (criação)
+        resp1 = client.post("/api/v1/auth/google", json={"credential": "token1"})
+        assert resp1.status_code == 200
+
+        # Segundo login (reutilização)
+        resp2 = client.post("/api/v1/auth/google", json={"credential": "token2"})
+        assert resp2.status_code == 200
+
+    # Confere no banco que existe apenas um usuário com este email e este sub
+    db = SessionLocal()
+    users = db.query(Usuario).filter(Usuario.email == email).all()
+    assert len(users) == 1
+    assert users[0].google_sub == sub_id
+    db.close()
+
+def test_google_login_new_institutional_user_provisioning():
+    """9. Usuário institucional novo -> provisionamento com perfil ALUNO e turma padrão."""
+    sub_id = f"google-sub-novo-{uuid.uuid4().hex}"
+    email = f"aluno.novato.{uuid.uuid4().hex[:6]}@escola.pr.gov.br"
+    nome = "Novato Institucional Silva"
+    mock_payload = {
+        "iss": "https://accounts.google.com",
+        "sub": sub_id,
+        "email": email,
+        "email_verified": True,
+        "name": nome,
+        "aud": CURRENT_GOOGLE_AUD,
+    }
+
+    with patch("google.oauth2.id_token.verify_oauth2_token", return_value=mock_payload):
+        resp = client.post("/api/v1/auth/google", json={"credential": "token_novato"})
+        assert resp.status_code == 200
+        token_data = resp.json()
+        assert token_data["role"] == "ALUNO"
+        assert token_data["email"] == email
+
+    db = SessionLocal()
+    user = db.query(Usuario).filter(Usuario.email == email).first()
+    assert user is not None
+    assert user.perfil == "ALUNO"
+    assert user.google_sub == sub_id
+    assert user.nome == nome
+    assert user.turma_id is not None
+    assert user.ativo is True
+    db.close()
+
+def test_gestao_login_preservation():
+    """10. Gestão continua funcionando perfeitamente via login tradicional."""
+    resp = client.post("/api/v1/auth/login", json={
+        "email": "gestao@ceep.demo",
+        "password": "demo123"
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["role"] == "GESTAO"
+    assert "access_token" in data
+
+    headers = {"Authorization": f"Bearer {data['access_token']}"}
+    dash_resp = client.get("/api/v1/management/overview", headers=headers)
+    assert dash_resp.status_code == 200
+    assert "total_turmas" in dash_resp.json()
+
+def test_cantina_login_preservation():
+    """11. Cantina continua funcionando perfeitamente via login tradicional."""
+    resp = client.post("/api/v1/auth/login", json={
+        "email": "cantina@ceep.demo",
+        "password": "demo123"
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["role"] == "CANTINA"
+    assert "access_token" in data
+
+    headers = {"Authorization": f"Bearer {data['access_token']}"}
+    cantina_resp = client.get("/api/v1/canteen/terminal-status", headers=headers)
+    assert cantina_resp.status_code == 200
+    assert cantina_resp.json()["status"] == "OPERACIONAL"
+
+def test_rbac_preservation_for_google_authenticated_student():
+    """12. RBAC continua funcionando: aluno autenticado via Google tem acesso às rotas de aluno e tem acesso negado à Gestão e Cantina."""
+    sub_id = f"google-sub-rbac-{uuid.uuid4().hex}"
+    email = f"aluno.rbac.{uuid.uuid4().hex[:6]}@escola.pr.gov.br"
+    mock_payload = {
+        "iss": "https://accounts.google.com",
+        "sub": sub_id,
+        "email": email,
+        "email_verified": True,
+        "name": "Aluno RBAC Google",
+        "aud": CURRENT_GOOGLE_AUD,
+    }
+
+    with patch("google.oauth2.id_token.verify_oauth2_token", return_value=mock_payload):
+        resp = client.post("/api/v1/auth/google", json={"credential": "token_rbac"})
+        assert resp.status_code == 200
+        student_token = resp.json()["access_token"]
+
+    headers = {"Authorization": f"Bearer {student_token}"}
+
+    # 1. Rota de aluno permitida
+    me_resp = client.get("/api/v1/auth/me", headers=headers)
+    assert me_resp.status_code == 200
+    assert me_resp.json()["perfil"] == "ALUNO"
+
+    dash_resp = client.get("/api/v1/student/dashboard", headers=headers)
+    assert dash_resp.status_code == 200
+
+    # 2. Rotas restritas de Gestão e Cantina negadas (403 Forbidden)
+    gestao_resp = client.get("/api/v1/management/overview", headers=headers)
+    assert gestao_resp.status_code == 403
+
+    cantina_resp = client.get("/api/v1/canteen/terminal-status", headers=headers)
+    assert cantina_resp.status_code == 403
+
+def test_google_login_extracts_and_preserves_picture_in_session():
+    """Valida extração segura da foto de perfil Google e sua preservação na sessão via JWT e /auth/me."""
+    sub_id = f"google-sub-pic-{uuid.uuid4().hex}"
+    email = f"aluno.foto.{uuid.uuid4().hex[:6]}@escola.pr.gov.br"
+    mock_pic_url = "https://lh3.googleusercontent.com/a/mock-valid-avatar-123"
+    mock_payload = {
+        "iss": "https://accounts.google.com",
+        "sub": sub_id,
+        "email": email,
+        "email_verified": True,
+        "name": "Aluno Com Foto Google",
+        "aud": CURRENT_GOOGLE_AUD,
+        "picture": mock_pic_url,
+    }
+
+    with patch("google.oauth2.id_token.verify_oauth2_token", return_value=mock_payload):
+        resp = client.post("/api/v1/auth/google", json={"credential": "token_with_pic"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["avatar_url"] == mock_pic_url
+        access_token = data["access_token"]
+
+    # Consulta /auth/me usando o token gerado
+    headers = {"Authorization": f"Bearer {access_token}"}
+    me_resp = client.get("/api/v1/auth/me", headers=headers)
+    assert me_resp.status_code == 200
+    me_data = me_resp.json()
+    assert me_data["avatar_url"] == mock_pic_url
+
+def test_traditional_login_has_no_google_picture_fallback():
+    """Valida que login tradicional não possui foto Google e aciona fallback institucional."""
+    token = get_auth_token("aluno@escola.pr.gov.br", "demo123")
+    headers = {"Authorization": f"Bearer {token}"}
+    me_resp = client.get("/api/v1/auth/me", headers=headers)
+    assert me_resp.status_code == 200
+    assert me_resp.json()["avatar_url"] is None
+
 
 
 

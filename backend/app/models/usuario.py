@@ -12,6 +12,7 @@ class Usuario(Base):
     senha_hash = Column(String(255), nullable=False)
     perfil = Column(String(20), nullable=False) # ALUNO, GESTAO, CANTINA
     turma_id = Column(Integer, ForeignKey("turmas.id"), nullable=True)
+    google_sub = Column(String(255), unique=True, index=True, nullable=True)
     ativo = Column(Boolean, default=True)
     criado_em = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 

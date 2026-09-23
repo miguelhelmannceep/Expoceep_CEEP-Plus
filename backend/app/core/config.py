@@ -1,12 +1,24 @@
-﻿from typing import List
+from pathlib import Path
+from typing import List, Tuple
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
+_ENV_FILES: Tuple[str, ...] = (
+    str(_BACKEND_DIR / ".env"),
+    str(_BACKEND_DIR.parent / ".env"),
+    ".env",
+    "backend/.env",
+)
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(case_sensitive=True)
+    model_config = SettingsConfigDict(case_sensitive=True, env_file=_ENV_FILES, extra="ignore")
 
     PROJECT_NAME: str = "CEEP+ API"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
+    
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = ""
     
     # JWT Settings
     SECRET_KEY: str = "ceep_plus_super_secret_key_expoceep_2026_cascavel"

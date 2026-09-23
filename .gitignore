@@ -16,6 +16,11 @@ dist/
 dist-ssr/
 *.local
 
+# Variáveis de Ambiente e Segredos
+.env
+.env.*
+!.env.example
+
 # Logs
 *.log
 npm-debug.log*

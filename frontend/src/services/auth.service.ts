@@ -1,4 +1,4 @@
-﻿import { request } from "./api";
+import { request } from "./api";
 import type { AuthResponse, DemoAccount, User } from "../types";
 
 export const authService = {
@@ -6,6 +6,13 @@ export const authService = {
     return request<AuthResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
+    });
+  },
+
+  async loginWithGoogle(credential: string): Promise<AuthResponse> {
+    return request<AuthResponse>("/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ credential }),
     });
   },
 

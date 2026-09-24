@@ -47,33 +47,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, pass: string) => {
-    setIsLoading(true);
-    try {
-      const response = await authService.login(email, pass);
-      localStorage.setItem("ceep_token", response.access_token);
-      setToken(response.access_token);
-      setRole(response.role);
-      
-      const userData = await authService.getMe();
-      setUser(userData);
-    } finally {
-      setIsLoading(false);
-    }
+    const response = await authService.login(email, pass);
+    localStorage.setItem("ceep_token", response.access_token);
+    setToken(response.access_token);
+    setRole(response.role);
+    
+    const userData = await authService.getMe();
+    setUser(userData);
   };
 
   const loginWithGoogle = async (credential: string) => {
-    setIsLoading(true);
-    try {
-      const response = await authService.loginWithGoogle(credential);
-      localStorage.setItem("ceep_token", response.access_token);
-      setToken(response.access_token);
-      setRole(response.role);
+    const response = await authService.loginWithGoogle(credential);
+    localStorage.setItem("ceep_token", response.access_token);
+    setToken(response.access_token);
+    setRole(response.role);
 
-      const userData = await authService.getMe();
-      setUser(userData);
-    } finally {
-      setIsLoading(false);
-    }
+    const userData = await authService.getMe();
+    setUser(userData);
   };
 
   const logout = () => {

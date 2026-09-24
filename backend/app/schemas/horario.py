@@ -7,6 +7,7 @@ class HorarioCreate(BaseModel):
     disciplina: Optional[str] = None
     professor_id: Optional[int] = None
     professor: Optional[str] = None
+    sala: Optional[str] = None
     dia_semana: str
     horario_inicio: str
     horario_fim: str
@@ -34,6 +35,7 @@ class HorarioUpdate(BaseModel):
     disciplina: Optional[str] = None
     professor_id: Optional[int] = None
     professor: Optional[str] = None
+    sala: Optional[str] = None
     dia_semana: Optional[str] = None
     horario_inicio: Optional[str] = None
     horario_fim: Optional[str] = None

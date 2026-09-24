@@ -308,16 +308,16 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Institucional */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#2d3661] dark:text-[#7de06f] bg-[#2d3661]/10 dark:bg-[#7de06f]/10 border border-[#2d3661]/20 dark:border-[#7de06f]/20 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
               Corpo Docente & Matriz
             </span>
-            <span className="text-xs text-slate-400 font-medium">| CEEP Pedro Boaretto Neto</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">| CEEP Pedro Boaretto Neto</span>
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mt-1">Disciplinas e Professores</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-1">Disciplinas e Professores</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Gerencie as componentes curriculares por curso e o corpo docente da instituição.
           </p>
         </div>
@@ -344,7 +344,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
           <button
             onClick={loadData}
             title="Recarregar dados"
-            className="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -356,8 +356,8 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
         <div
           className={`p-4 rounded-xl text-xs font-semibold flex items-center justify-between border ${
             feedback.type === "success"
-              ? "bg-[#4aaa3c]/10 text-[#2d3661] border-[#4aaa3c]/30"
-              : "bg-red-50 text-red-800 border-red-200"
+              ? "bg-[#4aaa3c]/10 text-[#2d3661] dark:text-[#7de06f] border-[#4aaa3c]/30"
+              : "bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-900"
           }`}
         >
           <div className="flex items-center space-x-2">
@@ -368,14 +368,14 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
             )}
             <span>{feedback.text}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="text-slate-400 hover:text-slate-600">
+          <button onClick={() => setFeedback(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
       {/* Navegação entre Sub-abas */}
-      <div className="flex space-x-2 border-b border-slate-200 pb-2">
+      <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-800 pb-2">
         <button
           onClick={() => {
             setSubTab("disciplinas");
@@ -384,7 +384,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
           className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             subTab === "disciplinas"
               ? "bg-[#2d3661] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800"
           }`}
         >
           <BookOpen className="w-4 h-4" />
@@ -399,7 +399,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
           className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             subTab === "professores"
               ? "bg-[#2d3661] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800"
           }`}
         >
           <UserCheck className="w-4 h-4" />
@@ -420,7 +420,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
             }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
           />
         </div>
 
@@ -429,7 +429,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
             <select
               value={selectedCourseFilter}
               onChange={(e) => setSelectedCourseFilter(e.target.value)}
-              className="w-full sm:w-56 px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+              className="w-full sm:w-56 px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
             >
               <option value="TODOS">Todos os Cursos</option>
               {courses.map((c) => (
@@ -446,10 +446,10 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
       {subTab === "disciplinas" && (
         <div>
           {filteredDisciplines.length === 0 ? (
-            <Card className="p-8 text-center space-y-3 bg-white border-slate-200">
+            <Card className="p-8 text-center space-y-3 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
               <BookOpen className="w-10 h-10 text-slate-400 mx-auto" />
-              <h4 className="text-sm font-bold text-slate-800">Nenhuma disciplina encontrada</h4>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Nenhuma disciplina encontrada</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                 Nenhuma disciplina cadastrada para o filtro aplicado.
               </p>
               <button
@@ -465,16 +465,16 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
               {filteredDisciplines.map((d) => (
                 <Card
                   key={d.id}
-                  className="p-5 bg-white border-slate-200 shadow-sm hover:border-slate-300 transition-all flex flex-col justify-between"
+                  className="p-5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-1.5">
-                        <span className="text-xs font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2 py-0.5 rounded-lg">
+                        <span className="text-xs font-bold text-[#2d3661] dark:text-[#7de06f] bg-[#2d3661]/10 dark:bg-[#7de06f]/10 border border-[#2d3661]/20 dark:border-[#7de06f]/20 px-2 py-0.5 rounded-lg">
                           {d.curso_sigla || "CURSO"}
                         </span>
                         {d.sigla && (
-                          <span className="text-[11px] font-mono font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                          <span className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                             {d.sigla}
                           </span>
                         )}
@@ -485,21 +485,21 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <h4 className="text-base font-bold text-slate-900 leading-snug">{d.nome}</h4>
-                      <p className="text-xs text-slate-500 mt-1 flex items-center space-x-1">
+                      <h4 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug">{d.nome}</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center space-x-1">
                         <GraduationCap className="w-3.5 h-3.5 text-slate-400" />
                         <span className="line-clamp-1">{d.curso_nome || "Curso Técnico"}</span>
                       </p>
                     </div>
                   </div>
 
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+                  <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <button
                       onClick={() => handleToggleDisciplineActive(d)}
                       title={d.ativo ? "Desativar disciplina" : "Ativar disciplina"}
                       className={`inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                         d.ativo
-                          ? "text-slate-500 hover:bg-slate-100"
+                          ? "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                           : "text-[#4aaa3c] bg-[#4aaa3c]/10 hover:bg-[#4aaa3c]/20"
                       }`}
                     >
@@ -510,7 +510,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                     <div className="flex items-center space-x-1.5">
                       <button
                         onClick={() => handleOpenEditDisciplineModal(d)}
-                        className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors"
+                        className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                         <span>Editar</span>
@@ -523,7 +523,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                             title: d.nome,
                           })
                         }
-                        className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium transition-colors"
+                        className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs font-medium transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Excluir</span>
@@ -541,10 +541,10 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
       {subTab === "professores" && (
         <div>
           {filteredProfessors.length === 0 ? (
-            <Card className="p-8 text-center space-y-3 bg-white border-slate-200">
+            <Card className="p-8 text-center space-y-3 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
               <UserCheck className="w-10 h-10 text-slate-400 mx-auto" />
-              <h4 className="text-sm font-bold text-slate-800">Nenhum professor encontrado</h4>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Nenhum professor encontrado</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                 Nenhum professor cadastrado corresponde à busca.
               </p>
               <button
@@ -560,11 +560,11 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
               {filteredProfessors.map((p) => (
                 <Card
                   key={p.id}
-                  className="p-5 bg-white border-slate-200 shadow-sm hover:border-slate-300 transition-all flex flex-col justify-between"
+                  className="p-5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="w-8 h-8 rounded-xl bg-[#2d3661]/10 text-[#2d3661] flex items-center justify-center font-bold text-xs border border-[#2d3661]/20">
+                      <div className="w-8 h-8 rounded-xl bg-[#2d3661]/10 dark:bg-[#7de06f]/10 text-[#2d3661] dark:text-[#7de06f] flex items-center justify-center font-bold text-xs border border-[#2d3661]/20 dark:border-[#7de06f]/20">
                         {p.nome.slice(0, 2).toUpperCase()}
                       </div>
                       <Badge variant={p.ativo ? "success" : "neutral"}>
@@ -573,21 +573,21 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <h4 className="text-base font-bold text-slate-900 leading-snug">{p.nome}</h4>
-                      <p className="text-xs text-slate-500 mt-1 flex items-center space-x-1">
+                      <h4 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug">{p.nome}</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center space-x-1">
                         <Mail className="w-3.5 h-3.5 text-slate-400" />
                         <span>{p.email || "Sem e-mail cadastrado"}</span>
                       </p>
                     </div>
                   </div>
 
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+                  <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <button
                       onClick={() => handleToggleProfessorActive(p)}
                       title={p.ativo ? "Desativar docente" : "Ativar docente"}
                       className={`inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                         p.ativo
-                          ? "text-slate-500 hover:bg-slate-100"
+                          ? "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                           : "text-[#4aaa3c] bg-[#4aaa3c]/10 hover:bg-[#4aaa3c]/20"
                       }`}
                     >
@@ -598,7 +598,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                     <div className="flex items-center space-x-1.5">
                       <button
                         onClick={() => handleOpenEditProfessorModal(p)}
-                        className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors"
+                        className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                         <span>Editar</span>
@@ -611,7 +611,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                             title: p.nome,
                           })
                         }
-                        className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium transition-colors"
+                        className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs font-medium transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Excluir</span>
@@ -628,17 +628,17 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
       {/* MODAL: CRIAR / EDITAR DISCIPLINA */}
       {isDisciplineModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2 text-[#2d3661]">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center space-x-2 text-[#2d3661] dark:text-[#7de06f]">
                 <BookOpen className="w-5 h-5" />
-                <h3 className="font-bold text-base text-slate-900">
+                <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
                   {editingDiscipline ? "Editar Disciplina" : "Nova Disciplina"}
                 </h3>
               </div>
               <button
                 onClick={() => setIsDisciplineModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -646,7 +646,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
 
             <form onSubmit={handleSaveDiscipline} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Curso Vinculado *</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Curso Vinculado *</label>
                 <select
                   value={disciplineFormData.curso_id}
                   onChange={(e) =>
@@ -656,7 +656,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                     })
                   }
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 font-medium focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 >
                   <option value={0} disabled>
                     Selecione o curso...
@@ -670,7 +670,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Nome da Disciplina *</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Nome da Disciplina *</label>
                 <input
                   type="text"
                   placeholder="Ex: Desenvolvimento Web, Topografia, Circuitos Elétricos"
@@ -679,12 +679,12 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                     setDisciplineFormData({ ...disciplineFormData, nome: e.target.value })
                   }
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Sigla (Opcional)</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Sigla (Opcional)</label>
                 <input
                   type="text"
                   placeholder="Ex: DW, BD, PAM, TOPO"
@@ -696,7 +696,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                     })
                   }
                   maxLength={10}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 uppercase font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 uppercase font-mono focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 />
               </div>
 
@@ -711,22 +711,22 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                       ativo: e.target.checked,
                     })
                   }
-                  className="w-4 h-4 text-[#2d3661] rounded border-slate-300 focus:ring-[#2d3661]"
+                  className="w-4 h-4 text-[#2d3661] rounded border-slate-300 dark:border-slate-600 focus:ring-[#2d3661]"
                 />
                 <label
                   htmlFor="disciplineAtivo"
-                  className="text-xs font-semibold text-slate-700 cursor-pointer"
+                  className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer"
                 >
                   Disciplina Ativa na Grade Curricular
                 </label>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end space-x-2">
                 <button
                   type="button"
                   onClick={() => setIsDisciplineModalOpen(false)}
                   disabled={isSubmitting}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -747,17 +747,17 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
       {/* MODAL: CRIAR / EDITAR PROFESSOR */}
       {isProfessorModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2 text-[#2d3661]">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center space-x-2 text-[#2d3661] dark:text-[#7de06f]">
                 <UserCheck className="w-5 h-5" />
-                <h3 className="font-bold text-base text-slate-900">
+                <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
                   {editingProfessor ? "Editar Professor" : "Cadastrar Professor"}
                 </h3>
               </div>
               <button
                 onClick={() => setIsProfessorModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -765,7 +765,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
 
             <form onSubmit={handleSaveProfessor} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Nome do Docente *</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Nome do Docente *</label>
                 <input
                   type="text"
                   placeholder="Ex: Prof. Carlos, Profª. Juliana"
@@ -774,12 +774,12 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                     setProfessorFormData({ ...professorFormData, nome: e.target.value })
                   }
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">E-mail Institucional (Opcional)</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">E-mail Institucional (Opcional)</label>
                 <input
                   type="email"
                   placeholder="Ex: docente@ceep.demo"
@@ -787,7 +787,7 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                   onChange={(e) =>
                     setProfessorFormData({ ...professorFormData, email: e.target.value })
                   }
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 />
               </div>
 
@@ -802,22 +802,22 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                       ativo: e.target.checked,
                     })
                   }
-                  className="w-4 h-4 text-[#2d3661] rounded border-slate-300 focus:ring-[#2d3661]"
+                  className="w-4 h-4 text-[#2d3661] rounded border-slate-300 dark:border-slate-600 focus:ring-[#2d3661]"
                 />
                 <label
                   htmlFor="professorAtivo"
-                  className="text-xs font-semibold text-slate-700 cursor-pointer"
+                  className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer"
                 >
                   Professor Ativo na Instituição
                 </label>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end space-x-2">
                 <button
                   type="button"
                   onClick={() => setIsProfessorModalOpen(false)}
                   disabled={isSubmitting}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -838,31 +838,31 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
       {/* MODAL: CONFIRMAÇÃO DE EXCLUSÃO */}
       {deletingTarget && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center space-x-3 text-red-600">
-              <div className="p-2 rounded-xl bg-red-50 border border-red-200/60">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center space-x-3 text-red-600 dark:text-red-400">
+              <div className="p-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200/60 dark:border-red-900/60">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-base text-slate-900">
+                <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
                   Confirmar Exclusão de {deletingTarget.type === "disciplina" ? "Disciplina" : "Professor"}
                 </h3>
-                <p className="text-xs text-slate-500">Esta ação verificará a grade horária.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Esta ação verificará a grade horária.</p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
               Tem certeza de que deseja excluir{" "}
-              <strong className="text-slate-900">{deletingTarget.title}</strong>? Caso existam
+              <strong className="text-slate-900 dark:text-slate-100">{deletingTarget.title}</strong>? Caso existam
               aulas vinculadas na grade horária, o sistema não permitirá a exclusão silenciosa.
             </p>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end space-x-2">
               <button
                 type="button"
                 onClick={() => setDeletingTarget(null)}
                 disabled={isSubmitting}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 Cancelar
               </button>

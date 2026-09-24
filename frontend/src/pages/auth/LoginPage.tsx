@@ -161,10 +161,24 @@ export const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    const emailClean = email.toLowerCase().trim();
+
+    if (!emailClean || !password) {
       setError({
         title: "Não foi possível entrar",
         message: "Por favor, preencha o e-mail e a senha para continuar.",
+      });
+      return;
+    }
+
+    // Validação de e-mail institucional para alunos
+    const isInstitutional = emailClean.endsWith("@escola.pr.gov.br");
+    const isAdministrative = emailClean === "gestao@ceep.demo" || emailClean === "cantina@ceep.demo";
+
+    if (!isInstitutional && !isAdministrative) {
+      setError({
+        title: "Não foi possível entrar",
+        message: "Para acessar como aluno, é necessário utilizar uma conta institucional @escola.pr.gov.br.",
       });
       return;
     }
@@ -173,11 +187,11 @@ export const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      await login(emailClean, password);
     } catch {
       setError({
         title: "Não foi possível entrar",
-        message: "Verifique seu e-mail e senha ou utilize uma conta institucional @escola.pr.gov.br.",
+        message: "E-mail ou senha incorretos. Verifique suas credenciais e tente novamente.",
       });
     } finally {
       setIsLoading(false);

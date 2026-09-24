@@ -272,16 +272,16 @@ export const ManagementCoursesClassesPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Institucional */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#2d3661] dark:text-[#7de06f] bg-[#2d3661]/10 dark:bg-[#7de06f]/10 border border-[#2d3661]/20 dark:border-[#7de06f]/20 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
               Estrutura Acadêmica
             </span>
-            <span className="text-xs text-slate-400 font-medium">| CEEP Pedro Boaretto Neto</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">| CEEP Pedro Boaretto Neto</span>
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mt-1">Gestão de Cursos e Turmas</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-1">Gestão de Cursos e Turmas</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Cadastre, edite e organize os cursos técnicos integrados e suas respectivas turmas.
           </p>
         </div>
@@ -308,7 +308,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
           <button
             onClick={loadData}
             title="Recarregar dados"
-            className="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -320,8 +320,8 @@ export const ManagementCoursesClassesPage: React.FC = () => {
         <div
           className={`p-4 rounded-xl text-xs font-semibold flex items-center justify-between border ${
             feedback.type === "success"
-              ? "bg-[#4aaa3c]/10 text-[#2d3661] border-[#4aaa3c]/30"
-              : "bg-red-50 text-red-800 border-red-200"
+              ? "bg-[#4aaa3c]/10 text-[#2d3661] dark:text-[#7de06f] border-[#4aaa3c]/30"
+              : "bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-900"
           }`}
         >
           <div className="flex items-center space-x-2">
@@ -332,14 +332,14 @@ export const ManagementCoursesClassesPage: React.FC = () => {
             )}
             <span>{feedback.text}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="text-slate-400 hover:text-slate-600">
+          <button onClick={() => setFeedback(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
       {/* Navegação entre Sub-abas (Cursos / Turmas) */}
-      <div className="flex space-x-2 border-b border-slate-200 pb-2">
+      <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-800 pb-2">
         <button
           onClick={() => {
             setSubTab("cursos");
@@ -348,7 +348,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
           className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             subTab === "cursos"
               ? "bg-[#2d3661] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800"
           }`}
         >
           <GraduationCap className="w-4 h-4" />
@@ -363,7 +363,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
           className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             subTab === "turmas"
               ? "bg-[#2d3661] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800"
           }`}
         >
           <Users className="w-4 h-4" />
@@ -384,7 +384,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
             }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
           />
         </div>
 
@@ -393,7 +393,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
             <select
               value={selectedCourseFilter}
               onChange={(e) => setSelectedCourseFilter(e.target.value)}
-              className="w-full sm:w-56 px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+              className="w-full sm:w-56 px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
             >
               <option value="TODOS">Todos os Cursos</option>
               {courses.map((c) => (
@@ -410,10 +410,10 @@ export const ManagementCoursesClassesPage: React.FC = () => {
       {subTab === "cursos" && (
         <div>
           {filteredCourses.length === 0 ? (
-            <Card className="p-8 text-center space-y-3 bg-white border-slate-200">
+            <Card className="p-8 text-center space-y-3 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
               <GraduationCap className="w-10 h-10 text-slate-400 mx-auto" />
-              <h4 className="text-sm font-bold text-slate-800">Nenhum curso encontrado</h4>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Nenhum curso encontrado</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                 Nenhum curso técnico corresponde aos critérios de pesquisa ou não há cursos cadastrados.
               </p>
               <button
@@ -429,11 +429,11 @@ export const ManagementCoursesClassesPage: React.FC = () => {
               {filteredCourses.map((c) => (
                 <Card
                   key={c.id}
-                  className="p-5 bg-white border-slate-200 shadow-sm hover:border-slate-300 transition-all flex flex-col justify-between"
+                  className="p-5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2.5 py-0.5 rounded-lg uppercase tracking-wider">
+                      <span className="text-xs font-bold text-[#2d3661] dark:text-[#7de06f] bg-[#2d3661]/10 dark:bg-[#7de06f]/10 border border-[#2d3661]/20 dark:border-[#7de06f]/20 px-2.5 py-0.5 rounded-lg uppercase tracking-wider">
                         {c.sigla}
                       </span>
                       <Badge variant={c.ativo ? "success" : "neutral"}>
@@ -442,7 +442,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <h4 className="text-base font-bold text-slate-900 leading-snug">{c.nome}</h4>
+                      <h4 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug">{c.nome}</h4>
                       <p className="text-xs text-slate-500 mt-1 flex items-center space-x-1">
                         <Users className="w-3.5 h-3.5 text-slate-400" />
                         <span>
@@ -504,15 +504,15 @@ export const ManagementCoursesClassesPage: React.FC = () => {
               {filteredClasses.map((t) => (
                 <Card
                   key={t.id}
-                  className="p-5 bg-white border-slate-200 shadow-sm hover:border-slate-300 transition-all flex flex-col justify-between"
+                  className="p-5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-1.5">
-                        <span className="text-[11px] font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2 py-0.5 rounded-md">
+                        <span className="text-[11px] font-bold text-[#2d3661] dark:text-[#7de06f] bg-[#2d3661]/10 dark:bg-[#7de06f]/10 border border-[#2d3661]/20 dark:border-[#7de06f]/20 px-2 py-0.5 rounded-md">
                           {t.curso_sigla || "CURSO"}
                         </span>
-                        <span className="text-xs text-slate-400 font-medium">
+                        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
                           {t.periodo || "Manhã"}
                         </span>
                       </div>
@@ -522,23 +522,23 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-bold text-slate-900 leading-snug">{t.nome_turma}</h4>
-                      <p className="text-xs text-slate-500 mt-1 flex items-center space-x-1">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug">{t.nome_turma}</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center space-x-1">
                         <Building2 className="w-3.5 h-3.5 text-slate-400" />
                         <span className="line-clamp-1">{t.curso}</span>
                       </p>
                       {t.ano && (
-                        <p className="text-[11px] text-slate-400 mt-0.5 font-medium">
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 font-medium">
                           Série / Ano: {t.ano}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-end space-x-2">
+                  <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end space-x-2">
                     <button
                       onClick={() => handleOpenEditClassModal(t)}
-                      className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors"
+                      className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                       <span>Editar</span>
@@ -551,7 +551,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                           title: t.nome_turma,
                         })
                       }
-                      className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium transition-colors"
+                      className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs font-medium transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Excluir</span>
@@ -567,17 +567,17 @@ export const ManagementCoursesClassesPage: React.FC = () => {
       {/* MODAL: CRIAR / EDITAR CURSO */}
       {isCourseModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2 text-[#2d3661]">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 animate-in fade-in zoom-in duration-200 transition-colors">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center space-x-2 text-[#2d3661] dark:text-[#7de06f]">
                 <GraduationCap className="w-5 h-5" />
-                <h3 className="font-bold text-base text-slate-900">
+                <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
                   {editingCourse ? "Editar Curso Técnico" : "Novo Curso Técnico"}
                 </h3>
               </div>
               <button
                 onClick={() => setIsCourseModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -585,19 +585,19 @@ export const ManagementCoursesClassesPage: React.FC = () => {
 
             <form onSubmit={handleSaveCourse} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Nome Completo do Curso *</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Nome Completo do Curso *</label>
                 <input
                   type="text"
                   placeholder="Ex: Desenvolvimento de Sistemas"
                   value={courseFormData.nome}
                   onChange={(e) => setCourseFormData({ ...courseFormData, nome: e.target.value })}
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Sigla Institucional *</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Sigla Institucional *</label>
                 <input
                   type="text"
                   placeholder="Ex: DS, EDIF, ELETRO, ADM"
@@ -607,7 +607,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                   }
                   required
                   maxLength={10}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 uppercase font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 uppercase font-mono focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 />
               </div>
 
@@ -619,19 +619,19 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                   onChange={(e) =>
                     setCourseFormData({ ...courseFormData, ativo: e.target.checked })
                   }
-                  className="w-4 h-4 text-[#2d3661] rounded border-slate-300 focus:ring-[#2d3661]"
+                  className="w-4 h-4 text-[#2d3661] rounded border-slate-300 dark:border-slate-700 focus:ring-[#2d3661]"
                 />
-                <label htmlFor="courseAtivo" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                <label htmlFor="courseAtivo" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
                   Curso Ativo na Instituição
                 </label>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end space-x-2">
                 <button
                   type="button"
                   onClick={() => setIsCourseModalOpen(false)}
                   disabled={isSubmitting}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -652,17 +652,17 @@ export const ManagementCoursesClassesPage: React.FC = () => {
       {/* MODAL: CRIAR / EDITAR TURMA */}
       {isClassModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2 text-[#2d3661]">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 animate-in fade-in zoom-in duration-200 transition-colors">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center space-x-2 text-[#2d3661] dark:text-[#7de06f]">
                 <Users className="w-5 h-5" />
-                <h3 className="font-bold text-base text-slate-900">
+                <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
                   {editingClass ? "Editar Turma" : "Nova Turma"}
                 </h3>
               </div>
               <button
                 onClick={() => setIsClassModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -670,14 +670,14 @@ export const ManagementCoursesClassesPage: React.FC = () => {
 
             <form onSubmit={handleSaveClass} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Curso Vinculado *</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Curso Vinculado *</label>
                 <select
                   value={classFormData.curso_id}
                   onChange={(e) =>
                     setClassFormData({ ...classFormData, curso_id: Number(e.target.value) })
                   }
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 font-medium focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 >
                   <option value={0} disabled>
                     Selecione um curso...
@@ -691,7 +691,7 @@ export const ManagementCoursesClassesPage: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Nome / Identificador da Turma *</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Nome / Identificador da Turma *</label>
                 <input
                   type="text"
                   placeholder="Ex: 3º C — Desenvolvimento de Sistemas"
@@ -700,19 +700,19 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                     setClassFormData({ ...classFormData, nome_turma: e.target.value })
                   }
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Série / Ano</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Série / Ano</label>
                   <select
                     value={classFormData.ano}
                     onChange={(e) =>
                       setClassFormData({ ...classFormData, ano: e.target.value })
                     }
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 font-medium focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                   >
                     <option value="1º Ano">1º Ano</option>
                     <option value="2º Ano">2º Ano</option>
@@ -722,13 +722,13 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Turno / Período</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Turno / Período</label>
                   <select
                     value={classFormData.periodo}
                     onChange={(e) =>
                       setClassFormData({ ...classFormData, periodo: e.target.value })
                     }
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 font-medium focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
                   >
                     <option value="Manhã">Manhã</option>
                     <option value="Tarde">Tarde</option>
@@ -746,19 +746,19 @@ export const ManagementCoursesClassesPage: React.FC = () => {
                   onChange={(e) =>
                     setClassFormData({ ...classFormData, ativo: e.target.checked })
                   }
-                  className="w-4 h-4 text-[#2d3661] rounded border-slate-300 focus:ring-[#2d3661]"
+                  className="w-4 h-4 text-[#2d3661] rounded border-slate-300 dark:border-slate-700 focus:ring-[#2d3661]"
                 />
-                <label htmlFor="classAtivo" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                <label htmlFor="classAtivo" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
                   Turma Ativa para Matrícula e Horários
                 </label>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end space-x-2">
                 <button
                   type="button"
                   onClick={() => setIsClassModalOpen(false)}
                   disabled={isSubmitting}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -779,31 +779,31 @@ export const ManagementCoursesClassesPage: React.FC = () => {
       {/* MODAL: CONFIRMAÇÃO DE EXCLUSÃO */}
       {deletingTarget && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-in fade-in zoom-in duration-200 transition-colors">
             <div className="flex items-center space-x-3 text-red-600">
-              <div className="p-2 rounded-xl bg-red-50 border border-red-200/60">
+              <div className="p-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-base text-slate-900">
+                <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
                   Confirmar Exclusão de {deletingTarget.type === "curso" ? "Curso" : "Turma"}
                 </h3>
-                <p className="text-xs text-slate-500">Esta ação verificará a integridade de dados.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Esta ação verificará a integridade de dados.</p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
               Tem certeza de que deseja excluir{" "}
-              <strong className="text-slate-900">{deletingTarget.title}</strong>? Caso existam
+              <strong className="text-slate-900 dark:text-slate-100">{deletingTarget.title}</strong>? Caso existam
               alunos, turmas ou horários vinculados, o sistema não permitirá a exclusão silenciosa.
             </p>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end space-x-2">
               <button
                 type="button"
                 onClick={() => setDeletingTarget(null)}
                 disabled={isSubmitting}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 Cancelar
               </button>

@@ -1,5 +1,6 @@
-import { LayoutDashboard, Bell, Users, BookOpen, Calendar, Coffee, Settings, LogOut, Shield } from "lucide-react";
+import { LayoutDashboard, Bell, Users, BookOpen, Calendar, Coffee, Settings, LogOut, Shield, Sun, Moon } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 
 export type ManagementTab = "dashboard" | "avisos" | "turmas" | "disciplinas" | "horarios" | "cantina" | "configuracoes";
 
@@ -15,21 +16,22 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
   children,
 }) => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const navItems: { id: ManagementTab; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "avisos", label: "Avisos", icon: Bell },
     { id: "turmas", label: "Cursos & Turmas", icon: Users },
     { id: "disciplinas", label: "Disciplinas & Docentes", icon: BookOpen },
-    { id: "horarios", label: "Grade Horária", icon: Calendar },
+    { id: "horarios", label: "Planejamento de Horários", icon: Calendar },
     { id: "cantina", label: "Cantina / Demanda", icon: Coffee },
     { id: "configuracoes", label: "Configurações", icon: Settings },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
+    <div className={`${theme === "dark" ? "dark" : ""} min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200`}>
       {/* Top Header */}
-      <header className="bg-[#2d3661] text-white border-b border-[#222a4d] sticky top-0 z-30 shadow-md">
+      <header className="bg-[#2d3661] dark:bg-[#181f3b] text-white border-b border-[#222a4d] dark:border-slate-800 sticky top-0 z-30 shadow-md transition-colors">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center p-0.5 shadow-sm border border-slate-200 shrink-0 overflow-hidden">
@@ -51,14 +53,25 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <div className="hidden sm:block text-right">
               <p className="text-xs font-semibold text-white">{user?.nome}</p>
               <p className="text-[11px] text-slate-300">{user?.email}</p>
             </div>
+
+            {/* Alternador de Tema */}
+            <button
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Alternar para Modo Claro" : "Alternar para Modo Escuro"}
+              aria-label="Alternar tema"
+              className="p-2 rounded-xl bg-[#1f2647] dark:bg-slate-800 text-slate-200 hover:text-amber-300 hover:bg-[#181f3b] dark:hover:bg-slate-700 text-xs font-medium transition-all"
+            >
+              {theme === "dark" ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-slate-300" />}
+            </button>
+
             <button
               onClick={logout}
-              className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-[#1f2647] text-slate-200 hover:text-red-400 hover:bg-[#181f3b] text-xs font-medium transition-all"
+              className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-[#1f2647] dark:bg-slate-800 text-slate-200 hover:text-red-400 hover:bg-[#181f3b] dark:hover:bg-slate-700 text-xs font-medium transition-all"
             >
               <LogOut className="w-4 h-4" />
               <span>Sair</span>
@@ -67,7 +80,7 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="max-w-6xl mx-auto px-4 overflow-x-auto no-scrollbar flex space-x-1 border-t border-[#3c4779]/60">
+        <div className="max-w-6xl mx-auto px-4 overflow-x-auto no-scrollbar flex space-x-1 border-t border-[#3c4779]/60 dark:border-slate-800">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -77,8 +90,8 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
                 onClick={() => onTabChange(item.id)}
                 className={`flex items-center space-x-2 px-4 py-3 text-xs font-semibold whitespace-nowrap transition-all border-b-2 ${
                   isActive
-                    ? "border-[#4aaa3c] text-white bg-[#1f2647]"
-                    : "border-transparent text-slate-300 hover:text-white hover:bg-[#1f2647]/50"
+                    ? "border-[#4aaa3c] text-white bg-[#1f2647] dark:bg-slate-800"
+                    : "border-transparent text-slate-300 hover:text-white hover:bg-[#1f2647]/50 dark:hover:bg-slate-800/50"
                 }`}
               >
                 <Icon className={`w-4 h-4 ${isActive ? "text-[#7de06f]" : "text-slate-400"}`} />

@@ -273,18 +273,18 @@ export const ManagementNoticesPage: React.FC = () => {
       )}
 
       {/* Cabeçalho de Ações */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold text-[#2d3661] bg-[#2d3661]/10 border border-[#2d3661]/20 px-2 py-0.5 rounded-md uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#2d3661] dark:text-[#7de06f] bg-[#2d3661]/10 dark:bg-[#7de06f]/10 border border-[#2d3661]/20 dark:border-[#7de06f]/20 px-2 py-0.5 rounded-md uppercase tracking-wider">
               Mural Institucional
             </span>
           </div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
-            <Bell className="w-5 h-5 text-[#2d3661]" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+            <Bell className="w-5 h-5 text-[#2d3661] dark:text-[#7de06f]" />
             <span>Gerenciamento de Comunicados</span>
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Publique avisos e comunicados com texto e imagem para toda a escola, cursos específicos ou turmas.
           </p>
         </div>
@@ -307,7 +307,7 @@ export const ManagementNoticesPage: React.FC = () => {
           className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
             filter === "TODOS"
               ? "bg-[#2d3661] text-white shadow-sm shadow-[#2d3661]/20"
-              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
           }`}
         >
           Todos ({notices.length})
@@ -317,7 +317,7 @@ export const ManagementNoticesPage: React.FC = () => {
           className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
             filter === "PUBLICADOS"
               ? "bg-[#4aaa3c] text-white shadow-sm shadow-[#4aaa3c]/20"
-              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
           }`}
         >
           Publicados ({publishedNotices.length})
@@ -327,7 +327,7 @@ export const ManagementNoticesPage: React.FC = () => {
           className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
             filter === "RASCUNHOS"
               ? "bg-[#2d3661] text-white shadow-sm shadow-[#2d3661]/20"
-              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
           }`}
         >
           Rascunhos ({draftNotices.length})
@@ -356,8 +356,8 @@ export const ManagementNoticesPage: React.FC = () => {
                 key={n.id}
                 className={`p-5 space-y-3.5 border transition-all ${
                   isDraft
-                    ? "bg-slate-50/70 border-slate-200"
-                    : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
+                    ? "bg-slate-50/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800"
+                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm"
                 }`}
               >
                 {/* Linha 1: Badges de Status, Prioridade e Público */}
@@ -373,13 +373,13 @@ export const ManagementNoticesPage: React.FC = () => {
                       </Badge>
                     )}
                     {getPriorityBadge(n.prioridade)}
-                    <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md flex items-center">
+                    <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-md flex items-center">
                       <Tag className="w-3 h-3 mr-1 text-slate-400" />
                       {n.publico_alvo_nome || n.publico_alvo_tipo}
                     </span>
                   </div>
 
-                  <span className="text-xs text-slate-400 flex items-center">
+                  <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center">
                     <Calendar className="w-3.5 h-3.5 mr-1 text-slate-400" />
                     {new Date(n.data_publicacao).toLocaleDateString("pt-BR")}
                   </span>
@@ -387,7 +387,7 @@ export const ManagementNoticesPage: React.FC = () => {
 
                 {/* Imagem do Comunicado (se existir) */}
                 {n.imagem_url && (
-                  <div className="rounded-xl overflow-hidden max-h-48 border border-slate-200 bg-slate-100">
+                  <div className="rounded-xl overflow-hidden max-h-48 border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800">
                     <img
                       src={n.imagem_url}
                       alt={n.titulo}
@@ -398,17 +398,17 @@ export const ManagementNoticesPage: React.FC = () => {
 
                 {/* Linha 2: Título e Conteúdo */}
                 <div className="space-y-1">
-                  <h3 className="text-base font-bold text-slate-900 leading-snug">{n.titulo}</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug">{n.titulo}</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                     {n.descricao}
                   </p>
                 </div>
 
                 {/* Linha 3: Rodapé com Autor e Ações */}
-                <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs text-slate-500 flex items-center">
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center">
                     <UserIcon className="w-3.5 h-3.5 mr-1 text-slate-400" />
-                    Autor: <strong className="ml-1 text-slate-700">{n.autor_nome || "Gestão"}</strong>
+                    Autor: <strong className="ml-1 text-slate-700 dark:text-slate-200">{n.autor_nome || "Gestão"}</strong>
                   </span>
 
                   <div className="flex items-center space-x-2">
@@ -428,7 +428,7 @@ export const ManagementNoticesPage: React.FC = () => {
 
                     <button
                       onClick={() => handleOpenEditModal(n)}
-                      className="px-2.5 py-1.5 text-xs font-semibold text-[#2d3661] hover:text-[#222a4d] bg-slate-100 hover:bg-[#2d3661]/10 border border-slate-200 rounded-lg transition-colors flex items-center space-x-1"
+                      className="px-2.5 py-1.5 text-xs font-semibold text-[#2d3661] dark:text-[#7de06f] hover:text-[#222a4d] bg-slate-100 dark:bg-slate-800 hover:bg-[#2d3661]/10 dark:hover:bg-[#7de06f]/10 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors flex items-center space-x-1"
                       title="Editar comunicado"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -438,7 +438,7 @@ export const ManagementNoticesPage: React.FC = () => {
                     <button
                       onClick={() => handleDeleteNotice(n.id)}
                       disabled={deletingId === n.id}
-                      className="px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors flex items-center space-x-1 disabled:opacity-50"
+                      className="px-2.5 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:text-red-700 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-900 rounded-lg transition-colors flex items-center space-x-1 disabled:opacity-50"
                       title="Excluir comunicado"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -462,7 +462,7 @@ export const ManagementNoticesPage: React.FC = () => {
       >
         <form onSubmit={handleSubmitForm} className="space-y-4">
           {formError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start space-x-2">
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl text-xs text-red-700 dark:text-red-300 flex items-start space-x-2">
               <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
               <span>{formError}</span>
             </div>
@@ -470,7 +470,7 @@ export const ManagementNoticesPage: React.FC = () => {
 
           {/* Campo Título */}
           <div className="space-y-1.5">
-            <label htmlFor="notice-title" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <label htmlFor="notice-title" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
               Título do Comunicado <span className="text-red-500">*</span>
             </label>
             <input
@@ -480,22 +480,22 @@ export const ManagementNoticesPage: React.FC = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Ex: Calendário das Bancas Finais de TCC"
-              className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10"
+              className="w-full px-3.5 py-2.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10"
             />
           </div>
 
           {/* Campo Imagem (Opcional) */}
-          <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+          <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-1.5">
-                <ImageIcon className="w-4 h-4 text-[#2d3661]" />
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+                <ImageIcon className="w-4 h-4 text-[#2d3661] dark:text-[#7de06f]" />
                 <span>Imagem Ilustrativa (Opcional)</span>
               </label>
               {imageUrl && (
                 <button
                   type="button"
                   onClick={() => setImageUrl("")}
-                  className="text-[11px] font-semibold text-red-600 hover:text-red-700 flex items-center space-x-0.5"
+                  className="text-[11px] font-semibold text-red-600 dark:text-red-400 hover:text-red-700 flex items-center space-x-0.5"
                 >
                   <X className="w-3 h-3" />
                   <span>Remover imagem</span>
@@ -504,15 +504,15 @@ export const ManagementNoticesPage: React.FC = () => {
             </div>
 
             {imageUrl ? (
-              <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-white">
+              <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
                 <img
                   src={imageUrl}
                   alt="Prévia do comunicado"
                   className="w-full h-36 object-cover"
                 />
-                <div className="p-2 bg-white/90 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
+                <div className="p-2 bg-white/90 dark:bg-slate-800/90 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300">
                   <span className="font-medium truncate max-w-[200px]">Imagem associada</span>
-                  <label className="text-xs font-bold text-[#2d3661] hover:underline cursor-pointer">
+                  <label className="text-xs font-bold text-[#2d3661] dark:text-[#7de06f] hover:underline cursor-pointer">
                     Substituir
                     <input
                       type="file"
@@ -526,8 +526,8 @@ export const ManagementNoticesPage: React.FC = () => {
             ) : (
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <label className="inline-flex items-center px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors shadow-sm">
-                    <Upload className="w-3.5 h-3.5 mr-1.5 text-[#2d3661]" />
+                  <label className="inline-flex items-center px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors shadow-sm">
+                    <Upload className="w-3.5 h-3.5 mr-1.5 text-[#2d3661] dark:text-[#7de06f]" />
                     <span>Carregar arquivo</span>
                     <input
                       type="file"
@@ -536,7 +536,7 @@ export const ManagementNoticesPage: React.FC = () => {
                       className="hidden"
                     />
                   </label>
-                  <span className="text-[11px] text-slate-400">ou informe uma URL abaixo</span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500">ou informe uma URL abaixo</span>
                 </div>
 
                 <input
@@ -544,7 +544,7 @@ export const ManagementNoticesPage: React.FC = () => {
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
                   placeholder="https://exemplo.com/imagem.jpg"
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10"
                 />
               </div>
             )}
@@ -552,7 +552,7 @@ export const ManagementNoticesPage: React.FC = () => {
 
           {/* Campo Descrição */}
           <div className="space-y-1.5">
-            <label htmlFor="notice-desc" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <label htmlFor="notice-desc" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
               Conteúdo / Mensagem <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -562,21 +562,21 @@ export const ManagementNoticesPage: React.FC = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Digite o comunicado completo que será apresentado aos alunos..."
-              className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10 resize-none leading-relaxed"
+              className="w-full px-3.5 py-2.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#2d3661] focus:ring-2 focus:ring-[#2d3661]/10 resize-none leading-relaxed"
             />
           </div>
 
           {/* Linha: Prioridade e Status */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label htmlFor="notice-priority" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+              <label htmlFor="notice-priority" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Prioridade
               </label>
               <select
                 id="notice-priority"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as any)}
-                className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:border-[#2d3661]"
+                className="w-full px-3.5 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:border-[#2d3661]"
               >
                 <option value="BAIXA">Baixa (Informativo geral)</option>
                 <option value="MEDIA">Média (Padrão)</option>
@@ -586,14 +586,14 @@ export const ManagementNoticesPage: React.FC = () => {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="notice-status" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+              <label htmlFor="notice-status" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Estado de Publicação
               </label>
               <select
                 id="notice-status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value as any)}
-                className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:border-[#2d3661]"
+                className="w-full px-3.5 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:border-[#2d3661]"
               >
                 <option value="PUBLICADO">Publicar Imediatamente</option>
                 <option value="RASCUNHO">Salvar como Rascunho</option>
@@ -602,8 +602,8 @@ export const ManagementNoticesPage: React.FC = () => {
           </div>
 
           {/* Segmentação de Público-Alvo */}
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-            <span className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-3">
+            <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
               Público-Alvo (Segmentação)
             </span>
 
@@ -617,7 +617,7 @@ export const ManagementNoticesPage: React.FC = () => {
                 className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all ${
                   targetType === "GERAL"
                     ? "bg-[#2d3661] text-white border-[#2d3661] shadow-sm"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                    : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                 }`}
               >
                 Toda Escola
@@ -634,7 +634,7 @@ export const ManagementNoticesPage: React.FC = () => {
                 className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all ${
                   targetType === "CURSO"
                     ? "bg-[#2d3661] text-white border-[#2d3661] shadow-sm"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                    : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                 }`}
               >
                 Por Curso
@@ -651,7 +651,7 @@ export const ManagementNoticesPage: React.FC = () => {
                 className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all ${
                   targetType === "TURMA"
                     ? "bg-[#2d3661] text-white border-[#2d3661] shadow-sm"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                    : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                 }`}
               >
                 Por Turma
@@ -661,15 +661,15 @@ export const ManagementNoticesPage: React.FC = () => {
             {/* Dropdown dinâmico dependendo da segmentação selecionada */}
             {targetType === "CURSO" && (
               <div className="space-y-1 pt-1">
-                <label htmlFor="course-select" className="block text-[11px] font-semibold text-slate-600 flex items-center space-x-1">
-                  <Layers className="w-3.5 h-3.5 text-[#2d3661]" />
+                <label htmlFor="course-select" className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 flex items-center space-x-1">
+                  <Layers className="w-3.5 h-3.5 text-[#2d3661] dark:text-[#7de06f]" />
                   <span>Selecione o Curso de Destino</span>
                 </label>
                 <select
                   id="course-select"
                   value={targetId || ""}
                   onChange={(e) => setTargetId(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:border-[#2d3661]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:border-[#2d3661]"
                 >
                   <option value="" disabled>Selecione um curso...</option>
                   {courses.map((c) => (
@@ -683,15 +683,15 @@ export const ManagementNoticesPage: React.FC = () => {
 
             {targetType === "TURMA" && (
               <div className="space-y-1 pt-1">
-                <label htmlFor="class-select" className="block text-[11px] font-semibold text-slate-600 flex items-center space-x-1">
-                  <Users className="w-3.5 h-3.5 text-[#2d3661]" />
+                <label htmlFor="class-select" className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 flex items-center space-x-1">
+                  <Users className="w-3.5 h-3.5 text-[#2d3661] dark:text-[#7de06f]" />
                   <span>Selecione a Turma de Destino</span>
                 </label>
                 <select
                   id="class-select"
                   value={targetId || ""}
                   onChange={(e) => setTargetId(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:border-[#2d3661]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:border-[#2d3661]"
                 >
                   <option value="" disabled>Selecione uma turma...</option>
                   {classes.map((cls) => (
@@ -705,7 +705,7 @@ export const ManagementNoticesPage: React.FC = () => {
           </div>
 
           {/* Botões do Formulário */}
-          <div className="flex space-x-2 pt-3 border-t border-slate-100">
+          <div className="flex space-x-2 pt-3 border-t border-slate-100 dark:border-slate-800">
             <Button
               type="button"
               variant="ghost"

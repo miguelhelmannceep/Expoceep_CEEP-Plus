@@ -963,6 +963,7 @@ def create_schedule(
         horario_fim=payload.horario_fim.strip(),
         disciplina=disciplina_nome,
         professor=professor_nome,
+        sala=payload.sala.strip() if payload.sala else None,
         turma_id=turma.id,
         disciplina_id=disciplina_obj.id if disciplina_obj else None,
         professor_id=professor_obj.id if professor_obj else None,
@@ -1063,6 +1064,8 @@ def update_schedule(
     horario.dia_semana = dia_semana
     horario.horario_inicio = horario_inicio
     horario.horario_fim = horario_fim
+    if payload.sala is not None:
+        horario.sala = payload.sala.strip() if payload.sala else None
     if payload.ativo is not None:
         horario.ativo = payload.ativo
 

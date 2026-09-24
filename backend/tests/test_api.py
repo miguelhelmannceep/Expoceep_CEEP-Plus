@@ -2771,6 +2771,165 @@ def test_traditional_login_has_no_google_picture_fallback():
     assert me_resp.json()["avatar_url"] is None
 
 
+# ==============================================================================
+# MILESTONE 5C: TESTES DE LOGIN, HORÁRIOS GESTÃO, CONFLITOS E RBAC
+# ==============================================================================
+
+def test_milestone5c_traditional_login_invalid_institutional_domain():
+    """Valida rejeição de e-mail tradicional não institucional (ex: @gmail.com)."""
+    resp = client.post("/api/v1/auth/login", json={
+        "email": "aluno.invalido@gmail.com",
+        "password": "senha"
+    })
+    assert resp.status_code == 401
+    assert "incorretos" in resp.json()["detail"].lower()
+
+def test_milestone5c_traditional_login_wrong_password_generic_error():
+    """Valida mensagem de erro genérica em caso de senha incorreta para conta existente."""
+    resp = client.post("/api/v1/auth/login", json={
+        "email": "aluno@escola.pr.gov.br",
+        "password": "senha_totalmente_errada_999"
+    })
+    assert resp.status_code == 401
+    assert "incorretos" in resp.json()["detail"].lower()
+
+def test_milestone5c_management_schedule_crud_and_conflict_workflow():
+    """Valida ciclo completo de criação, conflitos, edição e exclusão na grade horária da Gestão."""
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    # Busca turmas, cursos, disciplinas e professores existentes
+    turmas_resp = client.get("/api/v1/management/classes", headers=headers_gestao)
+    assert turmas_resp.status_code == 200
+    turmas = turmas_resp.json()
+    assert len(turmas) >= 2
+    turma_1 = turmas[0]
+    turma_2 = turmas[1]
+
+    profs_resp = client.get("/api/v1/management/professors", headers=headers_gestao)
+    assert profs_resp.status_code == 200
+    profs = profs_resp.json()
+    assert len(profs) >= 1
+    prof_1 = profs[0]
+
+    unique_suffix = uuid.uuid4().hex[:4].upper()
+    dia_teste = "SEXTA"
+    horario_inicio = "13:30"
+    horario_fim = "14:20"
+
+    # 1. Criação com sucesso de uma nova aula
+    create_payload = {
+        "turma_id": turma_1["id"],
+        "dia_semana": dia_teste,
+        "horario_inicio": horario_inicio,
+        "horario_fim": horario_fim,
+        "disciplina": f"Desenvolvimento Web {unique_suffix}",
+        "professor": prof_1["nome"],
+        "professor_id": prof_1["id"],
+        "sala": "Lab 01",
+        "ativo": True,
+    }
+    create_resp = client.post("/api/v1/management/schedules", json=create_payload, headers=headers_gestao)
+    assert create_resp.status_code == 201
+    created_schedule = create_resp.json()
+    assert created_schedule["id"] is not None
+    assert created_schedule["turma_id"] == turma_1["id"]
+    assert created_schedule["dia_semana"] == dia_teste
+    schedule_id = created_schedule["id"]
+
+    try:
+        # 2. Conflito de Turma: mesma turma, mesmo dia e intervalo sobreposto (13:50 às 14:40)
+        turma_conflict_payload = {
+            "turma_id": turma_1["id"],
+            "dia_semana": dia_teste,
+            "horario_inicio": "13:50",
+            "horario_fim": "14:40",
+            "disciplina": "Banco de Dados",
+            "professor": "Outro Professor",
+            "sala": "Lab 02",
+            "ativo": True,
+        }
+        conflict_resp = client.post("/api/v1/management/schedules", json=turma_conflict_payload, headers=headers_gestao)
+        assert conflict_resp.status_code == 400
+        assert "conflito" in conflict_resp.json()["detail"].lower()
+        assert "turma" in conflict_resp.json()["detail"].lower()
+
+        # 3. Conflito de Professor: turma diferente, mesmo professor, mesmo dia e intervalo sobreposto
+        prof_conflict_payload = {
+            "turma_id": turma_2["id"],
+            "dia_semana": dia_teste,
+            "horario_inicio": "13:40",
+            "horario_fim": "14:30",
+            "disciplina": "Redes de Computadores",
+            "professor": prof_1["nome"],
+            "professor_id": prof_1["id"],
+            "sala": "Lab 03",
+            "ativo": True,
+        }
+        prof_conflict_resp = client.post("/api/v1/management/schedules", json=prof_conflict_payload, headers=headers_gestao)
+        assert prof_conflict_resp.status_code == 400
+        assert "conflito" in prof_conflict_resp.json()["detail"].lower()
+        assert "professor" in prof_conflict_resp.json()["detail"].lower()
+
+        # 4. Atualização de aula existente (PUT)
+        update_payload = {
+            "turma_id": turma_1["id"],
+            "dia_semana": dia_teste,
+            "horario_inicio": "14:30",
+            "horario_fim": "15:20",
+            "disciplina": f"Desenvolvimento Web Avançado {unique_suffix}",
+            "professor": prof_1["nome"],
+            "professor_id": prof_1["id"],
+            "sala": "Lab 04",
+            "ativo": True,
+        }
+        update_resp = client.put(f"/api/v1/management/schedules/{schedule_id}", json=update_payload, headers=headers_gestao)
+        assert update_resp.status_code == 200
+        updated = update_resp.json()
+        assert updated["horario_inicio"] == "14:30"
+        assert updated["horario_fim"] == "15:20"
+        assert updated["sala"] == "Lab 04"
+
+    finally:
+        # 5. Exclusão da aula (DELETE)
+        del_resp = client.delete(f"/api/v1/management/schedules/{schedule_id}", headers=headers_gestao)
+        assert del_resp.status_code == 200
+
+def test_milestone5c_management_schedule_rbac_enforcement():
+    """Valida que ALUNO e CANTINA têm acesso estritamente proibido (403) aos endpoints de gestão de horários."""
+    token_aluno = get_auth_token("aluno@escola.pr.gov.br")
+    headers_aluno = {"Authorization": f"Bearer {token_aluno}"}
+
+    token_cantina = get_auth_token("cantina@ceep.demo")
+    headers_cantina = {"Authorization": f"Bearer {token_cantina}"}
+
+    dummy_payload = {
+        "turma_id": 1,
+        "dia_semana": "SEGUNDA",
+        "horario_inicio": "07:30",
+        "horario_fim": "08:20",
+        "disciplina": "Teste RBAC",
+        "professor": "Docente RBAC",
+    }
+
+    # 1. Aluno não pode listar, criar, editar nem excluir na rota de gestão
+    assert client.get("/api/v1/management/schedules", headers=headers_aluno).status_code == 403
+    assert client.post("/api/v1/management/schedules", json=dummy_payload, headers=headers_aluno).status_code == 403
+    assert client.put("/api/v1/management/schedules/1", json=dummy_payload, headers=headers_aluno).status_code == 403
+    assert client.delete("/api/v1/management/schedules/1", headers=headers_aluno).status_code == 403
+
+    # 2. Cantina não pode listar, criar, editar nem excluir na rota de gestão
+    assert client.get("/api/v1/management/schedules", headers=headers_cantina).status_code == 403
+    assert client.post("/api/v1/management/schedules", json=dummy_payload, headers=headers_cantina).status_code == 403
+    assert client.put("/api/v1/management/schedules/1", json=dummy_payload, headers=headers_cantina).status_code == 403
+    assert client.delete("/api/v1/management/schedules/1", headers=headers_cantina).status_code == 403
+
+    # 3. Aluno continua com acesso permitido à rota de leitura de horários de sua turma
+    aluno_schedule_resp = client.get("/api/v1/schedules/1", headers=headers_aluno)
+    assert aluno_schedule_resp.status_code == 200
+
+
+
 
 
 

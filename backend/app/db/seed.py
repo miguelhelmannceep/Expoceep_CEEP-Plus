@@ -8,7 +8,7 @@ from app.models.turma import Curso, Turma
 from app.models.disciplina import Disciplina
 from app.models.professor import Professor
 from app.models.usuario import Usuario
-from app.models.horario import Horario
+from app.models.horario import Horario, PeriodoHorario, DisponibilidadeRecurso, RegraDisciplina
 from app.models.aviso import Aviso
 from app.models.tarefa import Tarefa
 from app.models.produto import Produto
@@ -26,6 +26,12 @@ def ensure_schema_migrations(db: Session) -> None:
                     conn.execute(text("ALTER TABLE horarios ADD COLUMN professor_id INTEGER REFERENCES professores(id)"))
                 if "ativo" not in h_cols:
                     conn.execute(text("ALTER TABLE horarios ADD COLUMN ativo BOOLEAN DEFAULT 1"))
+                if "duracao" not in h_cols:
+                    conn.execute(text("ALTER TABLE horarios ADD COLUMN duracao INTEGER DEFAULT 1"))
+                if "periodo_ordem" not in h_cols:
+                    conn.execute(text("ALTER TABLE horarios ADD COLUMN periodo_ordem INTEGER"))
+                if "grupo" not in h_cols:
+                    conn.execute(text("ALTER TABLE horarios ADD COLUMN grupo VARCHAR(50)"))
                 conn.commit()
         except Exception as e:
             print(f"Migration warning horarios: {e}")
@@ -81,6 +87,48 @@ def init_db(db: Session) -> None:
         db.commit()
     except Exception as e:
         print(f"Email migration warning: {e}")
+
+    # 0. Garante Períodos e Intervalos Padrão (Conceito de Timetable aSc)
+    try:
+        if db.query(PeriodoHorario).first() is None:
+            periodos_padrao = [
+                PeriodoHorario(ordem=1, nome="1ª aula", horario_inicio="07:30", horario_fim="08:20", turno="Manhã", is_intervalo=False, ativo=True),
+                PeriodoHorario(ordem=2, nome="2ª aula", horario_inicio="08:20", horario_fim="09:10", turno="Manhã", is_intervalo=False, ativo=True),
+                PeriodoHorario(ordem=3, nome="Intervalo / Recreio", horario_inicio="09:10", horario_fim="09:25", turno="Manhã", is_intervalo=True, ativo=True),
+                PeriodoHorario(ordem=4, nome="3ª aula", horario_inicio="09:25", horario_fim="10:15", turno="Manhã", is_intervalo=False, ativo=True),
+                PeriodoHorario(ordem=5, nome="4ª aula", horario_inicio="10:15", horario_fim="11:05", turno="Manhã", is_intervalo=False, ativo=True),
+                PeriodoHorario(ordem=6, nome="5ª aula", horario_inicio="11:15", horario_fim="12:05", turno="Manhã", is_intervalo=False, ativo=True),
+                PeriodoHorario(ordem=7, nome="6ª aula", horario_inicio="12:05", horario_fim="12:55", turno="Manhã", is_intervalo=False, ativo=True),
+            ]
+            db.add_all(periodos_padrao)
+            db.commit()
+    except Exception as e:
+        print(f"Periodos seed warning: {e}")
+
+    # Garante Regras Iniciais de Carga Semanal por Disciplina se ainda não existirem
+    try:
+        if db.query(RegraDisciplina).first() is None:
+            turma_3c_obj = db.query(Turma).filter(Turma.nome_turma.like("%3º C%")).first()
+            if turma_3c_obj:
+                disciplinas_3c = db.query(Disciplina).filter(Disciplina.curso_id == turma_3c_obj.curso_id).all()
+                regras_iniciais = []
+                for d in disciplinas_3c:
+                    aulas_meta = 4 if d.sigla in ["DW", "BD", "PAM", "RC"] else 2
+                    regras_iniciais.append(
+                        RegraDisciplina(
+                            turma_id=turma_3c_obj.id,
+                            disciplina_id=d.id,
+                            aulas_semanais=aulas_meta,
+                            max_aulas_dia=2,
+                            permitir_aula_dupla=True,
+                            sala_preferencial="Laboratório 02" if d.sigla in ["DW", "PAM"] else None
+                        )
+                    )
+                if regras_iniciais:
+                    db.add_all(regras_iniciais)
+                    db.commit()
+    except Exception as e:
+        print(f"Regras seed warning: {e}")
 
     # Se já existirem dados, não duplica
     if db.query(Usuario).first():

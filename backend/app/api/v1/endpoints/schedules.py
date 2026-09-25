@@ -57,6 +57,9 @@ def get_schedules_by_class(
             turma_id=h.turma_id,
             disciplina_id=h.disciplina_id,
             professor_id=h.professor_id,
+            duracao=h.duracao if h.duracao is not None else 1,
+            periodo_ordem=h.periodo_ordem,
+            grupo=h.grupo,
             turma_nome=turma.nome_turma,
             curso_nome=turma.curso,
             ativo=h.ativo if h.ativo is not None else True

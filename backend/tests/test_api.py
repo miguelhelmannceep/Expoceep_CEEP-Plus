@@ -2929,6 +2929,248 @@ def test_milestone5c_management_schedule_rbac_enforcement():
     assert aluno_schedule_resp.status_code == 200
 
 
+# ============================================================================
+# MILESTONE 5D: TESTES DO PLANEJAMENTO DE HORÁRIOS (MODELO aSc TIMETABLES)
+# ============================================================================
+
+def test_milestone_5d_room_conflict():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    # Turma 1 na Sala Teste M5D no Sábado 08:00-09:00
+    c1 = client.post("/api/v1/management/schedules", json={
+        "turma_id": 1,
+        "disciplina_id": 1,
+        "professor_id": 1,
+        "sala": "Sala Teste M5D",
+        "dia_semana": "Sábado",
+        "horario_inicio": "08:00",
+        "horario_fim": "09:00"
+    }, headers=headers_gestao)
+    assert c1.status_code == 201
+    id1 = c1.json()["id"]
+
+    try:
+        # Turma 2 tenta agendar na mesma Sala Teste M5D no mesmo horário (com professor diferente)
+        c2 = client.post("/api/v1/management/schedules", json={
+            "turma_id": 2,
+            "disciplina_id": 2,
+            "professor_id": 2,
+            "sala": "Sala Teste M5D",
+            "dia_semana": "Sábado",
+            "horario_inicio": "08:30",
+            "horario_fim": "09:00"
+        }, headers=headers_gestao)
+        assert c2.status_code == 400
+        assert "sala" in c2.json()["detail"].lower() or "espaço físico" in c2.json()["detail"].lower()
+    finally:
+        client.delete(f"/api/v1/management/schedules/{id1}", headers=headers_gestao)
+
+
+def test_milestone_5d_double_lesson_overlap():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    # Aula dupla da Turma 1 no Sábado das 10:00 às 11:40 (duracao = 2)
+    c1 = client.post("/api/v1/management/schedules", json={
+        "turma_id": 1,
+        "disciplina_id": 1,
+        "professor_id": 1,
+        "dia_semana": "Sábado",
+        "horario_inicio": "10:00",
+        "horario_fim": "11:40",
+        "duracao": 2
+    }, headers=headers_gestao)
+    assert c1.status_code == 201
+    id1 = c1.json()["id"]
+
+    try:
+        # Tentativa de agendar aula simples no segundo período (10:50 às 11:40) para a mesma turma
+        c2 = client.post("/api/v1/management/schedules", json={
+            "turma_id": 1,
+            "disciplina_id": 2,
+            "professor_id": 2,
+            "dia_semana": "Sábado",
+            "horario_inicio": "10:50",
+            "horario_fim": "11:40"
+        }, headers=headers_gestao)
+        assert c2.status_code == 400
+        assert "conflito" in c2.json()["detail"].lower()
+    finally:
+        client.delete(f"/api/v1/management/schedules/{id1}", headers=headers_gestao)
+
+
+def test_milestone_5d_simultaneous_non_conflicting_classes_allowed():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    # Turma 1 no Sábado 14:00-15:00 com Prof 1 na Sala A
+    c1 = client.post("/api/v1/management/schedules", json={
+        "turma_id": 1,
+        "disciplina_id": 1,
+        "professor_id": 1,
+        "sala": "Sala A M5D",
+        "dia_semana": "Sábado",
+        "horario_inicio": "14:00",
+        "horario_fim": "15:00"
+    }, headers=headers_gestao)
+    assert c1.status_code == 201
+    id1 = c1.json()["id"]
+
+    try:
+        # Turma 2 no Sábado EXATAMENTE no mesmo horário 14:00-15:00, mas com Prof 2 e Sala B
+        c2 = client.post("/api/v1/management/schedules", json={
+            "turma_id": 2,
+            "disciplina_id": 2,
+            "professor_id": 2,
+            "sala": "Sala B M5D",
+            "dia_semana": "Sábado",
+            "horario_inicio": "14:00",
+            "horario_fim": "15:00"
+        }, headers=headers_gestao)
+        assert c2.status_code == 201
+        id2 = c2.json()["id"]
+        client.delete(f"/api/v1/management/schedules/{id2}", headers=headers_gestao)
+    finally:
+        client.delete(f"/api/v1/management/schedules/{id1}", headers=headers_gestao)
+
+
+def test_milestone_5d_recess_interval_block():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    # Tentativa de agendar aula atravessando o recreio institucional (09:10 às 09:25) na Segunda-feira
+    c = client.post("/api/v1/management/schedules", json={
+        "turma_id": 1,
+        "disciplina_id": 1,
+        "professor_id": 1,
+        "dia_semana": "Segunda-feira",
+        "horario_inicio": "09:00",
+        "horario_fim": "09:40"
+    }, headers=headers_gestao)
+    assert c.status_code == 400
+    assert "intervalo" in c.json()["detail"].lower() or "recreio" in c.json()["detail"].lower()
+
+
+def test_milestone_5d_unavailability_block_teacher_and_room():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    # 1. Cria bloqueio para Professor 1 no Sábado 16:00-17:00
+    prof = client.get("/api/v1/management/professors", headers=headers_gestao).json()[0]
+    b_prof = client.post("/api/v1/management/schedules/availabilities", json={
+        "tipo_recurso": "PROFESSOR",
+        "recurso_id": prof["id"],
+        "recurso_identificador": prof["nome"],
+        "dia_semana": "Sábado",
+        "horario_inicio": "16:00",
+        "horario_fim": "17:00",
+        "tipo": "INDISPONIVEL",
+        "motivo": "Reunião de departamento"
+    }, headers=headers_gestao)
+    assert b_prof.status_code == 201
+    b_prof_id = b_prof.json()["id"]
+
+    try:
+        # Tenta agendar aula para esse professor no intervalo bloqueado
+        c1 = client.post("/api/v1/management/schedules", json={
+            "turma_id": 1,
+            "disciplina_id": 1,
+            "professor_id": prof["id"],
+            "dia_semana": "Sábado",
+            "horario_inicio": "16:15",
+            "horario_fim": "16:45"
+        }, headers=headers_gestao)
+        assert c1.status_code == 400
+        assert "indispon" in c1.json()["detail"].lower()
+    finally:
+        client.delete(f"/api/v1/management/schedules/availabilities/{b_prof_id}", headers=headers_gestao)
+
+    # 2. Cria bloqueio para Sala Especial M5D no Sábado 17:00-18:00
+    b_sala = client.post("/api/v1/management/schedules/availabilities", json={
+        "tipo_recurso": "SALA",
+        "recurso_identificador": "Sala Especial M5D",
+        "dia_semana": "Sábado",
+        "horario_inicio": "17:00",
+        "horario_fim": "18:00",
+        "tipo": "INDISPONIVEL",
+        "motivo": "Manutenção de equipamentos"
+    }, headers=headers_gestao)
+    assert b_sala.status_code == 201
+    b_sala_id = b_sala.json()["id"]
+
+    try:
+        c2 = client.post("/api/v1/management/schedules", json={
+            "turma_id": 1,
+            "disciplina_id": 1,
+            "professor_id": 2,
+            "sala": "Sala Especial M5D",
+            "dia_semana": "Sábado",
+            "horario_inicio": "17:10",
+            "horario_fim": "17:50"
+        }, headers=headers_gestao)
+        assert c2.status_code == 400
+        assert "indispon" in c2.json()["detail"].lower()
+    finally:
+        client.delete(f"/api/v1/management/schedules/availabilities/{b_sala_id}", headers=headers_gestao)
+
+
+def test_milestone_5d_discipline_rule_balance():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    # Define regra de disciplina para Turma 1, Disciplina 1 com 4 aulas semanais
+    r = client.post("/api/v1/management/schedules/discipline-rules", json={
+        "turma_id": 1,
+        "disciplina_id": 1,
+        "aulas_semanais": 4,
+        "max_aulas_dia": 2,
+        "permitir_aula_dupla": True,
+        "sala_preferencial": "Lab Maker"
+    }, headers=headers_gestao)
+    assert r.status_code == 201
+    assert r.json()["aulas_semanais"] == 4
+
+    # Consulta balanço pedagógico da Turma 1
+    balanco = client.get("/api/v1/management/schedules/discipline-rules/1", headers=headers_gestao)
+    assert balanco.status_code == 200
+    items = balanco.json()
+    assert len(items) > 0
+    d1 = next((item for item in items if item["disciplina_id"] == 1), None)
+    assert d1 is not None
+    assert d1["aulas_semanais_planejadas"] == 4
+    assert d1["balanco_status"] in ["OK", "PENDENTE", "EXCEDENTE"]
+
+
+def test_milestone_5d_student_and_rbac_planning_endpoints():
+    token_aluno = get_auth_token("aluno@escola.pr.gov.br")
+    headers_aluno = {"Authorization": f"Bearer {token_aluno}"}
+
+    token_cantina = get_auth_token("cantina@ceep.demo")
+    headers_cantina = {"Authorization": f"Bearer {token_cantina}"}
+
+    # 1. Aluno pode ler horários da turma e receber duracao e sala
+    resp = client.get("/api/v1/schedules/1", headers=headers_aluno)
+    assert resp.status_code == 200
+    if len(resp.json()) > 0:
+        first = resp.json()[0]
+        assert "duracao" in first
+        assert "sala" in first
+
+    # 2. Aluno é bloqueado nas rotas de planejamento da Gestão (HTTP 403)
+    assert client.get("/api/v1/management/schedules/periods", headers=headers_aluno).status_code == 403
+    assert client.get("/api/v1/management/schedules/availabilities", headers=headers_aluno).status_code == 403
+    assert client.get("/api/v1/management/schedules/discipline-rules/1", headers=headers_aluno).status_code == 403
+    assert client.get("/api/v1/management/schedules/rooms", headers=headers_aluno).status_code == 403
+
+    # 3. Cantina é bloqueada nas rotas de planejamento da Gestão (HTTP 403)
+    assert client.get("/api/v1/management/schedules/periods", headers=headers_cantina).status_code == 403
+    assert client.get("/api/v1/management/schedules/availabilities", headers=headers_cantina).status_code == 403
+    assert client.get("/api/v1/management/schedules/discipline-rules/1", headers=headers_cantina).status_code == 403
+    assert client.get("/api/v1/management/schedules/rooms", headers=headers_cantina).status_code == 403
+
+
+
 
 
 

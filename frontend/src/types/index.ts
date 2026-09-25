@@ -133,6 +133,9 @@ export interface ScheduleItem {
   professor: string;
   sala?: string | null;
   turma_id: number;
+  duracao?: number;
+  periodo_ordem?: number | null;
+  grupo?: string | null;
 }
 
 export interface CanteenOverviewSummary {
@@ -324,9 +327,13 @@ export interface ManagementScheduleItem {
   horario_fim: string;
   disciplina: string;
   professor: string;
+  sala?: string | null;
   turma_id: number;
   disciplina_id?: number | null;
   professor_id?: number | null;
+  duracao?: number;
+  periodo_ordem?: number | null;
+  grupo?: string | null;
   turma_nome?: string | null;
   curso_nome?: string | null;
   ativo: boolean;
@@ -338,9 +345,13 @@ export interface CreateSchedulePayload {
   disciplina?: string | null;
   professor_id?: number | null;
   professor?: string | null;
+  sala?: string | null;
   dia_semana: string;
   horario_inicio: string;
   horario_fim: string;
+  duracao?: number;
+  periodo_ordem?: number | null;
+  grupo?: string | null;
   ativo?: boolean;
 }
 
@@ -350,10 +361,91 @@ export interface UpdateSchedulePayload {
   disciplina?: string | null;
   professor_id?: number | null;
   professor?: string | null;
+  sala?: string | null;
   dia_semana?: string;
   horario_inicio?: string;
   horario_fim?: string;
+  duracao?: number;
+  periodo_ordem?: number | null;
+  grupo?: string | null;
   ativo?: boolean;
+}
+
+export interface PeriodItem {
+  id: number;
+  ordem: number;
+  nome: string;
+  horario_inicio: string;
+  horario_fim: string;
+  turno: string;
+  is_intervalo: boolean;
+  ativo: boolean;
+}
+
+export interface CreatePeriodPayload {
+  ordem: number;
+  nome: string;
+  horario_inicio: string;
+  horario_fim: string;
+  turno?: string;
+  is_intervalo?: boolean;
+  ativo?: boolean;
+}
+
+export interface AvailabilityItem {
+  id: number;
+  tipo_recurso: "PROFESSOR" | "TURMA" | "SALA" | string;
+  recurso_id?: number | null;
+  recurso_identificador: string;
+  dia_semana: string;
+  horario_inicio: string;
+  horario_fim: string;
+  periodo_ordem?: number | null;
+  tipo: "INDISPONIVEL" | "PREFERENCIA" | string;
+  motivo?: string | null;
+  ativo: boolean;
+}
+
+export interface CreateAvailabilityPayload {
+  tipo_recurso: "PROFESSOR" | "TURMA" | "SALA" | string;
+  recurso_id?: number | null;
+  recurso_identificador: string;
+  dia_semana: string;
+  horario_inicio: string;
+  horario_fim: string;
+  periodo_ordem?: number | null;
+  tipo?: "INDISPONIVEL" | "PREFERENCIA" | string;
+  motivo?: string | null;
+  ativo?: boolean;
+}
+
+export interface DisciplineRuleItem {
+  id: number;
+  turma_id: number;
+  disciplina_id: number;
+  aulas_semanais: number;
+  max_aulas_dia: number;
+  permitir_aula_dupla: boolean;
+  sala_preferencial?: string | null;
+}
+
+export interface CreateDisciplineRulePayload {
+  turma_id: number;
+  disciplina_id: number;
+  aulas_semanais: number;
+  max_aulas_dia?: number;
+  permitir_aula_dupla?: boolean;
+  sala_preferencial?: string | null;
+}
+
+export interface DisciplineBalanceItem {
+  disciplina_id: number;
+  disciplina_nome: string;
+  disciplina_sigla?: string | null;
+  aulas_semanais_planejadas: number;
+  aulas_alocadas_na_grade: number;
+  balanco_status: "OK" | "PENDENTE" | "EXCEDENTE" | string;
+  sala_preferencial?: string | null;
 }
 
 export interface ManagementOrderItem {

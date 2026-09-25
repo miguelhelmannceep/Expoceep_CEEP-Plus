@@ -8,7 +8,7 @@ from app.models.turma import Curso, Turma
 from app.models.disciplina import Disciplina
 from app.models.professor import Professor
 from app.models.aviso import Aviso
-from app.models.horario import Horario
+from app.models.horario import Horario, PeriodoHorario, DisponibilidadeRecurso, RegraDisciplina
 from app.models.pedido import Pedido, PedidoItem, Pagamento
 from app.models.produto import Produto
 from app.schemas.management import (
@@ -39,7 +39,14 @@ from app.schemas.professor import (
 from app.schemas.horario import (
     HorarioCreate,
     HorarioUpdate,
-    HorarioOut
+    HorarioOut,
+    PeriodoHorarioCreate,
+    PeriodoHorarioOut,
+    DisponibilidadeRecursoCreate,
+    DisponibilidadeRecursoOut,
+    RegraDisciplinaCreate,
+    RegraDisciplinaOut,
+    RegraDisciplinaBalanceOut
 )
 from app.schemas.produto import (
     ProdutoCreate,
@@ -808,6 +815,7 @@ def validate_and_check_conflicts(
     turma_id: int,
     professor_nome: str,
     professor_id: Optional[int] = None,
+    sala: Optional[str] = None,
     exclude_id: Optional[int] = None
 ) -> None:
     # 1. Validação de ordem cronológica do intervalo
@@ -817,12 +825,35 @@ def validate_and_check_conflicts(
             detail="Horário de início deve ser anterior ao horário de término."
         )
 
-    # 2. Conflito de Turma no mesmo intervalo (overlap: existing_inicio < new_fim AND existing_fim > new_inicio)
+    # 2. Restrição de Intervalo / Recreio (PeriodoHorario com is_intervalo == True nos dias letivos)
+    dias_letivos = [
+        "segunda", "segunda-feira",
+        "terça", "terca", "terça-feira", "terca-feira",
+        "quarta", "quarta-feira",
+        "quinta", "quinta-feira",
+        "sexta", "sexta-feira",
+        "sábado", "sabado"
+    ]
+    if dia_semana.lower().strip() in dias_letivos:
+        intervalo_conflict = db.query(PeriodoHorario).filter(
+            PeriodoHorario.is_intervalo == True,
+            PeriodoHorario.ativo == True,
+            PeriodoHorario.horario_inicio < horario_fim,
+            PeriodoHorario.horario_fim > horario_inicio
+        ).first()
+        if intervalo_conflict:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Não é permitido agendar aulas no período de intervalo/recreio ({intervalo_conflict.nome}: {intervalo_conflict.horario_inicio} às {intervalo_conflict.horario_fim})."
+            )
+
+    # 3. Conflito de Turma no mesmo intervalo (overlap: existing_inicio < new_fim AND existing_fim > new_inicio)
     turma_conflict_query = db.query(Horario).filter(
         Horario.turma_id == turma_id,
         func.lower(Horario.dia_semana) == func.lower(dia_semana),
         Horario.horario_inicio < horario_fim,
-        Horario.horario_fim > horario_inicio
+        Horario.horario_fim > horario_inicio,
+        (Horario.ativo == True) | (Horario.ativo == None)
     )
     if exclude_id:
         turma_conflict_query = turma_conflict_query.filter(Horario.id != exclude_id)
@@ -833,7 +864,7 @@ def validate_and_check_conflicts(
             detail=f"Conflito de horário para a turma: já existe aula de '{turma_conf.disciplina}' ({turma_conf.horario_inicio} às {turma_conf.horario_fim}) no mesmo intervalo."
         )
 
-    # 3. Conflito de Professor no mesmo intervalo
+    # 4. Conflito de Professor no mesmo intervalo
     prof_filters = [func.lower(Horario.professor) == func.lower(professor_nome)]
     if professor_id:
         prof_filters.append(Horario.professor_id == professor_id)
@@ -842,7 +873,8 @@ def validate_and_check_conflicts(
         func.lower(Horario.dia_semana) == func.lower(dia_semana),
         or_(*prof_filters),
         Horario.horario_inicio < horario_fim,
-        Horario.horario_fim > horario_inicio
+        Horario.horario_fim > horario_inicio,
+        (Horario.ativo == True) | (Horario.ativo == None)
     )
     if exclude_id:
         prof_conflict_query = prof_conflict_query.filter(Horario.id != exclude_id)
@@ -853,6 +885,93 @@ def validate_and_check_conflicts(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Conflito de horário para o professor '{professor_nome}': já possui aula na turma '{turma_desc}' ({prof_conf.horario_inicio} às {prof_conf.horario_fim}) no mesmo intervalo."
         )
+
+    # 5. Conflito de Espaço Físico / Sala
+    if sala and sala.strip():
+        sala_clean = sala.strip()
+        sala_conflict_query = db.query(Horario).filter(
+            func.lower(Horario.sala) == func.lower(sala_clean),
+            func.lower(Horario.dia_semana) == func.lower(dia_semana),
+            Horario.horario_inicio < horario_fim,
+            Horario.horario_fim > horario_inicio,
+            (Horario.ativo == True) | (Horario.ativo == None)
+        )
+        if exclude_id:
+            sala_conflict_query = sala_conflict_query.filter(Horario.id != exclude_id)
+        sala_conf = sala_conflict_query.first()
+        if sala_conf:
+            conf_turma = sala_conf.turma_rel.nome_turma if sala_conf.turma_rel else f"Turma #{sala_conf.turma_id}"
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Conflito de espaço físico: a sala '{sala_clean}' já está ocupada pela turma '{conf_turma}' ({sala_conf.disciplina}, {sala_conf.horario_inicio} às {sala_conf.horario_fim})."
+            )
+
+    # 6. Bloqueio de Indisponibilidade de Professor
+    prof_disp_query = db.query(DisponibilidadeRecurso).filter(
+        DisponibilidadeRecurso.tipo_recurso == "PROFESSOR",
+        DisponibilidadeRecurso.tipo == "INDISPONIVEL",
+        DisponibilidadeRecurso.ativo == True,
+        func.lower(DisponibilidadeRecurso.dia_semana) == func.lower(dia_semana),
+        DisponibilidadeRecurso.horario_inicio < horario_fim,
+        DisponibilidadeRecurso.horario_fim > horario_inicio
+    )
+    if professor_id:
+        prof_disp_query = prof_disp_query.filter(
+            or_(
+                DisponibilidadeRecurso.recurso_id == professor_id,
+                func.lower(DisponibilidadeRecurso.recurso_identificador) == func.lower(professor_nome)
+            )
+        )
+    else:
+        prof_disp_query = prof_disp_query.filter(
+            func.lower(DisponibilidadeRecurso.recurso_identificador) == func.lower(professor_nome)
+        )
+    prof_disp = prof_disp_query.first()
+    if prof_disp:
+        motivo_str = f" Motivo: {prof_disp.motivo}." if prof_disp.motivo else ""
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Bloqueio de indisponibilidade: o professor '{professor_nome}' possui restrição neste horário ({prof_disp.horario_inicio} às {prof_disp.horario_fim}).{motivo_str}"
+        )
+
+    # 7. Bloqueio de Indisponibilidade de Turma
+    turma_disp = db.query(DisponibilidadeRecurso).filter(
+        DisponibilidadeRecurso.tipo_recurso == "TURMA",
+        DisponibilidadeRecurso.tipo == "INDISPONIVEL",
+        DisponibilidadeRecurso.ativo == True,
+        func.lower(DisponibilidadeRecurso.dia_semana) == func.lower(dia_semana),
+        DisponibilidadeRecurso.horario_inicio < horario_fim,
+        DisponibilidadeRecurso.horario_fim > horario_inicio,
+        or_(
+            DisponibilidadeRecurso.recurso_id == turma_id,
+            func.lower(DisponibilidadeRecurso.recurso_identificador) == func.lower(str(turma_id))
+        )
+    ).first()
+    if turma_disp:
+        motivo_str = f" Motivo: {turma_disp.motivo}." if turma_disp.motivo else ""
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Bloqueio de indisponibilidade: a turma possui restrição de horário agendada ({turma_disp.horario_inicio} às {turma_disp.horario_fim}).{motivo_str}"
+        )
+
+    # 8. Bloqueio de Indisponibilidade de Sala
+    if sala and sala.strip():
+        sala_clean = sala.strip()
+        sala_disp = db.query(DisponibilidadeRecurso).filter(
+            DisponibilidadeRecurso.tipo_recurso == "SALA",
+            DisponibilidadeRecurso.tipo == "INDISPONIVEL",
+            DisponibilidadeRecurso.ativo == True,
+            func.lower(DisponibilidadeRecurso.dia_semana) == func.lower(dia_semana),
+            DisponibilidadeRecurso.horario_inicio < horario_fim,
+            DisponibilidadeRecurso.horario_fim > horario_inicio,
+            func.lower(DisponibilidadeRecurso.recurso_identificador) == func.lower(sala_clean)
+        ).first()
+        if sala_disp:
+            motivo_str = f" Motivo: {sala_disp.motivo}." if sala_disp.motivo else ""
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Bloqueio de indisponibilidade: a sala '{sala_clean}' está indisponível neste horário ({sala_disp.horario_inicio} às {sala_disp.horario_fim}).{motivo_str}"
+            )
 
 
 @router.get("/schedules", response_model=List[HorarioOut], summary="Lista todas as aulas da grade horária para a Gestão")
@@ -882,6 +1001,9 @@ def list_management_schedules(
             turma_id=h.turma_id,
             disciplina_id=h.disciplina_id,
             professor_id=h.professor_id,
+            duracao=h.duracao if h.duracao is not None else 1,
+            periodo_ordem=h.periodo_ordem,
+            grupo=h.grupo,
             turma_nome=h.turma_rel.nome_turma if h.turma_rel else None,
             curso_nome=h.turma_rel.curso if h.turma_rel else None,
             ativo=h.ativo if h.ativo is not None else True
@@ -946,6 +1068,8 @@ def create_schedule(
             detail="É obrigatório informar o professor."
         )
 
+    sala_clean = payload.sala.strip() if payload.sala else None
+
     # 4. Checa conflitos de horários e valida intervalos
     validate_and_check_conflicts(
         db=db,
@@ -954,7 +1078,8 @@ def create_schedule(
         horario_fim=payload.horario_fim.strip(),
         turma_id=turma.id,
         professor_nome=professor_nome,
-        professor_id=professor_obj.id if professor_obj else None
+        professor_id=professor_obj.id if professor_obj else None,
+        sala=sala_clean
     )
 
     novo_horario = Horario(
@@ -963,10 +1088,13 @@ def create_schedule(
         horario_fim=payload.horario_fim.strip(),
         disciplina=disciplina_nome,
         professor=professor_nome,
-        sala=payload.sala.strip() if payload.sala else None,
+        sala=sala_clean,
         turma_id=turma.id,
         disciplina_id=disciplina_obj.id if disciplina_obj else None,
         professor_id=professor_obj.id if professor_obj else None,
+        duracao=payload.duracao if payload.duracao is not None else 1,
+        periodo_ordem=payload.periodo_ordem,
+        grupo=payload.grupo.strip() if payload.grupo else None,
         ativo=payload.ativo if payload.ativo is not None else True
     )
     db.add(novo_horario)
@@ -984,6 +1112,9 @@ def create_schedule(
         turma_id=novo_horario.turma_id,
         disciplina_id=novo_horario.disciplina_id,
         professor_id=novo_horario.professor_id,
+        duracao=novo_horario.duracao if novo_horario.duracao is not None else 1,
+        periodo_ordem=novo_horario.periodo_ordem,
+        grupo=novo_horario.grupo,
         turma_nome=turma.nome_turma,
         curso_nome=turma.curso,
         ativo=novo_horario.ativo
@@ -1043,6 +1174,7 @@ def update_schedule(
     dia_semana = payload.dia_semana.strip() if payload.dia_semana is not None else horario.dia_semana
     horario_inicio = payload.horario_inicio.strip() if payload.horario_inicio is not None else horario.horario_inicio
     horario_fim = payload.horario_fim.strip() if payload.horario_fim is not None else horario.horario_fim
+    sala = payload.sala.strip() if payload.sala is not None else horario.sala
 
     # 5. Validação de intervalos e conflitos
     validate_and_check_conflicts(
@@ -1053,6 +1185,7 @@ def update_schedule(
         turma_id=turma_id,
         professor_nome=professor_nome,
         professor_id=professor_id,
+        sala=sala,
         exclude_id=schedule_id
     )
 
@@ -1066,6 +1199,12 @@ def update_schedule(
     horario.horario_fim = horario_fim
     if payload.sala is not None:
         horario.sala = payload.sala.strip() if payload.sala else None
+    if payload.duracao is not None:
+        horario.duracao = payload.duracao
+    if payload.periodo_ordem is not None:
+        horario.periodo_ordem = payload.periodo_ordem
+    if payload.grupo is not None:
+        horario.grupo = payload.grupo.strip() if payload.grupo else None
     if payload.ativo is not None:
         horario.ativo = payload.ativo
 
@@ -1083,6 +1222,9 @@ def update_schedule(
         turma_id=horario.turma_id,
         disciplina_id=horario.disciplina_id,
         professor_id=horario.professor_id,
+        duracao=horario.duracao if horario.duracao is not None else 1,
+        periodo_ordem=horario.periodo_ordem,
+        grupo=horario.grupo,
         turma_nome=turma.nome_turma,
         curso_nome=turma.curso,
         ativo=horario.ativo
@@ -1105,6 +1247,261 @@ def delete_schedule(
     db.delete(horario)
     db.commit()
     return {"mensagem": "Horário de aula excluído com sucesso.", "id": schedule_id}
+
+
+# ==========================================
+# GESTÃO DE HORÁRIOS: PERÍODOS & INTERVALOS
+# ==========================================
+
+@router.get("/schedules/periods", response_model=List[PeriodoHorarioOut], summary="Lista períodos e intervalos cadastrados")
+def list_periods(
+    turno: Optional[str] = None,
+    current_user: Usuario = Depends(require_roles(["GESTAO"])),
+    db: Session = Depends(get_db)
+):
+    query = db.query(PeriodoHorario)
+    if turno:
+        query = query.filter(func.lower(PeriodoHorario.turno) == func.lower(turno))
+    periodos = query.order_by(PeriodoHorario.ordem.asc(), PeriodoHorario.horario_inicio.asc()).all()
+    return periodos
+
+
+@router.post("/schedules/periods", response_model=PeriodoHorarioOut, status_code=status.HTTP_201_CREATED, summary="Cadastra um novo período ou intervalo")
+def create_period(
+    payload: PeriodoHorarioCreate,
+    current_user: Usuario = Depends(require_roles(["GESTAO"])),
+    db: Session = Depends(get_db)
+):
+    if payload.horario_inicio.strip() >= payload.horario_fim.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Horário de início deve ser anterior ao horário de término."
+        )
+    novo_p = PeriodoHorario(
+        ordem=payload.ordem,
+        nome=payload.nome.strip(),
+        horario_inicio=payload.horario_inicio.strip(),
+        horario_fim=payload.horario_fim.strip(),
+        turno=payload.turno.strip() if payload.turno else "Manhã",
+        is_intervalo=bool(payload.is_intervalo),
+        ativo=payload.ativo if payload.ativo is not None else True
+    )
+    db.add(novo_p)
+    db.commit()
+    db.refresh(novo_p)
+    return novo_p
+
+
+@router.delete("/schedules/periods/{period_id}", summary="Exclui um período ou intervalo")
+def delete_period(
+    period_id: int,
+    current_user: Usuario = Depends(require_roles(["GESTAO"])),
+    db: Session = Depends(get_db)
+):
+    periodo = db.query(PeriodoHorario).filter(PeriodoHorario.id == period_id).first()
+    if not periodo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Período não encontrado."
+        )
+    db.delete(periodo)
+    db.commit()
+    return {"mensagem": "Período removido com sucesso.", "id": period_id}
+
+
+# ==========================================
+# GESTÃO DE HORÁRIOS: DISPONIBILIDADE & BLOQUEIOS
+# ==========================================
+
+@router.get("/schedules/availabilities", response_model=List[DisponibilidadeRecursoOut], summary="Lista regras de disponibilidade e bloqueios")
+def list_availabilities(
+    tipo_recurso: Optional[str] = None,
+    recurso_identificador: Optional[str] = None,
+    dia_semana: Optional[str] = None,
+    current_user: Usuario = Depends(require_roles(["GESTAO"])),
+    db: Session = Depends(get_db)
+):
+    query = db.query(DisponibilidadeRecurso)
+    if tipo_recurso:
+        query = query.filter(func.upper(DisponibilidadeRecurso.tipo_recurso) == func.upper(tipo_recurso.strip()))
+    if recurso_identificador:
+        query = query.filter(func.lower(DisponibilidadeRecurso.recurso_identificador) == func.lower(recurso_identificador.strip()))
+    if dia_semana:
+        query = query.filter(func.lower(DisponibilidadeRecurso.dia_semana) == func.lower(dia_semana.strip()))
+    
+    return query.order_by(DisponibilidadeRecurso.dia_semana.asc(), DisponibilidadeRecurso.horario_inicio.asc()).all()
+
+
+@router.post("/schedules/availabilities", response_model=DisponibilidadeRecursoOut, status_code=status.HTTP_201_CREATED, summary="Registra bloqueio ou preferência de recurso")
+def create_availability(
+    payload: DisponibilidadeRecursoCreate,
+    current_user: Usuario = Depends(require_roles(["GESTAO"])),
+    db: Session = Depends(get_db)
+):
+    if payload.horario_inicio.strip() >= payload.horario_fim.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Horário de início deve ser anterior ao horário de término."
+        )
+    disp = DisponibilidadeRecurso(
+        tipo_recurso=payload.tipo_recurso.strip().upper(),
+        recurso_id=payload.recurso_id,
+        recurso_identificador=payload.recurso_identificador.strip(),
+        dia_semana=payload.dia_semana.strip(),
+        horario_inicio=payload.horario_inicio.strip(),
+        horario_fim=payload.horario_fim.strip(),
+        periodo_ordem=payload.periodo_ordem,
+        tipo=payload.tipo.strip().upper() if payload.tipo else "INDISPONIVEL",
+        motivo=payload.motivo.strip() if payload.motivo else None,
+        ativo=payload.ativo if payload.ativo is not None else True
+    )
+    db.add(disp)
+    db.commit()
+    db.refresh(disp)
+    return disp
+
+
+@router.delete("/schedules/availabilities/{availability_id}", summary="Remove um bloqueio ou preferência")
+def delete_availability(
+    availability_id: int,
+    current_user: Usuario = Depends(require_roles(["GESTAO"])),
+    db: Session = Depends(get_db)
+):
+    disp = db.query(DisponibilidadeRecurso).filter(DisponibilidadeRecurso.id == availability_id).first()
+    if not disp:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Registro de disponibilidade não encontrado."
+        )
+    db.delete(disp)
+    db.commit()
+    return {"mensagem": "Bloqueio de disponibilidade removido com sucesso.", "id": availability_id}
+
+
+# ==========================================
+# GESTÃO DE HORÁRIOS: CARGA SEMANAL & REGRAS DE DISCIPLINA
+# ==========================================
+
+@router.get("/schedules/discipline-rules/{turma_id}", response_model=List[RegraDisciplinaBalanceOut], summary="Balanço pedagógico de carga horária da turma")
+def get_turma_discipline_balance(
+    turma_id: int,
+    current_user: Usuario = Depends(require_roles(["GESTAO"])),
+    db: Session = Depends(get_db)
+):
+    turma = db.query(Turma).filter(Turma.id == turma_id).first()
+    if not turma:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Turma não encontrada.")
+
+    regras = db.query(RegraDisciplina).filter(RegraDisciplina.turma_id == turma_id).all()
+    regras_map = {r.disciplina_id: r for r in regras}
+
+    horarios = db.query(Horario).filter(
+        Horario.turma_id == turma_id,
+        (Horario.ativo == True) | (Horario.ativo == None)
+    ).all()
+
+    alocadas_por_disciplina = {}
+    for h in horarios:
+        dur = h.duracao if h.duracao is not None else 1
+        if h.disciplina_id:
+            alocadas_por_disciplina[h.disciplina_id] = alocadas_por_disciplina.get(h.disciplina_id, 0) + dur
+
+    todas_disc = db.query(Disciplina).filter(Disciplina.ativo == True).order_by(Disciplina.nome.asc()).all()
+
+    balanco = []
+    for disc in todas_disc:
+        regra = regras_map.get(disc.id)
+        planejadas = regra.aulas_semanais if regra else 0
+        alocadas = alocadas_por_disciplina.get(disc.id, 0)
+
+        if regra or alocadas > 0:
+            if alocadas == planejadas:
+                b_status = "OK"
+            elif alocadas < planejadas:
+                b_status = "PENDENTE"
+            else:
+                b_status = "EXCEDENTE"
+
+            balanco.append(RegraDisciplinaBalanceOut(
+                disciplina_id=disc.id,
+                disciplina_nome=disc.nome,
+                disciplina_sigla=disc.sigla,
+                aulas_semanais_planejadas=planejadas,
+                aulas_alocadas_na_grade=alocadas,
+                balanco_status=b_status,
+                sala_preferencial=regra.sala_preferencial if regra else None
+            ))
+
+    return balanco
+
+
+@router.post("/schedules/discipline-rules", response_model=RegraDisciplinaOut, status_code=status.HTTP_201_CREATED, summary="Cadastra ou atualiza regra de disciplina para a turma")
+def upsert_discipline_rule(
+    payload: RegraDisciplinaCreate,
+    current_user: Usuario = Depends(require_roles(["GESTAO"])),
+    db: Session = Depends(get_db)
+):
+    turma = db.query(Turma).filter(Turma.id == payload.turma_id).first()
+    if not turma:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Turma não encontrada.")
+
+    disciplina = db.query(Disciplina).filter(Disciplina.id == payload.disciplina_id).first()
+    if not disciplina:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Disciplina não encontrada.")
+
+    regra = db.query(RegraDisciplina).filter(
+        RegraDisciplina.turma_id == payload.turma_id,
+        RegraDisciplina.disciplina_id == payload.disciplina_id
+    ).first()
+
+    if regra:
+        regra.aulas_semanais = payload.aulas_semanais
+        regra.max_aulas_dia = payload.max_aulas_dia or 2
+        regra.permitir_aula_dupla = payload.permitir_aula_dupla if payload.permitir_aula_dupla is not None else True
+        regra.sala_preferencial = payload.sala_preferencial.strip() if payload.sala_preferencial else None
+    else:
+        regra = RegraDisciplina(
+            turma_id=payload.turma_id,
+            disciplina_id=payload.disciplina_id,
+            aulas_semanais=payload.aulas_semanais,
+            max_aulas_dia=payload.max_aulas_dia or 2,
+            permitir_aula_dupla=payload.permitir_aula_dupla if payload.permitir_aula_dupla is not None else True,
+            sala_preferencial=payload.sala_preferencial.strip() if payload.sala_preferencial else None
+        )
+        db.add(regra)
+
+    db.commit()
+    db.refresh(regra)
+    return regra
+
+
+# ==========================================
+# GESTÃO DE HORÁRIOS: SALAS E ESPAÇOS FÍSICOS
+# ==========================================
+
+@router.get("/schedules/rooms", response_model=List[str], summary="Lista de salas e espaços físicos cadastrados ou em uso")
+def list_schedule_rooms(
+    current_user: Usuario = Depends(require_roles(["GESTAO"])),
+    db: Session = Depends(get_db)
+):
+    salas_padrao = [
+        "Auditório",
+        "Lab Informática 1",
+        "Lab Informática 2",
+        "Lab Maker",
+        "Lab Redes",
+        "Quadra Poliesportiva",
+        "Sala 101",
+        "Sala 102",
+        "Sala 103",
+        "Sala 201",
+        "Sala 202"
+    ]
+    db_salas = db.query(Horario.sala).filter(Horario.sala.isnot(None), Horario.sala != "").distinct().all()
+    for s in db_salas:
+        if s[0] and s[0].strip() and s[0].strip() not in salas_padrao:
+            salas_padrao.append(s[0].strip())
+    return sorted(list(set(salas_padrao)))
 
 
 # ============================================================================

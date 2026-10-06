@@ -1224,9 +1224,9 @@ def test_management_cannot_delete_class_with_linked_students_or_schedules():
     token_gestao = get_auth_token("gestao@ceep.demo")
     headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
 
-    # Turma 3º C possui alunos e horários no seed
+    # Turma 3º C / 3C possui alunos e horários no seed
     classes = client.get("/api/v1/management/classes", headers=headers_gestao).json()
-    turma_3c = next((t for t in classes if "3º C" in t["nome_turma"]), None)
+    turma_3c = next((t for t in classes if "3C" in t["nome_turma"] or "3º C" in t["nome_turma"]), None)
     assert turma_3c is not None
 
     del_resp = client.delete(f"/api/v1/management/classes/{turma_3c['id']}", headers=headers_gestao)
@@ -2134,7 +2134,7 @@ def test_e2e_student_complete_journey():
     assert dash_resp.status_code == 200
     dash = dash_resp.json()
     assert dash["aluno_nome"] == "Aluno Demo"
-    assert "3º C" in dash["turma_nome"]
+    assert "3C" in dash["turma_nome"] or "3º C" in dash["turma_nome"]
     if dash.get("proxima_aula"):
         assert dash["proxima_aula"]["sala"] is None
 
@@ -3039,17 +3039,29 @@ def test_milestone_5d_recess_interval_block():
     token_gestao = get_auth_token("gestao@ceep.demo")
     headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
 
-    # Tentativa de agendar aula atravessando o recreio institucional (09:10 às 09:25) na Segunda-feira
+    # Tentativa de agendar aula atravessando o recreio institucional da manhã (09:40 às 09:55) na Segunda-feira
     c = client.post("/api/v1/management/schedules", json={
         "turma_id": 1,
         "disciplina_id": 1,
         "professor_id": 1,
         "dia_semana": "Segunda-feira",
-        "horario_inicio": "09:00",
-        "horario_fim": "09:40"
+        "horario_inicio": "09:30",
+        "horario_fim": "10:00"
     }, headers=headers_gestao)
     assert c.status_code == 400
     assert "intervalo" in c.json()["detail"].lower() or "recreio" in c.json()["detail"].lower()
+
+    # Tentativa de agendar aula atravessando o recreio institucional da tarde (15:40 às 15:55) na Quarta-feira
+    c_tarde = client.post("/api/v1/management/schedules", json={
+        "turma_id": 1,
+        "disciplina_id": 1,
+        "professor_id": 1,
+        "dia_semana": "Quarta-feira",
+        "horario_inicio": "15:30",
+        "horario_fim": "16:00"
+    }, headers=headers_gestao)
+    assert c_tarde.status_code == 400
+    assert "intervalo" in c_tarde.json()["detail"].lower() or "recreio" in c_tarde.json()["detail"].lower()
 
 
 def test_milestone_5d_unavailability_block_teacher_and_room():
@@ -3168,6 +3180,134 @@ def test_milestone_5d_student_and_rbac_planning_endpoints():
     assert client.get("/api/v1/management/schedules/availabilities", headers=headers_cantina).status_code == 403
     assert client.get("/api/v1/management/schedules/discipline-rules/1", headers=headers_cantina).status_code == 403
     assert client.get("/api/v1/management/schedules/rooms", headers=headers_cantina).status_code == 403
+
+
+# ==========================================
+# TESTES DO MILESTONE 5E - HORÁRIOS REAIS E PERÍODOS OFICIAIS
+# ==========================================
+
+def test_milestone_5e_official_school_periods_registered():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    resp = client.get("/api/v1/management/schedules/periods", headers=headers_gestao)
+    assert resp.status_code == 200
+    periods = resp.json()
+    assert len(periods) == 14
+
+    manha_periods = [p for p in periods if p["turno"] == "Manhã"]
+    tarde_periods = [p for p in periods if p["turno"] == "Tarde"]
+    assert len(manha_periods) == 7
+    assert len(tarde_periods) == 7
+
+    # Valida horários oficiais da Manhã
+    assert manha_periods[0]["horario_inicio"] == "07:10" and manha_periods[0]["horario_fim"] == "08:00"
+    assert manha_periods[1]["horario_inicio"] == "08:00" and manha_periods[1]["horario_fim"] == "08:50"
+    assert manha_periods[2]["horario_inicio"] == "08:50" and manha_periods[2]["horario_fim"] == "09:40"
+    assert manha_periods[3]["horario_inicio"] == "09:40" and manha_periods[3]["horario_fim"] == "09:55"
+    assert manha_periods[3]["is_intervalo"] is True
+    assert manha_periods[4]["horario_inicio"] == "09:55" and manha_periods[4]["horario_fim"] == "10:45"
+    assert manha_periods[5]["horario_inicio"] == "10:45" and manha_periods[5]["horario_fim"] == "11:35"
+    assert manha_periods[6]["horario_inicio"] == "11:35" and manha_periods[6]["horario_fim"] == "12:25"
+
+    # Valida horários oficiais da Tarde
+    assert tarde_periods[0]["horario_inicio"] == "13:10" and tarde_periods[0]["horario_fim"] == "14:00"
+    assert tarde_periods[1]["horario_inicio"] == "14:00" and tarde_periods[1]["horario_fim"] == "14:50"
+    assert tarde_periods[2]["horario_inicio"] == "14:50" and tarde_periods[2]["horario_fim"] == "15:40"
+    assert tarde_periods[3]["horario_inicio"] == "15:40" and tarde_periods[3]["horario_fim"] == "15:55"
+    assert tarde_periods[3]["is_intervalo"] is True
+    assert tarde_periods[4]["horario_inicio"] == "15:55" and tarde_periods[4]["horario_fim"] == "16:45"
+    assert tarde_periods[5]["horario_inicio"] == "16:45" and tarde_periods[5]["horario_fim"] == "17:35"
+    assert tarde_periods[6]["horario_inicio"] == "17:35" and tarde_periods[6]["horario_fim"] == "18:25"
+
+def test_milestone_5e_recess_protection_morning_and_afternoon():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    # Bloqueio de aula no recreio da manhã (09:40-09:55)
+    r_manha = client.post("/api/v1/management/schedules", json={
+        "turma_id": 1,
+        "disciplina_id": 1,
+        "professor_id": 1,
+        "dia_semana": "Terça-feira",
+        "horario_inicio": "09:35",
+        "horario_fim": "10:05"
+    }, headers=headers_gestao)
+    assert r_manha.status_code == 400
+    assert "intervalo" in r_manha.json()["detail"].lower() or "recreio" in r_manha.json()["detail"].lower()
+
+    # Bloqueio de aula no recreio da tarde (15:40-15:55)
+    r_tarde = client.post("/api/v1/management/schedules", json={
+        "turma_id": 1,
+        "disciplina_id": 1,
+        "professor_id": 1,
+        "dia_semana": "Quinta-feira",
+        "horario_inicio": "15:35",
+        "horario_fim": "16:05"
+    }, headers=headers_gestao)
+    assert r_tarde.status_code == 400
+    assert "intervalo" in r_tarde.json()["detail"].lower() or "recreio" in r_tarde.json()["detail"].lower()
+
+def test_milestone_5e_double_lessons_duration_and_recess_separation():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    # Aula dupla legítima no 1º bloco da manhã (07:10 às 08:50) no Domingo (dia livre)
+    c_dupla = client.post("/api/v1/management/schedules", json={
+        "turma_id": 1,
+        "disciplina_id": 1,
+        "professor_id": 1,
+        "dia_semana": "Domingo",
+        "horario_inicio": "07:10",
+        "horario_fim": "08:50",
+        "duracao": 2
+    }, headers=headers_gestao)
+    assert c_dupla.status_code == 201
+    dupla_id = c_dupla.json()["id"]
+
+    try:
+        # Tentativa de criar aula dupla atravessando os períodos 3 e 4 (08:50 às 10:45) que corta o recreio
+        c_atravessa = client.post("/api/v1/management/schedules", json={
+            "turma_id": 1,
+            "disciplina_id": 1,
+            "professor_id": 1,
+            "dia_semana": "Segunda-feira",
+            "horario_inicio": "08:50",
+            "horario_fim": "10:45",
+            "duracao": 2
+        }, headers=headers_gestao)
+        assert c_atravessa.status_code == 400
+        assert "intervalo" in c_atravessa.json()["detail"].lower() or "recreio" in c_atravessa.json()["detail"].lower()
+    finally:
+        client.delete(f"/api/v1/management/schedules/{dupla_id}", headers=headers_gestao)
+
+def test_milestone_5e_all_real_school_classes_registered():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    classes = client.get("/api/v1/management/classes", headers=headers_gestao).json()
+    assert len(classes) >= 47
+    class_names = [c["nome_turma"] for c in classes]
+
+    # Amostra de turmas da Manhã
+    assert any("1A ADM" in name for name in class_names)
+    assert any("3C DES. SISTEMAS" in name or "3º C" in name for name in class_names)
+    assert any("1D EDIFICAÇÕES" in name for name in class_names)
+    assert any("1F ELETROMECÂNICA" in name for name in class_names)
+    assert any("1G ELETRÔNICA" in name for name in class_names)
+    assert any("1H ENFERMAGEM" in name for name in class_names)
+    assert any("1J IA E DADOS" in name for name in class_names)
+    assert any("1K MEIO AMBIENTE" in name for name in class_names)
+
+    # Amostra de turmas da Tarde
+    assert any("1L ADM" in name for name in class_names)
+    assert any("1M DES. SISTEMAS" in name for name in class_names)
+    assert any("1N EDIFICAÇÕES" in name for name in class_names)
+    assert any("1O ELETROMECÂNICA" in name for name in class_names)
+    assert any("1P ENFERMAGEM" in name for name in class_names)
+    assert any("1Q ESTÉTICA" in name for name in class_names)
+    assert any("1R PROG. JOGOS DIGITAIS" in name for name in class_names)
+
 
 
 

@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 dias
     
     # Database Settings
-    DATABASE_URL: str = "sqlite:///./ceep_plus.db"
+    DATABASE_URL: str = f"sqlite:///{(_BACKEND_DIR / 'ceep_plus.db').as_posix()}"
     
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [

@@ -1,3 +1,6 @@
+import json
+import re
+from pathlib import Path
 from datetime import date, datetime, timezone
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -88,301 +91,296 @@ def init_db(db: Session) -> None:
     except Exception as e:
         print(f"Email migration warning: {e}")
 
-    # 0. Garante Períodos e Intervalos Padrão (Conceito de Timetable aSc)
+OFFICIAL_PERIODS = [
+    # Manhã
+    {"ordem": 1, "nome": "1ª aula", "horario_inicio": "07:10", "horario_fim": "08:00", "turno": "Manhã", "is_intervalo": False, "ativo": True},
+    {"ordem": 2, "nome": "2ª aula", "horario_inicio": "08:00", "horario_fim": "08:50", "turno": "Manhã", "is_intervalo": False, "ativo": True},
+    {"ordem": 3, "nome": "3ª aula", "horario_inicio": "08:50", "horario_fim": "09:40", "turno": "Manhã", "is_intervalo": False, "ativo": True},
+    {"ordem": 4, "nome": "Intervalo / Recreio", "horario_inicio": "09:40", "horario_fim": "09:55", "turno": "Manhã", "is_intervalo": True, "ativo": True},
+    {"ordem": 5, "nome": "4ª aula", "horario_inicio": "09:55", "horario_fim": "10:45", "turno": "Manhã", "is_intervalo": False, "ativo": True},
+    {"ordem": 6, "nome": "5ª aula", "horario_inicio": "10:45", "horario_fim": "11:35", "turno": "Manhã", "is_intervalo": False, "ativo": True},
+    {"ordem": 7, "nome": "6ª aula", "horario_inicio": "11:35", "horario_fim": "12:25", "turno": "Manhã", "is_intervalo": False, "ativo": True},
+    # Tarde
+    {"ordem": 1, "nome": "1ª aula", "horario_inicio": "13:10", "horario_fim": "14:00", "turno": "Tarde", "is_intervalo": False, "ativo": True},
+    {"ordem": 2, "nome": "2ª aula", "horario_inicio": "14:00", "horario_fim": "14:50", "turno": "Tarde", "is_intervalo": False, "ativo": True},
+    {"ordem": 3, "nome": "3ª aula", "horario_inicio": "14:50", "horario_fim": "15:40", "turno": "Tarde", "is_intervalo": False, "ativo": True},
+    {"ordem": 4, "nome": "Intervalo / Recreio", "horario_inicio": "15:40", "horario_fim": "15:55", "turno": "Tarde", "is_intervalo": True, "ativo": True},
+    {"ordem": 5, "nome": "4ª aula", "horario_inicio": "15:55", "horario_fim": "16:45", "turno": "Tarde", "is_intervalo": False, "ativo": True},
+    {"ordem": 6, "nome": "5ª aula", "horario_inicio": "16:45", "horario_fim": "17:35", "turno": "Tarde", "is_intervalo": False, "ativo": True},
+    {"ordem": 7, "nome": "6ª aula", "horario_inicio": "17:35", "horario_fim": "18:25", "turno": "Tarde", "is_intervalo": False, "ativo": True},
+]
+
+def sync_official_periods(db: Session) -> None:
     try:
-        if db.query(PeriodoHorario).first() is None:
-            periodos_padrao = [
-                PeriodoHorario(ordem=1, nome="1ª aula", horario_inicio="07:30", horario_fim="08:20", turno="Manhã", is_intervalo=False, ativo=True),
-                PeriodoHorario(ordem=2, nome="2ª aula", horario_inicio="08:20", horario_fim="09:10", turno="Manhã", is_intervalo=False, ativo=True),
-                PeriodoHorario(ordem=3, nome="Intervalo / Recreio", horario_inicio="09:10", horario_fim="09:25", turno="Manhã", is_intervalo=True, ativo=True),
-                PeriodoHorario(ordem=4, nome="3ª aula", horario_inicio="09:25", horario_fim="10:15", turno="Manhã", is_intervalo=False, ativo=True),
-                PeriodoHorario(ordem=5, nome="4ª aula", horario_inicio="10:15", horario_fim="11:05", turno="Manhã", is_intervalo=False, ativo=True),
-                PeriodoHorario(ordem=6, nome="5ª aula", horario_inicio="11:15", horario_fim="12:05", turno="Manhã", is_intervalo=False, ativo=True),
-                PeriodoHorario(ordem=7, nome="6ª aula", horario_inicio="12:05", horario_fim="12:55", turno="Manhã", is_intervalo=False, ativo=True),
-            ]
-            db.add_all(periodos_padrao)
+        existing = db.query(PeriodoHorario).all()
+        needs_sync = False
+        if len(existing) < 14:
+            needs_sync = True
+        elif any(p.horario_inicio in ["07:30", "09:10"] for p in existing):
+            needs_sync = True
+
+        if needs_sync:
+            db.query(PeriodoHorario).delete()
+            db.flush()
+            for p_dict in OFFICIAL_PERIODS:
+                db.add(PeriodoHorario(**p_dict))
             db.commit()
     except Exception as e:
-        print(f"Periodos seed warning: {e}")
+        print(f"Periodos sync warning: {e}")
 
-    # Garante Regras Iniciais de Carga Semanal por Disciplina se ainda não existirem
+def sync_real_school_data(db: Session) -> None:
     try:
-        if db.query(RegraDisciplina).first() is None:
-            turma_3c_obj = db.query(Turma).filter(Turma.nome_turma.like("%3º C%")).first()
-            if turma_3c_obj:
-                disciplinas_3c = db.query(Disciplina).filter(Disciplina.curso_id == turma_3c_obj.curso_id).all()
-                regras_iniciais = []
-                for d in disciplinas_3c:
-                    aulas_meta = 4 if d.sigla in ["DW", "BD", "PAM", "RC"] else 2
-                    regras_iniciais.append(
-                        RegraDisciplina(
-                            turma_id=turma_3c_obj.id,
-                            disciplina_id=d.id,
-                            aulas_semanais=aulas_meta,
-                            max_aulas_dia=2,
-                            permitir_aula_dupla=True,
-                            sala_preferencial="Laboratório 02" if d.sigla in ["DW", "PAM"] else None
-                        )
-                    )
-                if regras_iniciais:
-                    db.add_all(regras_iniciais)
-                    db.commit()
+        data_path = Path(__file__).parent / "real_school_data.json"
+        if not data_path.exists():
+            return
+        with open(data_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        curso_map = {}
+        for cur in data["cursos"]:
+            c_obj = db.query(Curso).filter(Curso.nome == cur["nome"]).first()
+            if not c_obj:
+                c_obj = Curso(nome=cur["nome"], sigla=cur["sigla"], ativo=True)
+                db.add(c_obj)
+                db.flush()
+            curso_map[cur["nome"]] = c_obj.id
+
+        turma_map = {}
+        t1 = db.query(Turma).filter(Turma.id == 1).first()
+        if t1 and t1.nome_turma != "3C DES. SISTEMAS":
+            t1.nome_turma = "3C DES. SISTEMAS"
+            t1.periodo = "Manhã"
+            t1.ano = "3º Ano"
+            db.flush()
+            turma_map["3C DES. SISTEMAS"] = 1
+
+        for t in data["turmas"]:
+            t_name = t["nome_turma"]
+            if t_name in turma_map:
+                continue
+            t_obj = db.query(Turma).filter(Turma.nome_turma == t_name).first()
+            if not t_obj:
+                cid = curso_map.get(t["curso_nome"], 1)
+                t_obj = Turma(
+                    nome_turma=t_name,
+                    curso=t["curso_nome"],
+                    periodo=t["periodo"],
+                    ano=t["ano"],
+                    curso_id=cid,
+                    ativo=True
+                )
+                db.add(t_obj)
+                db.flush()
+            turma_map[t_name] = t_obj.id
+
+        prof_map = {}
+        for p_name in data["professores"]:
+            p_obj = db.query(Professor).filter(Professor.nome == p_name).first()
+            if not p_obj:
+                clean_email = re.sub(r"[^a-z0-9]", "", p_name.lower()) + "@escola.pr.gov.br"
+                p_obj = Professor(nome=p_name, email=clean_email, ativo=True)
+                db.add(p_obj)
+                db.flush()
+            prof_map[p_name] = p_obj.id
+
+        disc_map = {}
+        for d_name in data["disciplinas"]:
+            d_obj = db.query(Disciplina).filter(Disciplina.nome == d_name).first()
+            if not d_obj:
+                words = re.sub(r"[^a-zA-Z0-9\s]", "", d_name).split()
+                sigla = "".join(w[:2].upper() for w in words[:3]) if words else "DISC"
+                d_obj = Disciplina(nome=d_name, sigla=sigla, curso_id=1, ativo=True)
+                db.add(d_obj)
+                db.flush()
+            disc_map[d_name] = d_obj.id
+
+        if db.query(Horario).count() < 100:
+            for h in data["horarios"]:
+                tid = turma_map.get(h["turma"])
+                did = disc_map.get(h["disciplina"])
+                prof_names = [p.strip() for p in h["professor"].split("/")]
+                pid = prof_map.get(prof_names[0]) if prof_names else None
+
+                h_obj = Horario(
+                    dia_semana=h["dia_semana"],
+                    horario_inicio=h["horario_inicio"],
+                    horario_fim=h["horario_fim"],
+                    disciplina=h["disciplina"],
+                    professor=h["professor"],
+                    turma_id=tid,
+                    disciplina_id=did,
+                    professor_id=pid,
+                    duracao=h["duracao"],
+                    periodo_ordem=h["periodo_ordem"],
+                    ativo=True
+                )
+                db.add(h_obj)
+            db.commit()
     except Exception as e:
-        print(f"Regras seed warning: {e}")
+        print(f"School data sync warning: {e}")
 
-    # Se já existirem dados, não duplica
-    if db.query(Usuario).first():
-        return
+    # 0. Garante Períodos e Intervalos Oficiais da Escola (Milestone 5E)
+    sync_official_periods(db)
+    sync_real_school_data(db)
 
-    print("Populando banco de dados com dados de demonstração do CEEP+...")
-
-    # 1. Cursos
-    ds = Curso(nome="Desenvolvimento de Sistemas", sigla="DS", ativo=True)
-    edif = Curso(nome="Edificações", sigla="EDIF", ativo=True)
-    eletro = Curso(nome="Eletrotécnica", sigla="ELETRO", ativo=True)
-    db.add_all([ds, edif, eletro])
-    db.flush()
-
-    # 2. Turmas
-    turma_3c = Turma(nome_turma="3º C — Desenvolvimento de Sistemas", curso="Desenvolvimento de Sistemas", ano="3º Ano", periodo="Manhã", curso_id=ds.id, ativo=True)
-    turma_2a = Turma(nome_turma="2º A — Desenvolvimento de Sistemas", curso="Desenvolvimento de Sistemas", ano="2º Ano", periodo="Tarde", curso_id=ds.id, ativo=True)
-    turma_1b = Turma(nome_turma="1º B — Edificações", curso="Edificações", ano="1º Ano", periodo="Manhã", curso_id=edif.id, ativo=True)
-    db.add_all([turma_3c, turma_2a, turma_1b])
-    db.flush()
-
-    # 3. Disciplinas
-    disc_ds = [
-        Disciplina(nome="Desenvolvimento Web", sigla="DW", curso_id=ds.id, ativo=True),
-        Disciplina(nome="Banco de Dados", sigla="BD", curso_id=ds.id, ativo=True),
-        Disciplina(nome="Programação de Aplicativos", sigla="PAM", curso_id=ds.id, ativo=True),
-        Disciplina(nome="Redes de Computadores", sigla="RC", curso_id=ds.id, ativo=True),
-        Disciplina(nome="Segurança da Informação", sigla="SI", curso_id=ds.id, ativo=True),
-        Disciplina(nome="Estrutura de Dados", sigla="ED", curso_id=ds.id, ativo=True),
-        Disciplina(nome="Engenharia de Software", sigla="ES", curso_id=ds.id, ativo=True),
-        Disciplina(nome="Lógica de Programação", sigla="LP", curso_id=ds.id, ativo=True),
+    # Garante usuários estruturais e essenciais para a operação do CEEP+
+    senha_padrao = get_password_hash("demo123")
+    essential_users = [
+        {"nome": "Aluno Demo", "email": "aluno@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 1},
+        {"nome": "Outro Aluno Demo", "email": "outro.aluno@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 2},
+        {"nome": "Gestão Demo", "email": "gestao@ceep.demo", "perfil": "GESTAO", "turma_id": None},
+        {"nome": "Cantina Demo", "email": "cantina@ceep.demo", "perfil": "CANTINA", "turma_id": None},
+        {"nome": "Diretoria", "email": "diretoria@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 1},
+        {"nome": "Miguel Helmann", "email": "miguel.helmann@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 1},
     ]
-    disc_edif = [
-        Disciplina(nome="Desenho Arquitetônico", sigla="DA", curso_id=edif.id, ativo=True),
-        Disciplina(nome="Materiais de Construção", sigla="MC", curso_id=edif.id, ativo=True),
-        Disciplina(nome="Topografia", sigla="TOPO", curso_id=edif.id, ativo=True),
-        Disciplina(nome="Geometria Descritiva", sigla="GD", curso_id=edif.id, ativo=True),
-    ]
-    disc_eletro = [
-        Disciplina(nome="Circuitos Elétricos", sigla="CE", curso_id=eletro.id, ativo=True),
-        Disciplina(nome="Instalações Elétricas", sigla="IE", curso_id=eletro.id, ativo=True),
-        Disciplina(nome="Automação Industrial", sigla="AI", curso_id=eletro.id, ativo=True),
-    ]
-    db.add_all(disc_ds + disc_edif + disc_eletro)
-    db.flush()
+    for u_data in essential_users:
+        if not db.query(Usuario).filter(Usuario.email == u_data["email"]).first():
+            db.add(Usuario(
+                nome=u_data["nome"],
+                email=u_data["email"],
+                senha_hash=senha_padrao,
+                perfil=u_data["perfil"],
+                turma_id=u_data["turma_id"],
+                ativo=True
+            ))
 
-    # 4. Professores
-    professores_demo = [
-        Professor(nome="Prof. Carlos", email="carlos.docente@ceep.demo", ativo=True),
-        Professor(nome="Prof. Ricardo", email="ricardo.docente@ceep.demo", ativo=True),
-        Professor(nome="Profª. Ana", email="ana.docente@ceep.demo", ativo=True),
-        Professor(nome="Prof. Marcos", email="marcos.docente@ceep.demo", ativo=True),
-        Professor(nome="Profª. Juliana", email="juliana.docente@ceep.demo", ativo=True),
-        Professor(nome="Prof. Paulo", email="paulo.docente@ceep.demo", ativo=True),
-        Professor(nome="Profª. Mariana", email="mariana.docente@ceep.demo", ativo=True),
-        Professor(nome="Profª. Fernanda", email="fernanda.docente@ceep.demo", ativo=True),
-        Professor(nome="Prof. Roberto", email="roberto.docente@ceep.demo", ativo=True),
-        Professor(nome="Profª. Patrícia", email="patricia.docente@ceep.demo", ativo=True),
-        Professor(nome="Prof. Henrique", email="henrique.docente@ceep.demo", ativo=True),
-    ]
-    db.add_all(professores_demo)
-    db.flush()
-
-    # 3. Usuários Demo
-    senha_hash_padrao = get_password_hash("demo123")
-
-    aluno_demo = Usuario(
-        nome="Aluno Demo",
-        email="aluno@escola.pr.gov.br",
-        senha_hash=senha_hash_padrao,
-        perfil="ALUNO",
-        turma_id=turma_3c.id,
-        ativo=True
-    )
-
-    # Segundo aluno para testes de isolamento de tarefas
-    aluno_outro = Usuario(
-        nome="Outro Aluno Demo",
-        email="outro.aluno@escola.pr.gov.br",
-        senha_hash=senha_hash_padrao,
-        perfil="ALUNO",
-        turma_id=turma_2a.id,
-        ativo=True
-    )
-
-    gestao_demo = Usuario(
-        nome="Gestão Demo",
-        email="gestao@ceep.demo",
-        senha_hash=senha_hash_padrao,
-        perfil="GESTAO",
-        turma_id=None,
-        ativo=True
-    )
-
-    cantina_demo = Usuario(
-        nome="Cantina Demo",
-        email="cantina@ceep.demo",
-        senha_hash=senha_hash_padrao,
-        perfil="CANTINA",
-        turma_id=None,
-        ativo=True
-    )
-
-    db.add_all([aluno_demo, aluno_outro, gestao_demo, cantina_demo])
-    db.flush()
-
-    # 4. Horários para 3º C (Manhã)
-    horarios = [
-        # 3º C - Segunda-feira
-        Horario(dia_semana="Segunda-feira", horario_inicio="07:30", horario_fim="08:20", disciplina="Desenvolvimento Web", professor="Prof. Carlos", sala="Laboratório 02", turma_id=turma_3c.id),
-        Horario(dia_semana="Segunda-feira", horario_inicio="08:20", horario_fim="09:10", disciplina="Banco de Dados", professor="Prof. Ricardo", sala="Laboratório 03", turma_id=turma_3c.id),
-        Horario(dia_semana="Segunda-feira", horario_inicio="09:25", horario_fim="10:15", disciplina="Matemática Aplicada", professor="Profª. Ana", sala="Sala 14", turma_id=turma_3c.id),
-        Horario(dia_semana="Segunda-feira", horario_inicio="10:15", horario_fim="11:05", disciplina="Programação de Aplicativos", professor="Prof. Carlos", sala="Laboratório 02", turma_id=turma_3c.id),
-        # 3º C - Terça-feira
-        Horario(dia_semana="Terça-feira", horario_inicio="07:30", horario_fim="08:20", disciplina="Redes de Computadores", professor="Prof. Marcos", sala="Laboratório 01", turma_id=turma_3c.id),
-        Horario(dia_semana="Terça-feira", horario_inicio="08:20", horario_fim="09:10", disciplina="Redes de Computadores", professor="Prof. Marcos", sala="Laboratório 01", turma_id=turma_3c.id),
-        Horario(dia_semana="Terça-feira", horario_inicio="09:25", horario_fim="10:15", disciplina="Língua Portuguesa", professor="Profª. Juliana", sala="Sala 14", turma_id=turma_3c.id),
-        Horario(dia_semana="Terça-feira", horario_inicio="10:15", horario_fim="11:05", disciplina="Segurança da Informação", professor="Prof. Ricardo", sala="Laboratório 03", turma_id=turma_3c.id),
-        # 3º C - Quarta-feira
-        Horario(dia_semana="Quarta-feira", horario_inicio="07:30", horario_fim="08:20", disciplina="Estrutura de Dados", professor="Prof. Carlos", sala="Laboratório 02", turma_id=turma_3c.id),
-        Horario(dia_semana="Quarta-feira", horario_inicio="08:20", horario_fim="09:10", disciplina="Estrutura de Dados", professor="Prof. Carlos", sala="Laboratório 02", turma_id=turma_3c.id),
-        Horario(dia_semana="Quarta-feira", horario_inicio="09:25", horario_fim="10:15", disciplina="Filosofia", professor="Prof. Paulo", sala="Sala 14", turma_id=turma_3c.id),
-        Horario(dia_semana="Quarta-feira", horario_inicio="10:15", horario_fim="11:05", disciplina="Gestão de Projetos", professor="Profª. Mariana", sala="Sala 14", turma_id=turma_3c.id),
-        # 3º C - Quinta-feira
-        Horario(dia_semana="Quinta-feira", horario_inicio="07:30", horario_fim="08:20", disciplina="Engenharia de Software", professor="Prof. Ricardo", sala="Laboratório 03", turma_id=turma_3c.id),
-        Horario(dia_semana="Quinta-feira", horario_inicio="08:20", horario_fim="09:10", disciplina="Engenharia de Software", professor="Prof. Ricardo", sala="Laboratório 03", turma_id=turma_3c.id),
-        Horario(dia_semana="Quinta-feira", horario_inicio="09:25", horario_fim="10:15", disciplina="Inglês Técnico", professor="Profª. Fernanda", sala="Sala 14", turma_id=turma_3c.id),
-        Horario(dia_semana="Quinta-feira", horario_inicio="10:15", horario_fim="11:05", disciplina="Física Aplicada", professor="Prof. Roberto", sala="Laboratório de Física", turma_id=turma_3c.id),
-        # 3º C - Sexta-feira
-        Horario(dia_semana="Sexta-feira", horario_inicio="07:30", horario_fim="08:20", disciplina="Prática Profissional", professor="Prof. Carlos", sala="Laboratório 02", turma_id=turma_3c.id),
-        Horario(dia_semana="Sexta-feira", horario_inicio="08:20", horario_fim="09:10", disciplina="Prática Profissional", professor="Prof. Carlos", sala="Laboratório 02", turma_id=turma_3c.id),
-        Horario(dia_semana="Sexta-feira", horario_inicio="09:25", horario_fim="10:15", disciplina="Empreendedorismo", professor="Profª. Mariana", sala="Sala 14", turma_id=turma_3c.id),
-        Horario(dia_semana="Sexta-feira", horario_inicio="10:15", horario_fim="11:05", disciplina="Ética e Cidadania", professor="Prof. Paulo", sala="Sala 14", turma_id=turma_3c.id),
-
-        # 2º A - Segunda-feira (Tarde)
-        Horario(dia_semana="Segunda-feira", horario_inicio="13:15", horario_fim="14:05", disciplina="Lógica de Programação", professor="Prof. Carlos", sala="Laboratório 01", turma_id=turma_2a.id),
-        Horario(dia_semana="Segunda-feira", horario_inicio="14:05", horario_fim="14:55", disciplina="Modelagem de Dados", professor="Prof. Ricardo", sala="Laboratório 03", turma_id=turma_2a.id),
-        Horario(dia_semana="Segunda-feira", horario_inicio="15:10", horario_fim="16:00", disciplina="História", professor="Profª. Luciana", sala="Sala 10", turma_id=turma_2a.id),
-        Horario(dia_semana="Segunda-feira", horario_inicio="16:00", horario_fim="16:50", disciplina="Química", professor="Prof. Eduardo", sala="Lab Química", turma_id=turma_2a.id),
-
-        # 1º B - Segunda-feira (Manhã)
-        Horario(dia_semana="Segunda-feira", horario_inicio="07:30", horario_fim="08:20", disciplina="Desenho Arquitetônico", professor="Prof. Marcos", sala="Ateliê 01", turma_id=turma_1b.id),
-        Horario(dia_semana="Segunda-feira", horario_inicio="08:20", horario_fim="09:10", disciplina="Materiais de Construção", professor="Profª. Patrícia", sala="Sala 05", turma_id=turma_1b.id),
-        Horario(dia_semana="Segunda-feira", horario_inicio="09:25", horario_fim="10:15", disciplina="Topografia", professor="Prof. Henrique", sala="Lab Topo", turma_id=turma_1b.id),
-        Horario(dia_semana="Segunda-feira", horario_inicio="10:15", horario_fim="11:05", disciplina="Geometria Descritiva", professor="Profª. Patrícia", sala="Ateliê 01", turma_id=turma_1b.id),
-    ]
-    db.add_all(horarios)
-
-    # 5. Avisos
-    avisos_demo = [
-        Aviso(
-            titulo="Inscrições Abertas para a ExpoCEEP 2026",
-            descricao="Estão abertas as inscrições de projetos para a tradicional feira técnica anual do CEEP. Procure a coordenação do seu curso para registrar sua equipe até o dia 25/09.",
-            prioridade="ALTA",
-            publico_alvo_tipo="GERAL",
-            status="PUBLICADO",
-            autor_id=gestao_demo.id
-        ),
-        Aviso(
-            titulo="Reunião de Pais e Mestres — 3º Ano Técnico",
-            descricao="Convocação dos representantes de turma e responsáveis do 3º ano para alinhamento das bancas avaliativas finais nesta sexta-feira às 19h no auditório.",
-            prioridade="URGENTE",
-            publico_alvo_tipo="CURSO",
-            publico_alvo_id=ds.id,
-            status="PUBLICADO",
-            autor_id=gestao_demo.id
-        ),
-        Aviso(
-            titulo="Horário Especial da Biblioteca no Recesso",
-            descricao="Informamos que durante o recesso escolar a biblioteca estará aberta das 08h às 14h para empréstimos, devoluções e pesquisas acadêmicas.",
-            prioridade="MEDIA",
-            publico_alvo_tipo="GERAL",
-            status="PUBLICADO",
-            autor_id=gestao_demo.id
-        ),
-        Aviso(
-            titulo="Palestra sobre Mercado de Tecnologia e Estágios",
-            descricao="Nesta quarta-feira às 10h, profissionais da área de TI apresentarão oportunidades de estágio e carreira para os estudantes do CEEP.",
-            prioridade="BAIXA",
-            publico_alvo_tipo="CURSO",
-            publico_alvo_id=ds.id,
-            status="PUBLICADO",
-            autor_id=gestao_demo.id
-        ),
-        Aviso(
-            titulo="Alinhamento do Projeto Integrador — 3º C",
-            descricao="Orientações específicas para os grupos de TCC da turma 3º C referentes ao cronograma de entrega das documentações técnicas.",
-            prioridade="ALTA",
-            publico_alvo_tipo="TURMA",
-            publico_alvo_id=turma_3c.id,
-            status="PUBLICADO",
-            autor_id=gestao_demo.id
-        ),
-    ]
-    db.add_all(avisos_demo)
+    # Garante item base da cantina
+    if not db.query(Produto).filter(Produto.nome == "Salgado").first():
+        db.add(Produto(
+            nome="Salgado",
+            descricao="Escolha seu salgado e retire na cantina após a confirmação do pedido.",
+            preco=8.00,
+            ativo=True
+        ))
+    db.commit()
 
 
-    # 6. Tarefas para Aluno Demo
-    tarefas_demo = [
-        Tarefa(
-            titulo="Trabalho de Banco de Dados",
-            descricao="Modelagem relacional e normalização da 1ª à 3ª forma normal para o sistema escolar.",
-            data_entrega=date(2026, 9, 15),
-            status="PENDENTE",
-            prioridade="ALTA",
-            aluno_id=aluno_demo.id
-        ),
-        Tarefa(
-            titulo="Relatório de Desenvolvimento Web",
-            descricao="Documentar a arquitetura REST, endpoints e padrões de integração entre frontend e backend.",
-            data_entrega=date(2026, 9, 18),
-            status="EM_ANDAMENTO",
-            prioridade="MEDIA",
-            aluno_id=aluno_demo.id
-        ),
-        Tarefa(
-            titulo="Lista de Exercícios — Matemática Aplicada",
-            descricao="Resolver os exercícios do capítulo 4 sobre matrizes e determinantes.",
-            data_entrega=date(2026, 9, 22),
-            status="PENDENTE",
-            prioridade="BAIXA",
-            aluno_id=aluno_demo.id
-        ),
-        Tarefa(
-            titulo="Artigo sobre Ética e Inteligência Artificial",
-            descricao="Resumo crítico de 2 páginas sobre os impactos éticos da IA na sociedade atual.",
-            data_entrega=date(2026, 9, 28),
-            status="CONCLUIDA",
-            prioridade="MEDIA",
-            aluno_id=aluno_demo.id
-        ),
-        # Tarefa pertencente ao outro aluno (para validar isolamento)
-        Tarefa(
+def seed_test_fixtures(db: Session) -> None:
+    """Fixtures específicas para execução da suite de testes automatizados (test_api.py)."""
+    # 1. Curso ELETRO para testes legados de cursos
+    if not db.query(Curso).filter(Curso.sigla == "ELETRO").first():
+        db.add(Curso(nome="Eletrotécnica", sigla="ELETRO", ativo=True))
+        db.flush()
+
+    # 2. Disciplina Desenvolvimento Web e Professor Prof. Carlos com horário de teste
+    c_ds = db.query(Curso).filter(Curso.sigla == "DS").first()
+    c_id = c_ds.id if c_ds else 1
+
+    dw = db.query(Disciplina).filter(Disciplina.nome == "Desenvolvimento Web").first()
+    if not dw:
+        dw = Disciplina(nome="Desenvolvimento Web", sigla="DW", curso_id=c_id, ativo=True)
+        db.add(dw)
+        db.flush()
+
+    pc = db.query(Professor).filter(Professor.nome == "Prof. Carlos").first()
+    if not pc:
+        pc = Professor(nome="Prof. Carlos", email="carlos.docente@ceep.demo", ativo=True)
+        db.add(pc)
+        db.flush()
+
+    if not db.query(Horario).filter(Horario.disciplina_id == dw.id).first():
+        h_dw = Horario(
+            dia_semana="Domingo",
+            horario_inicio="20:00",
+            horario_fim="20:50",
+            disciplina="Desenvolvimento Web",
+            professor="Prof. Carlos",
+            turma_id=1,
+            disciplina_id=dw.id,
+            professor_id=pc.id,
+            duracao=1,
+            ativo=True
+        )
+        db.add(h_dw)
+        db.flush()
+
+    # 3. Avisos de teste
+    gestao_user = db.query(Usuario).filter(Usuario.perfil == "GESTAO").first()
+    autor_id = gestao_user.id if gestao_user else 3
+
+    if db.query(Aviso).count() < 4:
+        avisos_fixtures = [
+            Aviso(
+                titulo="Inscrições Abertas para a ExpoCEEP 2026",
+                descricao="Estão abertas as inscrições de projetos para a tradicional feira técnica anual do CEEP.",
+                prioridade="ALTA",
+                publico_alvo_tipo="GERAL",
+                status="PUBLICADO",
+                autor_id=autor_id
+            ),
+            Aviso(
+                titulo="Reunião de Pais e Mestres — 3º Ano Técnico",
+                descricao="Convocação dos representantes de turma e responsáveis do 3º ano.",
+                prioridade="URGENTE",
+                publico_alvo_tipo="CURSO",
+                publico_alvo_id=c_id,
+                status="PUBLICADO",
+                autor_id=autor_id
+            ),
+            Aviso(
+                titulo="Horário Especial da Biblioteca no Recesso",
+                descricao="Informamos que durante o recesso escolar a biblioteca estará aberta.",
+                prioridade="MEDIA",
+                publico_alvo_tipo="GERAL",
+                status="PUBLICADO",
+                autor_id=autor_id
+            ),
+            Aviso(
+                titulo="Palestra sobre Mercado de Tecnologia e Estágios",
+                descricao="Nesta quarta-feira às 10h, profissionais de TI apresentarão oportunidades de estágio.",
+                prioridade="BAIXA",
+                publico_alvo_tipo="CURSO",
+                publico_alvo_id=c_id,
+                status="PUBLICADO",
+                autor_id=autor_id
+            ),
+        ]
+        db.add_all(avisos_fixtures)
+
+    # 4. Tarefas de teste
+    aluno_user = db.query(Usuario).filter(Usuario.email == "aluno@escola.pr.gov.br").first()
+    outro_user = db.query(Usuario).filter(Usuario.email == "outro.aluno@escola.pr.gov.br").first()
+
+    if aluno_user and db.query(Tarefa).filter(Tarefa.aluno_id == aluno_user.id).count() < 3:
+        tarefas_fixtures = [
+            Tarefa(
+                titulo="Trabalho de Banco de Dados",
+                descricao="Modelagem relacional e normalização para o sistema escolar.",
+                data_entrega=date(2026, 9, 15),
+                status="PENDENTE",
+                prioridade="ALTA",
+                aluno_id=aluno_user.id
+            ),
+            Tarefa(
+                titulo="Relatório de Desenvolvimento Web",
+                descricao="Documentar a arquitetura REST e endpoints.",
+                data_entrega=date(2026, 9, 18),
+                status="EM_ANDAMENTO",
+                prioridade="MEDIA",
+                aluno_id=aluno_user.id
+            ),
+            Tarefa(
+                titulo="Lista de Exercícios — Matemática Aplicada",
+                descricao="Resolver os exercícios do capítulo 4.",
+                data_entrega=date(2026, 9, 22),
+                status="PENDENTE",
+                prioridade="BAIXA",
+                aluno_id=aluno_user.id
+            ),
+        ]
+        db.add_all(tarefas_fixtures)
+
+    if outro_user and not db.query(Tarefa).filter(Tarefa.aluno_id == outro_user.id).first():
+        db.add(Tarefa(
             titulo="Maquete Estrutural — Edificações",
             descricao="Montagem da maquete em escala 1:50.",
             data_entrega=date(2026, 9, 30),
             status="PENDENTE",
             prioridade="ALTA",
-            aluno_id=aluno_outro.id
-        ),
-    ]
-    db.add_all(tarefas_demo)
-
-    # 7. Produto
-    salgado = Produto(
-        nome="Salgado",
-        descricao="Escolha seu salgado e retire na cantina após a confirmação do pedido.",
-        preco=8.00,
-        ativo=True
-    )
-    db.add(salgado)
+            aluno_id=outro_user.id
+        ))
 
     db.commit()
-    print("Banco de dados populado com sucesso!")
 
 if __name__ == "__main__":
     db = SessionLocal()

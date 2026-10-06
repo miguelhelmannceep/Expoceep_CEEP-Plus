@@ -831,8 +831,7 @@ def validate_and_check_conflicts(
         "terça", "terca", "terça-feira", "terca-feira",
         "quarta", "quarta-feira",
         "quinta", "quinta-feira",
-        "sexta", "sexta-feira",
-        "sábado", "sabado"
+        "sexta", "sexta-feira"
     ]
     if dia_semana.lower().strip() in dias_letivos:
         intervalo_conflict = db.query(PeriodoHorario).filter(
@@ -1262,7 +1261,7 @@ def list_periods(
     query = db.query(PeriodoHorario)
     if turno:
         query = query.filter(func.lower(PeriodoHorario.turno) == func.lower(turno))
-    periodos = query.order_by(PeriodoHorario.ordem.asc(), PeriodoHorario.horario_inicio.asc()).all()
+    periodos = query.order_by(PeriodoHorario.turno.asc(), PeriodoHorario.ordem.asc(), PeriodoHorario.horario_inicio.asc()).all()
     return periodos
 
 

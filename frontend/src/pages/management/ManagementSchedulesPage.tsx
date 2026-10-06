@@ -49,14 +49,24 @@ interface PeriodSlot {
   is_intervalo?: boolean;
 }
 
-const DEFAULT_PERIODS: PeriodSlot[] = [
-  { id: "1", ordem: 1, nome: "1ª aula", inicio: "07:30", fim: "08:20" },
-  { id: "2", ordem: 2, nome: "2ª aula", inicio: "08:20", fim: "09:10" },
-  { id: "int", ordem: 3, nome: "Recreio", inicio: "09:10", fim: "09:25", is_intervalo: true },
-  { id: "3", ordem: 4, nome: "3ª aula", inicio: "09:25", fim: "10:15" },
-  { id: "4", ordem: 5, nome: "4ª aula", inicio: "10:15", fim: "11:05" },
-  { id: "5", ordem: 6, nome: "5ª aula", inicio: "11:15", fim: "12:05" },
-  { id: "6", ordem: 7, nome: "6ª aula", inicio: "12:05", fim: "12:55" },
+const DEFAULT_PERIODS_MANHA: PeriodSlot[] = [
+  { id: "m1", ordem: 1, nome: "1ª aula", inicio: "07:10", fim: "08:00" },
+  { id: "m2", ordem: 2, nome: "2ª aula", inicio: "08:00", fim: "08:50" },
+  { id: "m3", ordem: 3, nome: "3ª aula", inicio: "08:50", fim: "09:40" },
+  { id: "mint", ordem: 4, nome: "Recreio", inicio: "09:40", fim: "09:55", is_intervalo: true },
+  { id: "m4", ordem: 5, nome: "4ª aula", inicio: "09:55", fim: "10:45" },
+  { id: "m5", ordem: 6, nome: "5ª aula", inicio: "10:45", fim: "11:35" },
+  { id: "m6", ordem: 7, nome: "6ª aula", inicio: "11:35", fim: "12:25" },
+];
+
+const DEFAULT_PERIODS_TARDE: PeriodSlot[] = [
+  { id: "t1", ordem: 1, nome: "1ª aula", inicio: "13:10", fim: "14:00" },
+  { id: "t2", ordem: 2, nome: "2ª aula", inicio: "14:00", fim: "14:50" },
+  { id: "t3", ordem: 3, nome: "3ª aula", inicio: "14:50", fim: "15:40" },
+  { id: "tint", ordem: 4, nome: "Recreio", inicio: "15:40", fim: "15:55", is_intervalo: true },
+  { id: "t4", ordem: 5, nome: "4ª aula", inicio: "15:55", fim: "16:45" },
+  { id: "t5", ordem: 6, nome: "5ª aula", inicio: "16:45", fim: "17:35" },
+  { id: "t6", ordem: 7, nome: "6ª aula", inicio: "17:35", fim: "18:25" },
 ];
 
 const DAYS_OF_WEEK = [
@@ -115,8 +125,8 @@ export const ManagementSchedulesPage: React.FC = () => {
     disciplina_id: 0,
     professor_id: 0,
     dia_semana: "Segunda-feira",
-    horario_inicio: "07:30",
-    horario_fim: "08:20",
+    horario_inicio: "07:10",
+    horario_fim: "08:00",
     sala: "Sala 101",
     duracao: 1,
   });
@@ -143,8 +153,8 @@ export const ManagementSchedulesPage: React.FC = () => {
     recurso_id: undefined,
     recurso_identificador: "",
     dia_semana: "Segunda-feira",
-    horario_inicio: "07:30",
-    horario_fim: "09:10",
+    horario_inicio: "07:10",
+    horario_fim: "08:50",
     tipo: "INDISPONIVEL",
     motivo: "",
   });
@@ -154,8 +164,8 @@ export const ManagementSchedulesPage: React.FC = () => {
   const [periodFormData, setPeriodFormData] = useState<CreatePeriodPayload>({
     ordem: 1,
     nome: "1ª aula",
-    horario_inicio: "07:30",
-    horario_fim: "08:20",
+    horario_inicio: "07:10",
+    horario_fim: "08:00",
     turno: "Manhã",
     is_intervalo: false,
     ativo: true,
@@ -240,18 +250,31 @@ export const ManagementSchedulesPage: React.FC = () => {
     }
   }, [selectedClassId]);
 
-  // Lista de períodos para a grade: usa os períodos da API se disponíveis ou DEFAULT_PERIODS
+  // Lista de períodos para a grade: filtra pelo turno da turma selecionada
+  const selectedTurma = classes.find((c) => c.id === selectedClassId);
+  const isSelectedTarde = selectedTurma?.periodo?.toLowerCase().includes("tarde") || false;
+  const filteredPeriodsByShift = periods.filter((p) =>
+    isSelectedTarde
+      ? p.turno?.toLowerCase().includes("tarde")
+      : p.turno?.toLowerCase().includes("manhã") || p.turno?.toLowerCase().includes("manha")
+  );
+
   const effectivePeriods: PeriodSlot[] =
-    periods.length > 0
-      ? periods.map((p) => ({
-          id: String(p.id),
-          ordem: p.ordem,
-          nome: p.nome,
-          inicio: p.horario_inicio,
-          fim: p.horario_fim,
-          is_intervalo: p.is_intervalo,
-        }))
-      : DEFAULT_PERIODS;
+    filteredPeriodsByShift.length > 0
+      ? filteredPeriodsByShift
+          .slice()
+          .sort((a, b) => a.ordem - b.ordem || a.horario_inicio.localeCompare(b.horario_inicio))
+          .map((p) => ({
+            id: String(p.id),
+            ordem: p.ordem,
+            nome: p.nome,
+            inicio: p.horario_inicio,
+            fim: p.horario_fim,
+            is_intervalo: Boolean(p.is_intervalo),
+          }))
+      : isSelectedTarde
+      ? DEFAULT_PERIODS_TARDE
+      : DEFAULT_PERIODS_MANHA;
 
   // Abrir Modal de Criação Rápida de Aula
   const handleOpenNewModal = (defaultDay?: string, defaultInicio?: string, defaultFim?: string) => {
@@ -262,8 +285,10 @@ export const ManagementSchedulesPage: React.FC = () => {
     const defaultDiscId = disciplines.length > 0 ? disciplines[0].id : 0;
     const defaultProfId = professors.length > 0 ? professors[0].id : 0;
 
-    const inicio = defaultInicio || "07:30";
-    const fim = defaultFim || "08:20";
+    const defaultStart = isSelectedTarde ? "13:10" : "07:10";
+    const defaultEnd = isSelectedTarde ? "14:00" : "08:00";
+    const inicio = defaultInicio || defaultStart;
+    const fim = defaultFim || defaultEnd;
     const dia = defaultDay || (selectedDayFilter !== "TODOS" ? selectedDayFilter : "Segunda-feira");
 
     const matchingPreset = effectivePeriods.find((p) => p.inicio === inicio && p.fim === fim && !p.is_intervalo);
@@ -790,7 +815,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                   Turma: <strong className="text-slate-800 dark:text-slate-200">{selectedTurmaObj.nome_turma}</strong> — {selectedTurmaObj.periodo}
                 </div>
                 <div>
-                  Aulas cadastradas: <strong className="text-slate-800 dark:text-slate-200">{schedules.length}</strong>
+                  Períodos alocados: <strong className="text-slate-800 dark:text-slate-200">{schedules.reduce((acc, s) => acc + (s.duracao || 1), 0)}/30</strong> ({schedules.length} registros)
                 </div>
               </div>
             )}
@@ -918,61 +943,79 @@ export const ManagementSchedulesPage: React.FC = () => {
                             >
                               {slotSchedules.length > 0 ? (
                                 <div className="space-y-2">
-                                  {slotSchedules.map((item) => (
-                                    <div
-                                      key={item.id}
-                                      className="group relative bg-slate-50 dark:bg-slate-800/80 hover:bg-[#2d3661]/5 dark:hover:bg-[#2d3661]/20 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 shadow-xs transition-all space-y-1.5"
-                                    >
-                                      <div>
-                                        <div className="flex items-center justify-between">
-                                          <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 line-clamp-1 flex items-center space-x-1">
-                                            <BookOpen className="w-3 h-3 text-[#2d3661] dark:text-[#7de06f] shrink-0" />
-                                            <span>{item.disciplina}</span>
-                                          </h4>
-                                          {item.duracao && item.duracao > 1 && (
-                                            <span className="text-[9px] font-bold bg-[#2d3661]/10 text-[#2d3661] dark:text-[#7de06f] px-1.5 py-0.2 rounded">
-                                              Dupla
-                                            </span>
-                                          )}
-                                        </div>
-                                        <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-1 mt-0.5 flex items-center space-x-1">
-                                          <UserIcon className="w-3 h-3 text-slate-400 shrink-0" />
-                                          <span>{item.professor}</span>
-                                        </p>
-                                        {item.sala && (
-                                          <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1 flex items-center space-x-1 mt-0.5 font-medium">
-                                            <MapPin className="w-3 h-3 text-[#4aaa3c] shrink-0" />
-                                            <span>{item.sala}</span>
-                                          </p>
-                                        )}
-                                      </div>
+                                  {slotSchedules.map((item) => {
+                                    const isDouble =
+                                      (item.duracao && item.duracao > 1) ||
+                                      item.horario_inicio < period.inicio ||
+                                      item.horario_fim > period.fim;
+                                    const isPart1 = item.horario_inicio === period.inicio;
+                                    const isPart2 = item.horario_fim === period.fim;
 
-                                      <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] text-slate-400">
-                                        <span>{item.horario_inicio} - {item.horario_fim}</span>
-                                        <div className="flex items-center space-x-1">
-                                          <button
-                                            onClick={() => handleOpenEditModal(item)}
-                                            title="Editar aula"
-                                            className="p-1 rounded text-slate-500 hover:text-[#2d3661] dark:hover:text-[#7de06f] hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors"
-                                          >
-                                            <Edit2 className="w-3 h-3" />
-                                          </button>
-                                          <button
-                                            onClick={() =>
-                                              setDeletingItem({
-                                                id: item.id,
-                                                title: `${item.disciplina} (${item.dia_semana}, ${item.horario_inicio} às ${item.horario_fim})`,
-                                              })
-                                            }
-                                            title="Remover aula"
-                                            className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
-                                          >
-                                            <Trash2 className="w-3 h-3" />
-                                          </button>
+                                    return (
+                                      <div
+                                        key={`${period.id}-${item.id}`}
+                                        className={`group relative bg-slate-50 dark:bg-slate-800/80 hover:bg-[#2d3661]/5 dark:hover:bg-[#2d3661]/20 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 shadow-xs transition-all space-y-1.5 ${
+                                          isDouble
+                                            ? "border-l-4 border-l-[#2d3661] dark:border-l-[#7de06f]"
+                                            : ""
+                                        }`}
+                                      >
+                                        <div>
+                                          <div className="flex items-center justify-between">
+                                            <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 line-clamp-1 flex items-center space-x-1">
+                                              <BookOpen className="w-3 h-3 text-[#2d3661] dark:text-[#7de06f] shrink-0" />
+                                              <span>{item.disciplina}</span>
+                                            </h4>
+                                            {isDouble && (
+                                              <span
+                                                className="text-[9px] font-bold bg-[#2d3661]/10 dark:bg-[#7de06f]/20 text-[#2d3661] dark:text-[#7de06f] px-1.5 py-0.5 rounded"
+                                                title={
+                                                  isPart1
+                                                    ? "Aula dupla (1ª parte)"
+                                                    : isPart2
+                                                    ? "Aula dupla (2ª parte)"
+                                                    : "Aula dupla"
+                                                }
+                                              >
+                                                {isPart1 ? "Dupla (1/2)" : isPart2 ? "Dupla (2/2)" : "Dupla"}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-1 mt-0.5 flex items-center space-x-1">
+                                            <UserIcon className="w-3 h-3 text-slate-400 shrink-0" />
+                                            <span>{item.professor}</span>
+                                          </p>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] text-slate-400">
+                                          <span className="font-mono text-slate-500 dark:text-slate-400">
+                                            {period.inicio} – {period.fim}
+                                          </span>
+                                          <div className="flex items-center space-x-1">
+                                            <button
+                                              onClick={() => handleOpenEditModal(item)}
+                                              title="Editar aula"
+                                              className="p-1 rounded text-slate-500 hover:text-[#2d3661] dark:hover:text-[#7de06f] hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors"
+                                            >
+                                              <Edit2 className="w-3 h-3" />
+                                            </button>
+                                            <button
+                                              onClick={() =>
+                                                setDeletingItem({
+                                                  id: item.id,
+                                                  title: `${item.disciplina} (${item.dia_semana}, ${item.horario_inicio} às ${item.horario_fim})`,
+                                                })
+                                              }
+                                              title="Remover aula"
+                                              className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                                            >
+                                              <Trash2 className="w-3 h-3" />
+                                            </button>
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               ) : (
                                 <button
@@ -1370,7 +1413,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                     <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Início (HH:MM)</label>
                     <input
                       type="text"
-                      placeholder="07:30"
+                      placeholder="07:10"
                       value={formData.horario_inicio}
                       onChange={(e) => setFormData({ ...formData, horario_inicio: e.target.value })}
                       required
@@ -1381,7 +1424,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                     <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Término (HH:MM)</label>
                     <input
                       type="text"
-                      placeholder="08:20"
+                      placeholder="08:00"
                       value={formData.horario_fim}
                       onChange={(e) => setFormData({ ...formData, horario_fim: e.target.value })}
                       required
@@ -1741,7 +1784,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Início (HH:MM) *</label>
                   <input
                     type="text"
-                    placeholder="07:30"
+                    placeholder="07:10"
                     value={availFormData.horario_inicio}
                     onChange={(e) => setAvailFormData({ ...availFormData, horario_inicio: e.target.value })}
                     required
@@ -1753,7 +1796,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Término (HH:MM) *</label>
                   <input
                     type="text"
-                    placeholder="09:10"
+                    placeholder="08:50"
                     value={availFormData.horario_fim}
                     onChange={(e) => setAvailFormData({ ...availFormData, horario_fim: e.target.value })}
                     required
@@ -1856,7 +1899,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Início (HH:MM) *</label>
                   <input
                     type="text"
-                    placeholder="07:30"
+                    placeholder="07:10"
                     value={periodFormData.horario_inicio}
                     onChange={(e) => setPeriodFormData({ ...periodFormData, horario_inicio: e.target.value })}
                     required
@@ -1868,7 +1911,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Fim (HH:MM) *</label>
                   <input
                     type="text"
-                    placeholder="08:20"
+                    placeholder="08:00"
                     value={periodFormData.horario_fim}
                     onChange={(e) => setPeriodFormData({ ...periodFormData, horario_fim: e.target.value })}
                     required

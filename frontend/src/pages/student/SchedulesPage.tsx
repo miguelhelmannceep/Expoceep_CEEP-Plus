@@ -5,7 +5,46 @@ import { Card } from "../../components/common/Card";
 import { ListSkeleton } from "../../components/common/Skeleton";
 import { EmptyState } from "../../components/common/EmptyState";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
-import { Calendar, Clock, User as UserIcon, BookOpen, GraduationCap, ChevronDown, Check } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  User as UserIcon,
+  BookOpen,
+  GraduationCap,
+  ChevronDown,
+  Check,
+  Coffee,
+  MapPin,
+} from "lucide-react";
+
+interface PeriodSlot {
+  id: string;
+  ordem: number;
+  nome: string;
+  inicio: string;
+  fim: string;
+  is_intervalo?: boolean;
+}
+
+const PERIODS_MANHA: PeriodSlot[] = [
+  { id: "m1", ordem: 1, nome: "1ª aula", inicio: "07:10", fim: "08:00" },
+  { id: "m2", ordem: 2, nome: "2ª aula", inicio: "08:00", fim: "08:50" },
+  { id: "m3", ordem: 3, nome: "3ª aula", inicio: "08:50", fim: "09:40" },
+  { id: "mint", ordem: 4, nome: "Intervalo / Recreio", inicio: "09:40", fim: "09:55", is_intervalo: true },
+  { id: "m4", ordem: 5, nome: "4ª aula", inicio: "09:55", fim: "10:45" },
+  { id: "m5", ordem: 6, nome: "5ª aula", inicio: "10:45", fim: "11:35" },
+  { id: "m6", ordem: 7, nome: "6ª aula", inicio: "11:35", fim: "12:25" },
+];
+
+const PERIODS_TARDE: PeriodSlot[] = [
+  { id: "t1", ordem: 1, nome: "1ª aula", inicio: "13:10", fim: "14:00" },
+  { id: "t2", ordem: 2, nome: "2ª aula", inicio: "14:00", fim: "14:50" },
+  { id: "t3", ordem: 3, nome: "3ª aula", inicio: "14:50", fim: "15:40" },
+  { id: "tint", ordem: 4, nome: "Intervalo / Recreio", inicio: "15:40", fim: "15:55", is_intervalo: true },
+  { id: "t4", ordem: 5, nome: "4ª aula", inicio: "15:55", fim: "16:45" },
+  { id: "t5", ordem: 6, nome: "5ª aula", inicio: "16:45", fim: "17:35" },
+  { id: "t6", ordem: 7, nome: "6ª aula", inicio: "17:35", fim: "18:25" },
+];
 
 export const SchedulesPage: React.FC = () => {
   const [classes, setClasses] = useState<ClassOption[]>([]);
@@ -60,10 +99,20 @@ export const SchedulesPage: React.FC = () => {
   }, [selectedClassId]);
 
   const selectedClass = classes.find((c) => c.id === selectedClassId);
+  const isTarde = selectedClass?.periodo?.toLowerCase().includes("tarde") || false;
+  const currentPeriods = isTarde ? PERIODS_TARDE : PERIODS_MANHA;
 
   const filteredSchedules = schedules.filter(
     (item) => item.dia_semana.toLowerCase() === selectedDay.toLowerCase()
   );
+
+  const checkOverlap = (item: ScheduleItem, period: PeriodSlot) => {
+    return item.horario_inicio < period.fim && item.horario_fim > period.inicio;
+  };
+
+  const filledPeriodsCount = currentPeriods.filter(
+    (p) => !p.is_intervalo && filteredSchedules.some((s) => checkOverlap(s, p))
+  ).length;
 
   if (isLoadingClasses) {
     return <ListSkeleton count={4} />;
@@ -183,16 +232,18 @@ export const SchedulesPage: React.FC = () => {
       </div>
 
       {/* Lista de Aulas do Dia */}
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
-          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{selectedDay}</span>
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            {selectedDay} {selectedClass ? `• Turno: ${selectedClass.periodo}` : ""}
+          </span>
           <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-            {filteredSchedules.length} {filteredSchedules.length === 1 ? "aula programada" : "aulas programadas"}
+            {filledPeriodsCount} de 6 aulas programadas
           </span>
         </div>
 
         {isLoadingSchedules ? (
-          <ListSkeleton count={4} />
+          <ListSkeleton count={6} />
         ) : filteredSchedules.length === 0 ? (
           <EmptyState
             icon={BookOpen}
@@ -200,24 +251,132 @@ export const SchedulesPage: React.FC = () => {
             description="Nenhuma disciplina cadastrada para este dia nesta turma."
           />
         ) : (
-          filteredSchedules.map((item) => (
-            <Card key={item.id} className="p-3.5 space-y-2 border-slate-100 dark:border-slate-700/80 hover:border-slate-200 dark:hover:border-slate-600 transition-all">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#2d3661] dark:text-[#7de06f] bg-[#2d3661]/10 dark:bg-[#2d3661]/30 border border-[#2d3661]/20 dark:border-[#2d3661]/40 px-2 py-0.5 rounded-md flex items-center">
-                  <Clock className="w-3 h-3 mr-1 text-[#4aaa3c] dark:text-[#7de06f]" />
-                  {item.horario_inicio} - {item.horario_fim}
-                </span>
-              </div>
+          <div className="space-y-2.5">
+            {currentPeriods.map((period) => {
+              // 1. RECREIO / INTERVALO ESCOLAR
+              if (period.is_intervalo) {
+                return (
+                  <div
+                    key={period.id}
+                    className="p-3.5 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 rounded-2xl flex items-center justify-between transition-colors shadow-xs"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 flex items-center justify-center shrink-0">
+                        <Coffee className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wide">
+                            Intervalo / Recreio
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-amber-700/80 dark:text-amber-400 font-medium">
+                          Pausa pedagógica para lanche e descanso
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-amber-800 dark:text-amber-300 bg-amber-100/80 dark:bg-amber-900/60 px-2.5 py-1 rounded-lg">
+                      {period.inicio} – {period.fim}
+                    </span>
+                  </div>
+                );
+              }
 
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{item.disciplina}</h3>
-                <p className="text-xs text-slate-600 dark:text-slate-300 flex items-center mt-0.5 font-medium">
-                  <UserIcon className="w-3 h-3 text-slate-400 mr-1" />
-                  {item.professor}
-                </p>
-              </div>
-            </Card>
-          ))
+              // 2. PERÍODO LETIVO
+              const matchingSchedules = filteredSchedules.filter((item) =>
+                checkOverlap(item, period)
+              );
+
+              // Período vago / sem aula
+              if (matchingSchedules.length === 0) {
+                return (
+                  <div
+                    key={period.id}
+                    className="p-3.5 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/30 flex items-center justify-between text-slate-400 dark:text-slate-500 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2.5">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                        {period.nome}
+                      </span>
+                      <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                        {period.inicio} – {period.fim}
+                      </span>
+                    </div>
+                    <span className="text-xs font-medium italic">
+                      Horário vago / Sem aula cadastrada
+                    </span>
+                  </div>
+                );
+              }
+
+              // Período com aula(s)
+              return matchingSchedules.map((item) => {
+                const isDouble =
+                  (item.duracao && item.duracao > 1) ||
+                  item.horario_inicio < period.inicio ||
+                  item.horario_fim > period.fim;
+
+                const isPart1 = item.horario_inicio === period.inicio;
+                const isPart2 = item.horario_fim === period.fim;
+
+                return (
+                  <Card
+                    key={`${period.id}-${item.id}`}
+                    className={`p-3.5 space-y-2 border-slate-100 dark:border-slate-700/80 hover:border-slate-200 dark:hover:border-slate-600 transition-all ${
+                      isDouble
+                        ? "border-l-4 border-l-[#2d3661] dark:border-l-[#7de06f]"
+                        : ""
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-bold text-[#2d3661] dark:text-[#7de06f] bg-[#2d3661]/10 dark:bg-[#2d3661]/30 border border-[#2d3661]/20 dark:border-[#2d3661]/40 px-2 py-0.5 rounded-md">
+                          {period.nome}
+                        </span>
+                        <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200 flex items-center">
+                          <Clock className="w-3.5 h-3.5 mr-1 text-[#4aaa3c] dark:text-[#7de06f]" />
+                          {period.inicio} – {period.fim}
+                        </span>
+                      </div>
+
+                      {isDouble && (
+                        <span
+                          className="text-[10px] font-bold bg-[#2d3661]/10 dark:bg-[#7de06f]/20 text-[#2d3661] dark:text-[#7de06f] px-2 py-0.5 rounded-md border border-[#2d3661]/20 dark:border-[#7de06f]/30"
+                          title={
+                            isPart1
+                              ? "Aula dupla (1ª parte)"
+                              : isPart2
+                              ? "Aula dupla (2ª parte)"
+                              : "Aula dupla"
+                          }
+                        >
+                          {isPart1 ? "Aula Dupla (1/2)" : isPart2 ? "Aula Dupla (2/2)" : "Aula Dupla"}
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                        {item.disciplina}
+                      </h3>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 flex items-center font-medium">
+                          <UserIcon className="w-3.5 h-3.5 text-slate-400 mr-1 shrink-0" />
+                          <span>{item.professor}</span>
+                        </p>
+                        {item.sala && (
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center">
+                            <MapPin className="w-3 h-3 text-slate-400 mr-1 shrink-0" />
+                            {item.sala}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                );
+              });
+            })}
+          </div>
         )}
       </div>
     </div>

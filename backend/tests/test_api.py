@@ -3309,6 +3309,350 @@ def test_milestone_5e_all_real_school_classes_registered():
     assert any("1R PROG. JOGOS DIGITAIS" in name for name in class_names)
 
 
+def test_milestone_5i_inactive_professors_protection():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    # 1. GET /management/professors?ativo=true não retorna professores inativos
+    resp_ativos = client.get("/api/v1/management/professors?ativo=true", headers=headers_gestao)
+    assert resp_ativos.status_code == 200
+    profs_ativos = resp_ativos.json()
+    assert len(profs_ativos) > 0
+    assert all(p["ativo"] is True for p in profs_ativos)
+
+    # 2. GET /management/professors (sem parâmetro) retorna todos os professores (compatibilidade mantida)
+    resp_todos = client.get("/api/v1/management/professors", headers=headers_gestao)
+    assert resp_todos.status_code == 200
+    profs_todos = resp_todos.json()
+    assert len(profs_todos) > len(profs_ativos)
+    assert any(p["ativo"] is False for p in profs_todos)
+
+    # Identifica um professor ativo e um professor inativo para os testes seguintes
+    prof_ativo = next(p for p in profs_todos if p["ativo"] is True)
+    prof_inativo = next(p for p in profs_todos if p["ativo"] is False)
+
+    # Turma e disciplina válidas para teste
+    classes = client.get("/api/v1/management/classes", headers=headers_gestao).json()
+    turma_id = classes[0]["id"]
+    disciplines = client.get("/api/v1/management/disciplines", headers=headers_gestao).json()
+    disciplina_id = disciplines[0]["id"]
+
+    # 3. POST /management/schedules com professor ativo -> sucesso (201)
+    payload_ativo = {
+        "turma_id": turma_id,
+        "disciplina_id": disciplina_id,
+        "professor_id": prof_ativo["id"],
+        "dia_semana": "Domingo",
+        "horario_inicio": "14:00",
+        "horario_fim": "15:00",
+        "sala": "Lab M5I Teste"
+    }
+    resp_create_ativo = client.post("/api/v1/management/schedules", json=payload_ativo, headers=headers_gestao)
+    assert resp_create_ativo.status_code == 201
+    created_schedule = resp_create_ativo.json()
+    schedule_id = created_schedule["id"]
+
+    try:
+        # 4. POST /management/schedules com professor inativo -> HTTP 400
+        payload_inativo = {
+            "turma_id": turma_id,
+            "disciplina_id": disciplina_id,
+            "professor_id": prof_inativo["id"],
+            "dia_semana": "Domingo",
+            "horario_inicio": "15:00",
+            "horario_fim": "16:00",
+            "sala": "Lab M5I Teste"
+        }
+        resp_create_inativo = client.post("/api/v1/management/schedules", json=payload_inativo, headers=headers_gestao)
+        assert resp_create_inativo.status_code == 400
+        assert "inativo" in resp_create_inativo.json()["detail"].lower()
+
+        # 5. PUT /management/schedules/{id} trocando para professor ativo -> sucesso (200)
+        outro_prof_ativo = next(p for p in profs_todos if p["ativo"] is True and p["id"] != prof_ativo["id"])
+        resp_update_ativo = client.put(
+            f"/api/v1/management/schedules/{schedule_id}",
+            json={"professor_id": outro_prof_ativo["id"]},
+            headers=headers_gestao
+        )
+        assert resp_update_ativo.status_code == 200
+        assert resp_update_ativo.json()["professor_id"] == outro_prof_ativo["id"]
+
+        # 6. PUT /management/schedules/{id} tentando trocar para professor inativo -> HTTP 400
+        resp_update_inativo = client.put(
+            f"/api/v1/management/schedules/{schedule_id}",
+            json={"professor_id": prof_inativo["id"]},
+            headers=headers_gestao
+        )
+        assert resp_update_inativo.status_code == 400
+        assert "inativo" in resp_update_inativo.json()["detail"].lower()
+
+    finally:
+        # Limpa o horário de teste criado
+        client.delete(f"/api/v1/management/schedules/{schedule_id}", headers=headers_gestao)
+
+
+def test_milestone_5i_existing_schedules_integrity():
+    token_gestao = get_auth_token("gestao@ceep.demo")
+    headers_gestao = {"Authorization": f"Bearer {token_gestao}"}
+
+    # Verifica lista de inativos
+    resp_inativos = client.get("/api/v1/management/professors?ativo=false", headers=headers_gestao)
+    assert resp_inativos.status_code == 200
+    inactive_ids = {p["id"] for p in resp_inativos.json()}
+
+    # Verifica todos os horários cadastrados
+    resp_schedules = client.get("/api/v1/management/schedules", headers=headers_gestao)
+    assert resp_schedules.status_code == 200
+    schedules = resp_schedules.json()
+
+    # Nenhum horário existente deve referenciar um professor inativo
+    assert all(s.get("professor_id") not in inactive_ids for s in schedules)
+
+
+# ==========================================
+# MILESTONE 5K: NORMALIZAÇÃO DE DISCIPLINAS
+# ==========================================
+
+def test_milestone_5k_disciplina_curso_id_pode_ser_nulo():
+    """1. Disciplina pode ter curso_id = None."""
+    db = SessionLocal()
+    try:
+        from app.models.disciplina import Disciplina
+        disc_nula = db.query(Disciplina).filter(Disciplina.curso_id.is_(None)).first()
+        assert disc_nula is not None
+        assert disc_nula.curso_id is None
+    finally:
+        db.close()
+
+
+def test_milestone_5k_disciplina_exclusiva_possui_curso_id():
+    """2. Disciplinas exclusivas possuem curso_id preenchido e válido."""
+    db = SessionLocal()
+    try:
+        from app.models.disciplina import Disciplina
+        from app.models.turma import Curso
+        cursos_ids = {c.id for c in db.query(Curso).all()}
+
+        exclusivas = db.query(Disciplina).filter(Disciplina.curso_id.isnot(None)).all()
+        assert len(exclusivas) >= 150
+        for d in exclusivas:
+            assert d.curso_id in cursos_ids
+            assert len(d.cursos_compartilhados) == 0
+    finally:
+        db.close()
+
+
+def test_milestone_5k_disciplina_compartilhada_possui_associacoes_m2m():
+    """3. Disciplinas compartilhadas possuem curso_id nulo e associações m2m na tabela intermediária."""
+    db = SessionLocal()
+    try:
+        from app.models.disciplina import Disciplina
+        bd = db.query(Disciplina).filter(Disciplina.nome == "Banco de Dados").first()
+        assert bd is not None
+        assert bd.curso_id is None
+        assert len(bd.cursos_compartilhados) >= 2
+        siglas = {c.sigla for c in bd.cursos_compartilhados}
+        assert "DS" in siglas
+        assert "JOGOS" in siglas
+    finally:
+        db.close()
+
+
+def test_milestone_5k_disciplina_formacao_geral_curso_id_nulo_e_sem_m2m():
+    """4. Disciplinas de formação geral possuem curso_id nulo e 0 associações m2m."""
+    db = SessionLocal()
+    try:
+        from app.models.disciplina import Disciplina
+        gerais = ["Português", "Matemática", "História", "Geografia", "Física"]
+        for g_nome in gerais:
+            d = db.query(Disciplina).filter(Disciplina.nome == g_nome).first()
+            assert d is not None, f"Disciplina {g_nome} não encontrada"
+            assert d.curso_id is None, f"{g_nome} deveria ter curso_id None"
+            assert len(d.cursos_compartilhados) == 0, f"{g_nome} não deveria ter cursos m2m"
+    finally:
+        db.close()
+
+
+def test_milestone_5k_listagem_disciplinas_retorna_tipo_correto():
+    """5. Listagem de disciplinas retorna o campo 'tipo' correto."""
+    token = get_auth_token("gestao@ceep.demo")
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = client.get("/api/v1/management/disciplines", headers=headers)
+    assert resp.status_code == 200
+    discs = resp.json()
+
+    tipos = {d["tipo"] for d in discs}
+    assert "EXCLUSIVA" in tipos
+    assert "COMPARTILHADA" in tipos
+    assert "FORMACAO_GERAL" in tipos
+
+    d_mat = next(d for d in discs if d["nome"] == "Matemática")
+    assert d_mat["tipo"] == "FORMACAO_GERAL"
+
+    d_bd = next(d for d in discs if d["nome"] == "Banco de Dados")
+    assert d_bd["tipo"] == "COMPARTILHADA"
+
+
+def test_milestone_5k_listagem_disciplinas_retorna_cursos_nomes():
+    """6. Listagem de disciplinas serializa cursos_nomes e curso_ids."""
+    token = get_auth_token("gestao@ceep.demo")
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = client.get("/api/v1/management/disciplines", headers=headers)
+    assert resp.status_code == 200
+    discs = resp.json()
+
+    d_bd = next(d for d in discs if d["nome"] == "Banco de Dados")
+    assert isinstance(d_bd["curso_ids"], list)
+    assert len(d_bd["curso_ids"]) >= 2
+    assert isinstance(d_bd["cursos_nomes"], list)
+    assert len(d_bd["cursos_nomes"]) >= 2
+
+
+def test_milestone_5k_filtro_disciplinas_por_curso_inclui_exclusivas():
+    """7. Filtro por curso inclui disciplinas exclusivas daquele curso."""
+    token = get_auth_token("gestao@ceep.demo")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp_c = client.get("/api/v1/management/courses", headers=headers)
+    c_ds = next(c for c in resp_c.json() if c["sigla"] == "DS")
+
+    resp_d = client.get(f"/api/v1/management/disciplines?curso_id={c_ds['id']}", headers=headers)
+    assert resp_d.status_code == 200
+    discs = resp_d.json()
+
+    exclusivas_ds = [d for d in discs if d["tipo"] == "EXCLUSIVA" and d["curso_id"] == c_ds["id"]]
+    assert len(exclusivas_ds) > 0
+
+
+def test_milestone_5k_filtro_disciplinas_por_curso_inclui_compartilhadas():
+    """8. Filtro por curso inclui disciplinas compartilhadas com aquele curso."""
+    token = get_auth_token("gestao@ceep.demo")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp_c = client.get("/api/v1/management/courses", headers=headers)
+    c_ds = next(c for c in resp_c.json() if c["sigla"] == "DS")
+
+    resp_d = client.get(f"/api/v1/management/disciplines?curso_id={c_ds['id']}", headers=headers)
+    assert resp_d.status_code == 200
+    nomes = {d["nome"] for d in resp_d.json()}
+
+    assert "Banco de Dados" in nomes
+
+
+def test_milestone_5k_filtro_disciplinas_por_curso_inclui_formacao_geral():
+    """9. Filtro por curso inclui disciplinas de formação geral."""
+    token = get_auth_token("gestao@ceep.demo")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp_c = client.get("/api/v1/management/courses", headers=headers)
+    c_ds = next(c for c in resp_c.json() if c["sigla"] == "DS")
+
+    resp_d = client.get(f"/api/v1/management/disciplines?curso_id={c_ds['id']}", headers=headers)
+    assert resp_d.status_code == 200
+    nomes = {d["nome"] for d in resp_d.json()}
+
+    assert "Matemática" in nomes
+    assert "Português" in nomes
+    assert "História" in nomes
+
+
+def test_milestone_5k_filtro_disciplinas_por_curso_exclui_exclusivas_de_outro_curso():
+    """10. Filtro por curso exclui disciplinas exclusivas de outros cursos."""
+    token = get_auth_token("gestao@ceep.demo")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp_c = client.get("/api/v1/management/courses", headers=headers)
+    c_ds = next(c for c in resp_c.json() if c["sigla"] == "DS")
+    c_enf = next(c for c in resp_c.json() if c["sigla"] == "ENF")
+
+    resp_ds = client.get(f"/api/v1/management/disciplines?curso_id={c_ds['id']}", headers=headers)
+    nomes_ds = {d["nome"] for d in resp_ds.json()}
+
+    resp_enf = client.get(f"/api/v1/management/disciplines?curso_id={c_enf['id']}", headers=headers)
+    discs_enf = resp_enf.json()
+
+    exclusivas_enf = [d["nome"] for d in discs_enf if d["tipo"] == "EXCLUSIVA" and d["curso_id"] == c_enf["id"]]
+    assert len(exclusivas_enf) > 0
+
+    for d_nome in exclusivas_enf:
+        assert d_nome not in nomes_ds
+
+
+def test_milestone_5k_criacao_disciplina_exclusiva():
+    """11. Criação de disciplina exclusiva com curso_id válido."""
+    token = get_auth_token("gestao@ceep.demo")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp_c = client.get("/api/v1/management/courses", headers=headers)
+    cid = resp_c.json()[0]["id"]
+
+    nome_teste = f"Disciplina Exclusiva Teste {uuid.uuid4().hex[:6]}"
+    payload = {
+        "nome": nome_teste,
+        "sigla": "DET",
+        "curso_id": cid,
+        "ativo": True
+    }
+    resp = client.post("/api/v1/management/disciplines", json=payload, headers=headers)
+    assert resp.status_code == 201
+    created = resp.json()
+    assert created["tipo"] == "EXCLUSIVA"
+    assert created["curso_id"] == cid
+    assert created["curso_ids"] == [cid]
+
+    # Limpeza
+    client.delete(f"/api/v1/management/disciplines/{created['id']}", headers=headers)
+
+
+def test_milestone_5k_criacao_disciplina_compartilhada():
+    """12. Criação de disciplina compartilhada com lista de curso_ids."""
+    token = get_auth_token("gestao@ceep.demo")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp_c = client.get("/api/v1/management/courses", headers=headers)
+    c_ids = [c["id"] for c in resp_c.json()[:2]]
+
+    nome_teste = f"Disciplina Compartilhada Teste {uuid.uuid4().hex[:6]}"
+    payload = {
+        "nome": nome_teste,
+        "sigla": "DCT",
+        "curso_ids": c_ids,
+        "ativo": True
+    }
+    resp = client.post("/api/v1/management/disciplines", json=payload, headers=headers)
+    assert resp.status_code == 201
+    created = resp.json()
+    assert created["tipo"] == "COMPARTILHADA"
+    assert created["curso_id"] is None
+    assert set(created["curso_ids"]) == set(c_ids)
+
+    # Limpeza
+    client.delete(f"/api/v1/management/disciplines/{created['id']}", headers=headers)
+
+
+def test_milestone_5k_criacao_disciplina_formacao_geral():
+    """13. Criação de disciplina de formação geral (sem curso_id e sem curso_ids)."""
+    token = get_auth_token("gestao@ceep.demo")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    nome_teste = f"Disciplina Formação Geral Teste {uuid.uuid4().hex[:6]}"
+    payload = {
+        "nome": nome_teste,
+        "sigla": "FGT",
+        "ativo": True
+    }
+    resp = client.post("/api/v1/management/disciplines", json=payload, headers=headers)
+    assert resp.status_code == 201
+    created = resp.json()
+    assert created["tipo"] == "FORMACAO_GERAL"
+    assert created["curso_id"] is None
+    assert created["curso_ids"] == []
+
+    # Limpeza
+    client.delete(f"/api/v1/management/disciplines/{created['id']}", headers=headers)
+
+
+
 
 
 

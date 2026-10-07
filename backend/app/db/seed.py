@@ -58,6 +58,20 @@ def ensure_schema_migrations(db: Session) -> None:
         except Exception as e:
             print(f"Migration warning usuarios: {e}")
 
+        # 4. Tabela associativa cursos_disciplinas
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS cursos_disciplinas (
+                    curso_id INTEGER NOT NULL REFERENCES cursos(id) ON DELETE CASCADE,
+                    disciplina_id INTEGER NOT NULL REFERENCES disciplinas(id) ON DELETE CASCADE,
+                    PRIMARY KEY (curso_id, disciplina_id)
+                )
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_cursos_disciplinas_disciplina_id ON cursos_disciplinas (disciplina_id)"))
+            conn.commit()
+        except Exception as e:
+            print(f"Migration warning cursos_disciplinas: {e}")
+
 def init_db(db: Session) -> None:
     Base.metadata.create_all(bind=engine)
     ensure_schema_migrations(db)
@@ -183,16 +197,66 @@ def sync_real_school_data(db: Session) -> None:
                 db.flush()
             prof_map[p_name] = p_obj.id
 
+        GERAL_DISCIPLINAS = {
+            "Arte", "Biologia", "Ed. Dig. e Comp.", "Ed. Financeira", "Ed. Física",
+            "Física", "Filosofia", "Geografia", "História", "Inglês",
+            "Matemática", "Português", "Química", "Sociologia", "Proj. de Vida"
+        }
+
+        SHARED_DISCIPLINAS = {
+            "Banco de Dados": ["DS", "JOGOS"],
+            "Biossegurança": ["ENF", "ESTETICA"],
+            "Ciências Dados": ["DS", "IA_DADOS"],
+            "Eletricidade": ["ELETROMEC", "ELETRON"],
+            "Eletrônica": ["ELETROMEC", "ELETRON"],
+            "Inst. Elétricas": ["EDIF", "ELETROMEC"],
+            "Lóg. Comp.": ["DS", "JOGOS"],
+            "Máq. Elétricas": ["ELETROMEC", "ELETRON"],
+            "Prog. Mobile": ["DS", "JOGOS"],
+            "Seg. do Trabalho": ["ELETROMEC", "ELETRON"],
+            "Sist. Hidr. Pneumát.": ["ELETROMEC", "ELETRON"],
+        }
+
+        turma_to_curso_id = {t["nome_turma"]: curso_map.get(t["curso_nome"]) for t in data["turmas"]}
+        disc_cursos_inferred = {}
+        for h in data["horarios"]:
+            t_name = h.get("turma")
+            c_id = turma_to_curso_id.get(t_name)
+            if c_id:
+                disc_cursos_inferred.setdefault(h["disciplina"], set()).add(c_id)
+
         disc_map = {}
         for d_name in data["disciplinas"]:
             d_obj = db.query(Disciplina).filter(Disciplina.nome == d_name).first()
             if not d_obj:
                 words = re.sub(r"[^a-zA-Z0-9\s]", "", d_name).split()
                 sigla = "".join(w[:2].upper() for w in words[:3]) if words else "DISC"
-                d_obj = Disciplina(nome=d_name, sigla=sigla, curso_id=1, ativo=True)
+                if d_name in GERAL_DISCIPLINAS or d_name in SHARED_DISCIPLINAS:
+                    cid = None
+                else:
+                    cids = disc_cursos_inferred.get(d_name, set())
+                    cid = list(cids)[0] if len(cids) == 1 else None
+                d_obj = Disciplina(nome=d_name, sigla=sigla, curso_id=cid, ativo=True)
                 db.add(d_obj)
                 db.flush()
             disc_map[d_name] = d_obj.id
+
+        for d_name, siglas in SHARED_DISCIPLINAS.items():
+            d_obj = db.query(Disciplina).filter(Disciplina.nome == d_name).first()
+            if d_obj:
+                for s in siglas:
+                    c_obj = db.query(Curso).filter(Curso.sigla == s).first()
+                    if c_obj:
+                        assoc = db.execute(
+                            text("SELECT 1 FROM cursos_disciplinas WHERE curso_id = :cid AND disciplina_id = :did"),
+                            {"cid": c_obj.id, "did": d_obj.id}
+                        ).first()
+                        if not assoc:
+                            db.execute(
+                                text("INSERT INTO cursos_disciplinas (curso_id, disciplina_id) VALUES (:cid, :did)"),
+                                {"cid": c_obj.id, "did": d_obj.id}
+                            )
+        db.flush()
 
         if db.query(Horario).count() < 100:
             for h in data["horarios"]:

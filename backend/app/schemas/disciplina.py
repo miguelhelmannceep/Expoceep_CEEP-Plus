@@ -1,10 +1,11 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, field_validator
 
 class DisciplinaCreate(BaseModel):
     nome: str
     sigla: Optional[str] = None
-    curso_id: int
+    curso_id: Optional[int] = None
+    curso_ids: Optional[List[int]] = None
     ativo: Optional[bool] = True
 
     @field_validator("nome")
@@ -25,8 +26,8 @@ class DisciplinaCreate(BaseModel):
 
     @field_validator("curso_id")
     @classmethod
-    def validate_curso_id(cls, v: int) -> int:
-        if v <= 0:
+    def validate_curso_id(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v <= 0:
             raise ValueError("ID de curso inválido.")
         return v
 
@@ -34,6 +35,7 @@ class DisciplinaUpdate(BaseModel):
     nome: Optional[str] = None
     sigla: Optional[str] = None
     curso_id: Optional[int] = None
+    curso_ids: Optional[List[int]] = None
     ativo: Optional[bool] = None
 
     @field_validator("nome")
@@ -59,7 +61,10 @@ class DisciplinaOut(BaseModel):
     id: int
     nome: str
     sigla: Optional[str] = None
-    curso_id: int
+    curso_id: Optional[int] = None
     curso_nome: Optional[str] = None
     curso_sigla: Optional[str] = None
+    curso_ids: List[int] = []
+    cursos_nomes: List[str] = []
+    tipo: str = "EXCLUSIVA"  # "EXCLUSIVA" | "COMPARTILHADA" | "FORMACAO_GERAL"
     ativo: bool = True

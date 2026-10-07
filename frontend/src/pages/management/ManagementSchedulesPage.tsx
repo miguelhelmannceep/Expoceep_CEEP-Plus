@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Calendar,
   Clock,
@@ -111,6 +111,22 @@ export const ManagementSchedulesPage: React.FC = () => {
   const [selectedPresetSlot, setSelectedPresetSlot] = useState<string>("1");
   const [isCustomTime, setIsCustomTime] = useState(false);
 
+  // Professores ativos para novas alocações e disponibilidades
+  const activeProfessors = useMemo(() => {
+    return professors.filter((p) => p.ativo);
+  }, [professors]);
+
+  // Lista para o modal de horário: ativos + preserva o docente atual se for inativo histórico
+  const scheduleModalProfessors = useMemo(() => {
+    if (editingSchedule && editingSchedule.professor_id) {
+      const currentProf = professors.find((p) => p.id === editingSchedule.professor_id);
+      if (currentProf && !currentProf.ativo) {
+        return [currentProf, ...activeProfessors];
+      }
+    }
+    return activeProfessors;
+  }, [activeProfessors, editingSchedule, professors]);
+
   const [formData, setFormData] = useState<{
     turma_id: number;
     disciplina_id: number;
@@ -145,6 +161,36 @@ export const ManagementSchedulesPage: React.FC = () => {
     permitir_aula_dupla: true,
     sala_preferencial: "",
   });
+
+  // Lista de disciplinas compatíveis com a turma do modal de horário
+  const scheduleModalDisciplines = useMemo(() => {
+    const currentClass = classes.find((c) => c.id === formData.turma_id);
+    if (!currentClass || !currentClass.curso_id) return disciplines;
+
+    const classCourseId = currentClass.curso_id;
+    return disciplines.filter((d) => {
+      if (editingSchedule && editingSchedule.disciplina_id === d.id) return true;
+      if (d.tipo === "FORMACAO_GERAL" || (!d.curso_id && (!d.curso_ids || d.curso_ids.length === 0))) return true;
+      if (d.curso_id === classCourseId) return true;
+      if (d.curso_ids && d.curso_ids.includes(classCourseId)) return true;
+      return false;
+    });
+  }, [disciplines, classes, formData.turma_id, editingSchedule]);
+
+  // Lista de disciplinas compatíveis com a turma do modal de regras de carga
+  const ruleModalDisciplines = useMemo(() => {
+    const currentClass = classes.find((c) => c.id === ruleFormData.turma_id);
+    if (!currentClass || !currentClass.curso_id) return disciplines;
+
+    const classCourseId = currentClass.curso_id;
+    return disciplines.filter((d) => {
+      if (ruleFormData.disciplina_id === d.id) return true;
+      if (d.tipo === "FORMACAO_GERAL" || (!d.curso_id && (!d.curso_ids || d.curso_ids.length === 0))) return true;
+      if (d.curso_id === classCourseId) return true;
+      if (d.curso_ids && d.curso_ids.includes(classCourseId)) return true;
+      return false;
+    });
+  }, [disciplines, classes, ruleFormData.turma_id, ruleFormData.disciplina_id]);
 
   // Modal: Novo Bloqueio de Disponibilidade
   const [isAvailModalOpen, setIsAvailModalOpen] = useState(false);
@@ -283,7 +329,7 @@ export const ManagementSchedulesPage: React.FC = () => {
 
     const defaultTurmaId = selectedClassId || (classes.length > 0 ? classes[0].id : 0);
     const defaultDiscId = disciplines.length > 0 ? disciplines[0].id : 0;
-    const defaultProfId = professors.length > 0 ? professors[0].id : 0;
+    const defaultProfId = activeProfessors.length > 0 ? activeProfessors[0].id : (professors.length > 0 ? professors[0].id : 0);
 
     const defaultStart = isSelectedTarde ? "13:10" : "07:10";
     const defaultEnd = isSelectedTarde ? "14:00" : "08:00";
@@ -1484,9 +1530,9 @@ export const ManagementSchedulesPage: React.FC = () => {
                     <option value={0} disabled>
                       Selecione a disciplina...
                     </option>
-                    {disciplines.map((d) => (
+                    {scheduleModalDisciplines.map((d) => (
                       <option key={d.id} value={d.id}>
-                        {d.nome} {d.curso_sigla ? `(${d.curso_sigla})` : ""}
+                        {d.nome} {d.tipo === "FORMACAO_GERAL" ? "(Geral)" : d.tipo === "COMPARTILHADA" ? "(Compartilhada)" : d.curso_sigla ? `(${d.curso_sigla})` : ""}
                       </option>
                     ))}
                   </select>
@@ -1505,9 +1551,9 @@ export const ManagementSchedulesPage: React.FC = () => {
                     <option value={0} disabled>
                       Selecione o professor...
                     </option>
-                    {professors.map((p) => (
+                    {scheduleModalProfessors.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.nome}
+                        {p.nome} {!p.ativo ? "(Inativo)" : ""}
                       </option>
                     ))}
                   </select>
@@ -1580,9 +1626,9 @@ export const ManagementSchedulesPage: React.FC = () => {
                   onChange={(e) => setRuleFormData({ ...ruleFormData, disciplina_id: Number(e.target.value) })}
                   className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-slate-100"
                 >
-                  {disciplines.map((d) => (
+                  {ruleModalDisciplines.map((d) => (
                     <option key={d.id} value={d.id}>
-                      {d.nome} {d.curso_sigla ? `(${d.curso_sigla})` : ""}
+                      {d.nome} {d.tipo === "FORMACAO_GERAL" ? "(Geral)" : d.tipo === "COMPARTILHADA" ? "(Compartilhada)" : d.curso_sigla ? `(${d.curso_sigla})` : ""}
                     </option>
                   ))}
                 </select>
@@ -1719,7 +1765,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                   <select
                     value={availFormData.recurso_identificador}
                     onChange={(e) => {
-                      const prof = professors.find((p) => p.nome === e.target.value);
+                      const prof = activeProfessors.find((p) => p.nome === e.target.value);
                       setAvailFormData({
                         ...availFormData,
                         recurso_identificador: e.target.value,
@@ -1730,7 +1776,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                     className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-slate-100"
                   >
                     <option value="" disabled>Selecione o professor...</option>
-                    {professors.map((p) => (
+                    {activeProfessors.map((p) => (
                       <option key={p.id} value={p.nome}>{p.nome}</option>
                     ))}
                   </select>

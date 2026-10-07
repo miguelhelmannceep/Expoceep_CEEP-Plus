@@ -45,8 +45,9 @@ export const disciplineProfessorService = {
   },
 
   // --- PROFESSORES ---
-  async getProfessors(): Promise<ProfessorItem[]> {
-    return request<ProfessorItem[]>("/management/professors");
+  async getProfessors(ativo?: boolean): Promise<ProfessorItem[]> {
+    const query = ativo !== undefined ? `?ativo=${ativo}` : "";
+    return request<ProfessorItem[]>(`/management/professors${query}`);
   },
 
   async createProfessor(payload: CreateProfessorPayload): Promise<ProfessorItem> {

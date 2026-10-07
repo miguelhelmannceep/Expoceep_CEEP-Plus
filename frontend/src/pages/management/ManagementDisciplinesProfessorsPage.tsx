@@ -51,12 +51,16 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
   const [disciplineFormData, setDisciplineFormData] = useState<{
     nome: string;
     sigla: string;
-    curso_id: number;
+    tipo: "EXCLUSIVA" | "COMPARTILHADA" | "FORMACAO_GERAL";
+    curso_id: number | null;
+    curso_ids: number[];
     ativo: boolean;
   }>({
     nome: "",
     sigla: "",
-    curso_id: 0,
+    tipo: "EXCLUSIVA",
+    curso_id: null,
+    curso_ids: [],
     ativo: true,
   });
 
@@ -114,11 +118,13 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
   // --- Handlers de Disciplinas ---
   const handleOpenNewDisciplineModal = () => {
     setEditingDiscipline(null);
-    const defaultCourseId = courses.length > 0 ? courses[0].id : 0;
+    const defaultCourseId = courses.length > 0 ? courses[0].id : null;
     setDisciplineFormData({
       nome: "",
       sigla: "",
+      tipo: "EXCLUSIVA",
       curso_id: defaultCourseId,
+      curso_ids: [],
       ativo: true,
     });
     setIsDisciplineModalOpen(true);
@@ -126,10 +132,19 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
 
   const handleOpenEditDisciplineModal = (d: DisciplineItem) => {
     setEditingDiscipline(d);
+    let resolvedTipo: "EXCLUSIVA" | "COMPARTILHADA" | "FORMACAO_GERAL" = "EXCLUSIVA";
+    if (d.tipo === "FORMACAO_GERAL" || (!d.curso_id && (!d.curso_ids || d.curso_ids.length === 0))) {
+      resolvedTipo = "FORMACAO_GERAL";
+    } else if (d.tipo === "COMPARTILHADA" || (d.curso_ids && d.curso_ids.length > 0)) {
+      resolvedTipo = "COMPARTILHADA";
+    }
+
     setDisciplineFormData({
       nome: d.nome,
       sigla: d.sigla || "",
-      curso_id: d.curso_id,
+      tipo: resolvedTipo,
+      curso_id: d.curso_id ?? (courses.length > 0 ? courses[0].id : null),
+      curso_ids: d.curso_ids || [],
       ativo: d.ativo,
     });
     setIsDisciplineModalOpen(true);
@@ -141,8 +156,12 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
       showFeedback("error", "Informe o nome da disciplina.");
       return;
     }
-    if (!disciplineFormData.curso_id) {
+    if (disciplineFormData.tipo === "EXCLUSIVA" && !disciplineFormData.curso_id) {
       showFeedback("error", "Selecione o curso vinculado à disciplina.");
+      return;
+    }
+    if (disciplineFormData.tipo === "COMPARTILHADA" && (!disciplineFormData.curso_ids || disciplineFormData.curso_ids.length < 2)) {
+      showFeedback("error", "Selecione ao menos 2 cursos para uma disciplina compartilhada.");
       return;
     }
 
@@ -152,7 +171,8 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
         const payload: UpdateDisciplinePayload = {
           nome: disciplineFormData.nome.trim(),
           sigla: disciplineFormData.sigla.trim() ? disciplineFormData.sigla.trim().toUpperCase() : null,
-          curso_id: disciplineFormData.curso_id,
+          curso_id: disciplineFormData.tipo === "EXCLUSIVA" ? disciplineFormData.curso_id : null,
+          curso_ids: disciplineFormData.tipo === "COMPARTILHADA" ? disciplineFormData.curso_ids : [],
           ativo: disciplineFormData.ativo,
         };
         await disciplineProfessorService.updateDiscipline(editingDiscipline.id, payload);
@@ -161,7 +181,8 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
         const payload: CreateDisciplinePayload = {
           nome: disciplineFormData.nome.trim(),
           sigla: disciplineFormData.sigla.trim() ? disciplineFormData.sigla.trim().toUpperCase() : null,
-          curso_id: disciplineFormData.curso_id,
+          curso_id: disciplineFormData.tipo === "EXCLUSIVA" ? disciplineFormData.curso_id : null,
+          curso_ids: disciplineFormData.tipo === "COMPARTILHADA" ? disciplineFormData.curso_ids : [],
           ativo: disciplineFormData.ativo,
         };
         await disciplineProfessorService.createDiscipline(payload);
@@ -289,13 +310,23 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
 
   // Filtragens
   const filteredDisciplines = disciplines.filter((d) => {
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      d.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (d.sigla && d.sigla.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (d.curso_nome && d.curso_nome.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCourse =
-      selectedCourseFilter === "TODOS" || String(d.curso_id) === selectedCourseFilter;
-    return matchesSearch && matchesCourse;
+      d.nome.toLowerCase().includes(q) ||
+      (d.sigla && d.sigla.toLowerCase().includes(q)) ||
+      (d.curso_nome && d.curso_nome.toLowerCase().includes(q)) ||
+      (d.cursos_nomes && d.cursos_nomes.some((cn) => cn.toLowerCase().includes(q)));
+
+    if (!matchesSearch) return false;
+
+    if (selectedCourseFilter === "TODOS") return true;
+
+    const courseIdNum = Number(selectedCourseFilter);
+    return (
+      d.tipo === "FORMACAO_GERAL" ||
+      d.curso_id === courseIdNum ||
+      (d.curso_ids && d.curso_ids.includes(courseIdNum))
+    );
   });
 
   const filteredProfessors = professors.filter((p) => {
@@ -469,10 +500,20 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-1.5">
-                        <span className="text-xs font-bold text-[#2d3661] dark:text-[#7de06f] bg-[#2d3661]/10 dark:bg-[#7de06f]/10 border border-[#2d3661]/20 dark:border-[#7de06f]/20 px-2 py-0.5 rounded-lg">
-                          {d.curso_sigla || "CURSO"}
-                        </span>
+                      <div className="flex items-center space-x-1.5 flex-wrap gap-1">
+                        {d.tipo === "FORMACAO_GERAL" ? (
+                          <span className="text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-lg">
+                            Formação Geral
+                          </span>
+                        ) : d.tipo === "COMPARTILHADA" ? (
+                          <span className="text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-lg">
+                            Compartilhada ({d.cursos_nomes?.length || d.curso_ids?.length || 0})
+                          </span>
+                        ) : (
+                          <span className="text-xs font-bold text-[#2d3661] dark:text-[#7de06f] bg-[#2d3661]/10 dark:bg-[#7de06f]/10 border border-[#2d3661]/20 dark:border-[#7de06f]/20 px-2 py-0.5 rounded-lg">
+                            {d.curso_sigla || d.curso_nome || "Exclusiva"}
+                          </span>
+                        )}
                         {d.sigla && (
                           <span className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                             {d.sigla}
@@ -487,8 +528,14 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                     <div>
                       <h4 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug">{d.nome}</h4>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center space-x-1">
-                        <GraduationCap className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="line-clamp-1">{d.curso_nome || "Curso Técnico"}</span>
+                        <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="line-clamp-1">
+                          {d.tipo === "FORMACAO_GERAL"
+                            ? "Base Nacional Comum / Transversal"
+                            : d.tipo === "COMPARTILHADA"
+                            ? (d.cursos_nomes && d.cursos_nomes.length > 0 ? d.cursos_nomes.join(", ") : "Compartilhada entre cursos")
+                            : (d.curso_nome || "Curso Técnico")}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -645,29 +692,123 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveDiscipline} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Curso Vinculado *</label>
-                <select
-                  value={disciplineFormData.curso_id}
-                  onChange={(e) =>
-                    setDisciplineFormData({
-                      ...disciplineFormData,
-                      curso_id: Number(e.target.value),
-                    })
-                  }
-                  required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 font-medium focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
-                >
-                  <option value={0} disabled>
-                    Selecione o curso...
-                  </option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.sigla} — {c.nome}
-                    </option>
-                  ))}
-                </select>
+              {/* Tipo de Disciplina */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Tipo de Componente Curricular *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDisciplineFormData({ ...disciplineFormData, tipo: "EXCLUSIVA" })}
+                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all text-center ${
+                      disciplineFormData.tipo === "EXCLUSIVA"
+                        ? "bg-[#2d3661] text-white border-[#2d3661] shadow-sm"
+                        : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    Exclusiva
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDisciplineFormData({ ...disciplineFormData, tipo: "COMPARTILHADA" })}
+                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all text-center ${
+                      disciplineFormData.tipo === "COMPARTILHADA"
+                        ? "bg-[#2d3661] text-white border-[#2d3661] shadow-sm"
+                        : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    Compartilhada
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDisciplineFormData({ ...disciplineFormData, tipo: "FORMACAO_GERAL" })}
+                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all text-center ${
+                      disciplineFormData.tipo === "FORMACAO_GERAL"
+                        ? "bg-[#2d3661] text-white border-[#2d3661] shadow-sm"
+                        : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    Formação Geral
+                  </button>
+                </div>
               </div>
+
+              {/* Exclusiva: Dropdown de Curso Único */}
+              {disciplineFormData.tipo === "EXCLUSIVA" && (
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Curso Vinculado *</label>
+                  <select
+                    value={disciplineFormData.curso_id ?? ""}
+                    onChange={(e) =>
+                      setDisciplineFormData({
+                        ...disciplineFormData,
+                        curso_id: e.target.value ? Number(e.target.value) : null,
+                      })
+                    }
+                    required
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 font-medium focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2d3661]/20 focus:border-[#2d3661] transition-all"
+                  >
+                    <option value="" disabled>
+                      Selecione o curso...
+                    </option>
+                    {courses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.sigla} — {c.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Compartilhada: Seleção Múltipla de Cursos */}
+              {disciplineFormData.tipo === "COMPARTILHADA" && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Cursos que compartilham esta disciplina (mínimo 2) *
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                    {courses.map((c) => {
+                      const isChecked = disciplineFormData.curso_ids.includes(c.id);
+                      return (
+                        <label
+                          key={c.id}
+                          className="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700/50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              const newIds = e.target.checked
+                                ? [...disciplineFormData.curso_ids, c.id]
+                                : disciplineFormData.curso_ids.filter((id) => id !== c.id);
+                              setDisciplineFormData({
+                                ...disciplineFormData,
+                                curso_ids: newIds,
+                              });
+                            }}
+                            className="w-3.5 h-3.5 rounded text-[#2d3661] focus:ring-[#2d3661]"
+                          />
+                          <span className="font-medium truncate">{c.sigla} — {c.nome}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Selecionados: {disciplineFormData.curso_ids.length} curso(s)
+                  </p>
+                </div>
+              )}
+
+              {/* Formação Geral: Nota explicativa */}
+              {disciplineFormData.tipo === "FORMACAO_GERAL" && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-200">
+                  <p className="font-semibold">Disciplina de Formação Geral / BNCC</p>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
+                    Esta disciplina não pertence a um curso específico e estará disponível para turmas de todos os cursos.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Nome da Disciplina *</label>

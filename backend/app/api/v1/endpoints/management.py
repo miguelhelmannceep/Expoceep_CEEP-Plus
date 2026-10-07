@@ -1,11 +1,11 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, and_
 from app.api.deps import get_db, require_roles
 from app.models.usuario import Usuario
 from app.models.turma import Curso, Turma
-from app.models.disciplina import Disciplina
+from app.models.disciplina import Disciplina, curso_disciplina
 from app.models.professor import Professor
 from app.models.aviso import Aviso
 from app.models.horario import Horario, PeriodoHorario, DisponibilidadeRecurso, RegraDisciplina
@@ -467,6 +467,41 @@ def delete_class(
 # GESTÃO DE DISCIPLINAS (SUBJECTS)
 # ==========================================
 
+def serialize_disciplina(d: Disciplina) -> DisciplinaOut:
+    shared = d.cursos_compartilhados if hasattr(d, "cursos_compartilhados") else []
+    if d.curso_id is not None:
+        tipo = "EXCLUSIVA"
+        c_ids = [d.curso_id]
+        c_names = [d.curso_rel.nome] if d.curso_rel else []
+        c_nome = d.curso_rel.nome if d.curso_rel else None
+        c_sigla = d.curso_rel.sigla if d.curso_rel else None
+    elif len(shared) > 0:
+        tipo = "COMPARTILHADA"
+        c_ids = [c.id for c in shared]
+        c_names = [c.nome for c in shared]
+        c_nome = ", ".join(c_names)
+        c_sigla = ", ".join(c.sigla for c in shared)
+    else:
+        tipo = "FORMACAO_GERAL"
+        c_ids = []
+        c_names = []
+        c_nome = "Formação Geral"
+        c_sigla = "GERAL"
+
+    return DisciplinaOut(
+        id=d.id,
+        nome=d.nome,
+        sigla=d.sigla,
+        curso_id=d.curso_id,
+        curso_nome=c_nome,
+        curso_sigla=c_sigla,
+        curso_ids=c_ids,
+        cursos_nomes=c_names,
+        tipo=tipo,
+        ativo=d.ativo if d.ativo is not None else True
+    )
+
+
 @router.get("/disciplines", response_model=List[DisciplinaOut], summary="Lista todas as disciplinas para a Gestão")
 def list_management_disciplines(
     curso_id: Optional[int] = None,
@@ -475,23 +510,21 @@ def list_management_disciplines(
 ):
     query = db.query(Disciplina)
     if curso_id:
-        query = query.filter(Disciplina.curso_id == curso_id)
-    disciplinas = query.order_by(Disciplina.nome.asc()).all()
-    
-    result = []
-    for d in disciplinas:
-        result.append(
-            DisciplinaOut(
-                id=d.id,
-                nome=d.nome,
-                sigla=d.sigla,
-                curso_id=d.curso_id,
-                curso_nome=d.curso_rel.nome if d.curso_rel else None,
-                curso_sigla=d.curso_rel.sigla if d.curso_rel else None,
-                ativo=d.ativo if d.ativo is not None else True
+        subq_shared = db.query(curso_disciplina.c.disciplina_id).filter(curso_disciplina.c.curso_id == curso_id)
+        subq_all_shared = db.query(curso_disciplina.c.disciplina_id)
+
+        query = query.filter(
+            or_(
+                Disciplina.curso_id == curso_id,
+                Disciplina.id.in_(subq_shared),
+                and_(
+                    Disciplina.curso_id.is_(None),
+                    ~Disciplina.id.in_(subq_all_shared)
+                )
             )
         )
-    return result
+    disciplinas = query.order_by(Disciplina.nome.asc()).all()
+    return [serialize_disciplina(d) for d in disciplinas]
 
 
 @router.post("/disciplines", response_model=DisciplinaOut, status_code=status.HTTP_201_CREATED, summary="Cria uma nova disciplina")
@@ -500,43 +533,62 @@ def create_discipline(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
-    curso = db.query(Curso).filter(Curso.id == payload.curso_id).first()
-    if not curso:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Curso selecionado não foi encontrado."
-        )
+    target_curso_ids = []
+    if payload.curso_ids is not None:
+        target_curso_ids = payload.curso_ids
+    elif payload.curso_id is not None:
+        target_curso_ids = [payload.curso_id]
+
+    cursos_objs = []
+    if target_curso_ids:
+        cursos_objs = db.query(Curso).filter(Curso.id.in_(target_curso_ids)).all()
+        if len(cursos_objs) != len(set(target_curso_ids)):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Um ou mais cursos informados não foram encontrados."
+            )
 
     nome_clean = payload.nome.strip()
-    dup = db.query(Disciplina).filter(
-        func.lower(Disciplina.nome) == func.lower(nome_clean),
-        Disciplina.curso_id == payload.curso_id
-    ).first()
-    if dup:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Já existe uma disciplina '{nome_clean}' cadastrada para o curso {curso.nome}."
-        )
+
+    if len(target_curso_ids) == 1:
+        single_cid = target_curso_ids[0]
+        dup = db.query(Disciplina).filter(
+            func.lower(Disciplina.nome) == func.lower(nome_clean),
+            Disciplina.curso_id == single_cid
+        ).first()
+        if dup:
+            curso_nome = cursos_objs[0].nome if cursos_objs else f"ID {single_cid}"
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Já existe uma disciplina '{nome_clean}' cadastrada para o curso {curso_nome}."
+            )
+        curso_id_final = single_cid
+    else:
+        dup = db.query(Disciplina).filter(
+            func.lower(Disciplina.nome) == func.lower(nome_clean),
+            Disciplina.curso_id.is_(None)
+        ).first()
+        if dup:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Já existe uma disciplina '{nome_clean}' com este escopo."
+            )
+        curso_id_final = None
 
     nova_disciplina = Disciplina(
         nome=nome_clean,
         sigla=payload.sigla.strip().upper() if payload.sigla else None,
-        curso_id=curso.id,
+        curso_id=curso_id_final,
         ativo=payload.ativo if payload.ativo is not None else True
     )
+    if len(target_curso_ids) > 1:
+        nova_disciplina.cursos_compartilhados = cursos_objs
+
     db.add(nova_disciplina)
     db.commit()
     db.refresh(nova_disciplina)
 
-    return DisciplinaOut(
-        id=nova_disciplina.id,
-        nome=nova_disciplina.nome,
-        sigla=nova_disciplina.sigla,
-        curso_id=nova_disciplina.curso_id,
-        curso_nome=curso.nome,
-        curso_sigla=curso.sigla,
-        ativo=nova_disciplina.ativo
-    )
+    return serialize_disciplina(nova_disciplina)
 
 
 @router.put("/disciplines/{discipline_id}", response_model=DisciplinaOut, summary="Edita uma disciplina existente")
@@ -553,27 +605,29 @@ def update_discipline(
             detail="Disciplina não encontrada."
         )
 
-    if payload.curso_id is not None:
-        curso = db.query(Curso).filter(Curso.id == payload.curso_id).first()
-        if not curso:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Novo curso selecionado não foi encontrado."
-            )
-        disciplina.curso_id = curso.id
+    if payload.curso_ids is not None or payload.curso_id is not None:
+        target_curso_ids = payload.curso_ids if payload.curso_ids is not None else ([payload.curso_id] if payload.curso_id else [])
+        cursos_objs = []
+        if target_curso_ids:
+            cursos_objs = db.query(Curso).filter(Curso.id.in_(target_curso_ids)).all()
+            if len(cursos_objs) != len(set(target_curso_ids)):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Um ou mais cursos informados não foram encontrados."
+                )
+
+        if len(target_curso_ids) == 1:
+            disciplina.curso_id = target_curso_ids[0]
+            disciplina.cursos_compartilhados = []
+        elif len(target_curso_ids) > 1:
+            disciplina.curso_id = None
+            disciplina.cursos_compartilhados = cursos_objs
+        else:
+            disciplina.curso_id = None
+            disciplina.cursos_compartilhados = []
 
     if payload.nome is not None:
         nome_clean = payload.nome.strip()
-        dup = db.query(Disciplina).filter(
-            func.lower(Disciplina.nome) == func.lower(nome_clean),
-            Disciplina.curso_id == disciplina.curso_id,
-            Disciplina.id != discipline_id
-        ).first()
-        if dup:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Já existe outra disciplina com o nome '{nome_clean}' neste curso."
-            )
         disciplina.nome = nome_clean
 
     if payload.sigla is not None:
@@ -585,15 +639,7 @@ def update_discipline(
     db.commit()
     db.refresh(disciplina)
 
-    return DisciplinaOut(
-        id=disciplina.id,
-        nome=disciplina.nome,
-        sigla=disciplina.sigla,
-        curso_id=disciplina.curso_id,
-        curso_nome=disciplina.curso_rel.nome if disciplina.curso_rel else None,
-        curso_sigla=disciplina.curso_rel.sigla if disciplina.curso_rel else None,
-        ativo=disciplina.ativo
-    )
+    return serialize_disciplina(disciplina)
 
 
 @router.patch("/disciplines/{discipline_id}/toggle-active", response_model=DisciplinaOut, summary="Ativa ou desativa uma disciplina")
@@ -613,15 +659,7 @@ def toggle_discipline_active(
     db.commit()
     db.refresh(disciplina)
 
-    return DisciplinaOut(
-        id=disciplina.id,
-        nome=disciplina.nome,
-        sigla=disciplina.sigla,
-        curso_id=disciplina.curso_id,
-        curso_nome=disciplina.curso_rel.nome if disciplina.curso_rel else None,
-        curso_sigla=disciplina.curso_rel.sigla if disciplina.curso_rel else None,
-        ativo=disciplina.ativo
-    )
+    return serialize_disciplina(disciplina)
 
 
 @router.delete("/disciplines/{discipline_id}", summary="Exclui uma disciplina")
@@ -639,7 +677,10 @@ def delete_discipline(
 
     # Integridade: checa se há aulas na grade usando esta disciplina
     horarios_count = db.query(Horario).filter(
-        func.lower(Horario.disciplina) == func.lower(disciplina.nome)
+        or_(
+            Horario.disciplina_id == disciplina.id,
+            func.lower(Horario.disciplina) == func.lower(disciplina.nome)
+        )
     ).count()
     if horarios_count > 0:
         raise HTTPException(
@@ -658,10 +699,14 @@ def delete_discipline(
 
 @router.get("/professors", response_model=List[ProfessorOut], summary="Lista todos os professores para a Gestão")
 def list_management_professors(
+    ativo: Optional[bool] = Query(None, description="Filtrar por status ativo/inativo"),
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
-    professores = db.query(Professor).order_by(Professor.nome.asc()).all()
+    query = db.query(Professor)
+    if ativo is not None:
+        query = query.filter(Professor.ativo == ativo)
+    professores = query.order_by(Professor.nome.asc()).all()
     return [
         ProfessorOut(
             id=p.id,
@@ -1056,11 +1101,21 @@ def create_schedule(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Professor selecionado não foi encontrado."
             )
+        if not professor_obj.ativo:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Não é possível alocar aulas para um professor inativo."
+            )
         professor_nome = professor_obj.nome
     elif professor_nome:
         professor_obj = db.query(Professor).filter(
             func.lower(Professor.nome) == func.lower(professor_nome)
         ).first()
+        if professor_obj and not professor_obj.ativo:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Não é possível alocar aulas para um professor inativo."
+            )
     else:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -1160,7 +1215,20 @@ def update_schedule(
     professor_id = payload.professor_id if payload.professor_id is not None else horario.professor_id
     professor_nome = payload.professor.strip() if payload.professor is not None else horario.professor
     professor_obj = None
-    if professor_id:
+    if payload.professor_id is not None:
+        professor_obj = db.query(Professor).filter(Professor.id == payload.professor_id).first()
+        if not professor_obj:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Professor informado não foi encontrado."
+            )
+        if not professor_obj.ativo:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Não é possível alocar aulas para um professor inativo."
+            )
+        professor_nome = professor_obj.nome
+    elif professor_id:
         professor_obj = db.query(Professor).filter(Professor.id == professor_id).first()
         if not professor_obj:
             raise HTTPException(
@@ -1168,6 +1236,18 @@ def update_schedule(
                 detail="Professor informado não foi encontrado."
             )
         professor_nome = professor_obj.nome
+    elif payload.professor is not None:
+        professor_obj = db.query(Professor).filter(
+            func.lower(Professor.nome) == func.lower(payload.professor.strip())
+        ).first()
+        if professor_obj and not professor_obj.ativo:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Não é possível alocar aulas para um professor inativo."
+            )
+        if professor_obj:
+            professor_id = professor_obj.id
+            professor_nome = professor_obj.nome
 
     # 4. Dia e horários
     dia_semana = payload.dia_semana.strip() if payload.dia_semana is not None else horario.dia_semana
@@ -1342,8 +1422,18 @@ def create_availability(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Horário de início deve ser anterior ao horário de término."
         )
+
+    tipo_recurso_clean = payload.tipo_recurso.strip().upper()
+    if tipo_recurso_clean == "PROFESSOR" and payload.recurso_id:
+        prof = db.query(Professor).filter(Professor.id == payload.recurso_id).first()
+        if prof and not prof.ativo:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Não é possível definir disponibilidade para um professor inativo."
+            )
+
     disp = DisponibilidadeRecurso(
-        tipo_recurso=payload.tipo_recurso.strip().upper(),
+        tipo_recurso=tipo_recurso_clean,
         recurso_id=payload.recurso_id,
         recurso_identificador=payload.recurso_identificador.strip(),
         dia_semana=payload.dia_semana.strip(),

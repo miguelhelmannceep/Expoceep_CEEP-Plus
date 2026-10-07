@@ -281,7 +281,10 @@ export interface DisciplineItem {
   id: number;
   nome: string;
   sigla?: string | null;
-  curso_id: number;
+  curso_id?: number | null;
+  curso_ids?: number[];
+  cursos_nomes?: string[];
+  tipo?: "EXCLUSIVA" | "COMPARTILHADA" | "FORMACAO_GERAL" | string;
   curso_nome?: string | null;
   curso_sigla?: string | null;
   ativo: boolean;
@@ -290,14 +293,16 @@ export interface DisciplineItem {
 export interface CreateDisciplinePayload {
   nome: string;
   sigla?: string | null;
-  curso_id: number;
+  curso_id?: number | null;
+  curso_ids?: number[];
   ativo?: boolean;
 }
 
 export interface UpdateDisciplinePayload {
   nome?: string;
   sigla?: string | null;
-  curso_id?: number;
+  curso_id?: number | null;
+  curso_ids?: number[];
   ativo?: boolean;
 }
 

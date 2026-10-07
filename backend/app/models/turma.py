@@ -11,7 +11,12 @@ class Curso(Base):
     ativo = Column(Boolean, default=True, nullable=False)
 
     turmas = relationship("Turma", back_populates="curso_rel")
-    disciplinas = relationship("Disciplina", back_populates="curso_rel")
+    disciplinas = relationship("Disciplina", back_populates="curso_rel", foreign_keys="Disciplina.curso_id")
+    disciplinas_compartilhadas = relationship(
+        "Disciplina",
+        secondary="cursos_disciplinas",
+        back_populates="cursos_compartilhados"
+    )
 
 
 class Turma(Base):

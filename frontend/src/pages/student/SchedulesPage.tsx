@@ -203,6 +203,10 @@ export const SchedulesPage: React.FC = () => {
 
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
   const [selectedDay, setSelectedDay] = useState<string>("Segunda-feira");
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<"TODOS" | "A" | "B">(() => {
+    const saved = localStorage.getItem("ceep_student_group_filter");
+    return saved === "A" || saved === "B" ? saved : "TODOS";
+  });
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -322,6 +326,11 @@ export const SchedulesPage: React.FC = () => {
     localStorage.setItem("ceep_student_selected_class_id", String(id));
   };
 
+  const handleGroupFilterChange = (filter: "TODOS" | "A" | "B") => {
+    setSelectedGroupFilter(filter);
+    localStorage.setItem("ceep_student_group_filter", filter);
+  };
+
   // Fechar dropdowns abertos ao clicar fora ou pressionar Escape
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
@@ -358,12 +367,12 @@ export const SchedulesPage: React.FC = () => {
       {
         value: "Manhã",
         label: "Manhã",
-        icon: <Sun className="w-4 h-4 text-amber-500 shrink-0" />,
+        icon: <Sun className="w-4 h-4 text-[#2d3661] dark:text-[#7de06f] shrink-0" />,
       },
       {
         value: "Tarde",
         label: "Tarde",
-        icon: <Sunset className="w-4 h-4 text-amber-600 shrink-0" />,
+        icon: <Sunset className="w-4 h-4 text-[#4aaa3c] dark:text-[#7de06f] shrink-0" />,
       },
     ],
     []
@@ -398,7 +407,13 @@ export const SchedulesPage: React.FC = () => {
   };
 
   const filledPeriodsCount = currentPeriods.filter(
-    (p) => !p.is_intervalo && filteredSchedules.some((s) => checkOverlap(s, p))
+    (p) =>
+      !p.is_intervalo &&
+      filteredSchedules.some(
+        (s) =>
+          checkOverlap(s, p) &&
+          (selectedGroupFilter === "TODOS" || s.grupo === selectedGroupFilter || !s.grupo)
+      )
   ).length;
 
   if (isLoadingClasses) {
@@ -449,9 +464,9 @@ export const SchedulesPage: React.FC = () => {
             onSelect={handleTurnoChange}
             selectedDisplayIcon={
               selectedTurno === "Manhã" ? (
-                <Sun className="w-4 h-4 text-amber-500 shrink-0" />
+                <Sun className="w-4 h-4 text-[#2d3661] dark:text-[#7de06f] shrink-0" />
               ) : selectedTurno === "Tarde" ? (
-                <Sunset className="w-4 h-4 text-amber-600 shrink-0" />
+                <Sunset className="w-4 h-4 text-[#4aaa3c] dark:text-[#7de06f] shrink-0" />
               ) : (
                 <Clock className="w-4 h-4 text-slate-400 shrink-0" />
               )
@@ -571,6 +586,48 @@ export const SchedulesPage: React.FC = () => {
             })}
           </div>
 
+          {/* Seletor de Subgrupo (Persistente no localStorage) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 px-1">
+              Visualizar subgrupo:
+            </span>
+            <div className="flex items-center space-x-1 bg-slate-200/60 dark:bg-slate-900/60 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => handleGroupFilterChange("TODOS")}
+                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  selectedGroupFilter === "TODOS"
+                    ? "bg-[#2d3661] dark:bg-[#4aaa3c] text-white shadow-xs"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
+              >
+                Todas as Aulas
+              </button>
+              <button
+                type="button"
+                onClick={() => handleGroupFilterChange("A")}
+                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  selectedGroupFilter === "A"
+                    ? "bg-[#2d3661] text-white shadow-xs"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
+              >
+                [A] Meu Grupo
+              </button>
+              <button
+                type="button"
+                onClick={() => handleGroupFilterChange("B")}
+                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  selectedGroupFilter === "B"
+                    ? "bg-[#4aaa3c] text-white shadow-xs"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
+              >
+                [B] Meu Grupo
+              </button>
+            </div>
+          </div>
+
           {/* Lista de Aulas do Dia */}
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
@@ -598,24 +655,24 @@ export const SchedulesPage: React.FC = () => {
                     return (
                       <div
                         key={period.id}
-                        className="p-3.5 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 rounded-2xl flex items-center justify-between transition-colors shadow-xs"
+                        className="p-3.5 bg-slate-100/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 rounded-2xl flex items-center justify-between transition-colors shadow-xs"
                       >
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 flex items-center justify-center shrink-0">
+                          <div className="w-8 h-8 rounded-xl bg-slate-200/80 dark:bg-slate-700 text-[#2d3661] dark:text-[#7de06f] flex items-center justify-center shrink-0">
                             <Coffee className="w-4 h-4" />
                           </div>
                           <div>
                             <div className="flex items-center space-x-2">
-                              <span className="text-xs font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wide">
+                              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
                                 Intervalo / Recreio
                               </span>
                             </div>
-                            <p className="text-[11px] text-amber-700/80 dark:text-amber-400 font-medium">
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                               Pausa pedagógica para lanche e descanso
                             </p>
                           </div>
                         </div>
-                        <span className="text-xs font-mono font-bold text-amber-800 dark:text-amber-300 bg-amber-100/80 dark:bg-amber-900/60 px-2.5 py-1 rounded-lg">
+                        <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-200/70 dark:bg-slate-700/80 px-2.5 py-1 rounded-lg">
                           {period.inicio} – {period.fim}
                         </span>
                       </div>
@@ -623,9 +680,19 @@ export const SchedulesPage: React.FC = () => {
                   }
 
                   // 2. PERÍODO LETIVO
-                  const matchingSchedules = filteredSchedules.filter((item) =>
+                  const rawMatchingSchedules = filteredSchedules.filter((item) =>
                     checkOverlap(item, period)
                   );
+
+                  const matchingSchedules = rawMatchingSchedules.filter((item) => {
+                    if (selectedGroupFilter === "A") {
+                      return item.grupo === "A" || !item.grupo;
+                    }
+                    if (selectedGroupFilter === "B") {
+                      return item.grupo === "B" || !item.grupo;
+                    }
+                    return true;
+                  });
 
                   // Período vago / sem aula
                   if (matchingSchedules.length === 0) {
@@ -663,7 +730,11 @@ export const SchedulesPage: React.FC = () => {
                       <Card
                         key={`${period.id}-${item.id}`}
                         className={`p-3.5 space-y-2 border-slate-100 dark:border-slate-700/80 hover:border-slate-200 dark:hover:border-slate-600 transition-all ${
-                          isDouble
+                          item.grupo === "A"
+                            ? "border-l-4 border-l-[#2d3661]"
+                            : item.grupo === "B"
+                            ? "border-l-4 border-l-[#4aaa3c]"
+                            : isDouble
                             ? "border-l-4 border-l-[#2d3661] dark:border-l-[#7de06f]"
                             : ""
                         }`}
@@ -679,20 +750,34 @@ export const SchedulesPage: React.FC = () => {
                             </span>
                           </div>
 
-                          {isDouble && (
-                            <span
-                              className="text-[10px] font-bold bg-[#2d3661]/10 dark:bg-[#7de06f]/20 text-[#2d3661] dark:text-[#7de06f] px-2 py-0.5 rounded-md border border-[#2d3661]/20 dark:border-[#7de06f]/30"
-                              title={
-                                isPart1
-                                  ? "Aula dupla (1ª parte)"
-                                  : isPart2
-                                  ? "Aula dupla (2ª parte)"
-                                  : "Aula dupla"
-                              }
-                            >
-                              {isPart1 ? "Aula Dupla (1/2)" : isPart2 ? "Aula Dupla (2/2)" : "Aula Dupla"}
-                            </span>
-                          )}
+                          <div className="flex items-center space-x-1.5">
+                            {item.grupo === "A" && (
+                              <span className="text-[10px] font-bold bg-[#2d3661]/10 dark:bg-[#2d3661]/30 text-[#2d3661] dark:text-slate-100 border border-[#2d3661]/25 dark:border-[#2d3661]/40 px-2 py-0.5 rounded-md flex items-center space-x-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#2d3661]" />
+                                <span>[A] Grupo A</span>
+                              </span>
+                            )}
+                            {item.grupo === "B" && (
+                              <span className="text-[10px] font-bold bg-[#4aaa3c]/10 dark:bg-[#4aaa3c]/25 text-[#4aaa3c] dark:text-[#7de06f] border border-[#4aaa3c]/25 dark:border-[#4aaa3c]/40 px-2 py-0.5 rounded-md flex items-center space-x-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#4aaa3c]" />
+                                <span>[B] Grupo B</span>
+                              </span>
+                            )}
+                            {isDouble && (
+                              <span
+                                className="text-[10px] font-bold bg-[#2d3661]/10 dark:bg-[#7de06f]/20 text-[#2d3661] dark:text-[#7de06f] px-2 py-0.5 rounded-md border border-[#2d3661]/20 dark:border-[#7de06f]/30"
+                                title={
+                                  isPart1
+                                    ? "Aula dupla (1ª parte)"
+                                    : isPart2
+                                    ? "Aula dupla (2ª parte)"
+                                    : "Aula dupla"
+                                }
+                              >
+                                {isPart1 ? "Dupla (1/2)" : isPart2 ? "Dupla (2/2)" : "Dupla"}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         <div>

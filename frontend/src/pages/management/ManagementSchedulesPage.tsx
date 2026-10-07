@@ -136,6 +136,7 @@ export const ManagementSchedulesPage: React.FC = () => {
     horario_fim: string;
     sala: string;
     duracao: number;
+    grupo: string | null;
   }>({
     turma_id: 0,
     disciplina_id: 0,
@@ -145,6 +146,7 @@ export const ManagementSchedulesPage: React.FC = () => {
     horario_fim: "08:00",
     sala: "Sala 101",
     duracao: 1,
+    grupo: null,
   });
 
   // Modal: Excluir Aula
@@ -323,7 +325,12 @@ export const ManagementSchedulesPage: React.FC = () => {
       : DEFAULT_PERIODS_MANHA;
 
   // Abrir Modal de Criação Rápida de Aula
-  const handleOpenNewModal = (defaultDay?: string, defaultInicio?: string, defaultFim?: string) => {
+  const handleOpenNewModal = (
+    defaultDay?: string,
+    defaultInicio?: string,
+    defaultFim?: string,
+    defaultGrupo?: string | null
+  ) => {
     setEditingSchedule(null);
     setModalConflictError(null);
 
@@ -354,6 +361,7 @@ export const ManagementSchedulesPage: React.FC = () => {
       horario_fim: fim,
       sala: rooms.length > 0 ? rooms[0] : "Sala 101",
       duracao: 1,
+      grupo: defaultGrupo || null,
     });
     setIsModalOpen(true);
   };
@@ -382,6 +390,7 @@ export const ManagementSchedulesPage: React.FC = () => {
       horario_fim: item.horario_fim,
       sala: item.sala || (rooms.length > 0 ? rooms[0] : "Sala 101"),
       duracao: item.duracao || 1,
+      grupo: item.grupo || null,
     });
     setIsModalOpen(true);
   };
@@ -436,6 +445,7 @@ export const ManagementSchedulesPage: React.FC = () => {
           horario_fim: formData.horario_fim,
           sala: formData.sala,
           duracao: formData.duracao,
+          grupo: formData.grupo ? formData.grupo : null,
         };
         await managementScheduleService.updateSchedule(editingSchedule.id, payload);
         showFeedback("success", "Aula atualizada na grade com sucesso.");
@@ -449,6 +459,7 @@ export const ManagementSchedulesPage: React.FC = () => {
           horario_fim: formData.horario_fim,
           sala: formData.sala,
           duracao: formData.duracao,
+          grupo: formData.grupo ? formData.grupo : null,
         };
         await managementScheduleService.createSchedule(payload);
         showFeedback("success", "Aula cadastrada na grade com sucesso.");
@@ -711,7 +722,7 @@ export const ManagementSchedulesPage: React.FC = () => {
           <BarChart3 className="w-4 h-4" />
           <span>Carga Semanal & Balanço</span>
           {disciplineBalance.some((b) => b.balanco_status === "PENDENTE") && (
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span className="w-2 h-2 rounded-full bg-[#2d3661] dark:bg-[#7de06f]" />
           )}
         </button>
 
@@ -882,7 +893,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                       item.balanco_status === "OK"
                         ? "bg-[#4aaa3c]/10 text-emerald-800 dark:text-[#7de06f] border-[#4aaa3c]/30"
                         : item.balanco_status === "PENDENTE"
-                        ? "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800"
+                        ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700"
                         : "bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200"
                     }`}
                   >
@@ -937,20 +948,20 @@ export const ManagementSchedulesPage: React.FC = () => {
                       return (
                         <tr
                           key={period.id}
-                          className="bg-amber-50/60 dark:bg-amber-950/20 border-y border-amber-200/50 dark:border-amber-900/30"
+                          className="bg-slate-100/70 dark:bg-slate-800/40 border-y border-slate-200 dark:border-slate-700"
                         >
-                          <td className="py-2.5 px-4 align-middle w-36 bg-amber-100/40 dark:bg-amber-950/40 border-r border-amber-200/50 dark:border-amber-900/40">
-                            <div className="flex items-center space-x-1.5 text-amber-800 dark:text-amber-300">
+                          <td className="py-2.5 px-4 align-middle w-36 bg-slate-200/50 dark:bg-slate-800/60 border-r border-slate-200 dark:border-slate-700">
+                            <div className="flex items-center space-x-1.5 text-slate-700 dark:text-slate-300">
                               <Coffee className="w-3.5 h-3.5 shrink-0" />
                               <span className="text-xs font-bold">{period.nome}</span>
                             </div>
-                            <p className="text-[10px] font-mono text-amber-700 dark:text-amber-400 mt-0.5">
+                            <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
                               {period.inicio} – {period.fim}
                             </p>
                           </td>
                           <td
                             colSpan={displayedDays.length}
-                            className="py-2.5 px-4 text-center text-xs font-semibold text-amber-800 dark:text-amber-300 tracking-wide"
+                            className="py-2.5 px-4 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 tracking-wide"
                           >
                             ☕ Intervalo / Recreio Escolar — Horário bloqueado para agendamento de aulas regulares
                           </td>
@@ -996,23 +1007,44 @@ export const ManagementSchedulesPage: React.FC = () => {
                                       item.horario_fim > period.fim;
                                     const isPart1 = item.horario_inicio === period.inicio;
                                     const isPart2 = item.horario_fim === period.fim;
+                                    const borderClass =
+                                      item.grupo === "A"
+                                        ? "border-l-4 border-l-[#2d3661]"
+                                        : item.grupo === "B"
+                                        ? "border-l-4 border-l-[#4aaa3c]"
+                                        : isDouble
+                                        ? "border-l-4 border-l-[#2d3661] dark:border-l-[#7de06f]"
+                                        : "";
 
                                     return (
                                       <div
                                         key={`${period.id}-${item.id}`}
-                                        className={`group relative bg-slate-50 dark:bg-slate-800/80 hover:bg-[#2d3661]/5 dark:hover:bg-[#2d3661]/20 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 shadow-xs transition-all space-y-1.5 ${
-                                          isDouble
-                                            ? "border-l-4 border-l-[#2d3661] dark:border-l-[#7de06f]"
-                                            : ""
-                                        }`}
+                                        className={`group relative bg-slate-50 dark:bg-slate-800/80 hover:bg-[#2d3661]/5 dark:hover:bg-[#2d3661]/20 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 shadow-xs transition-all space-y-1.5 ${borderClass}`}
                                       >
                                         <div>
-                                          <div className="flex items-center justify-between">
+                                          <div className="flex items-center justify-between gap-1">
                                             <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 line-clamp-1 flex items-center space-x-1">
                                               <BookOpen className="w-3 h-3 text-[#2d3661] dark:text-[#7de06f] shrink-0" />
                                               <span>{item.disciplina}</span>
                                             </h4>
-                                            {isDouble && (
+                                            <div className="flex items-center space-x-1 shrink-0">
+                                              {item.grupo === "A" && (
+                                                <span
+                                                  className="text-[9px] font-bold bg-[#2d3661]/15 text-[#2d3661] dark:text-indigo-200 px-1.5 py-0.5 rounded border border-[#2d3661]/30"
+                                                  title="Aula exclusiva do Grupo A (Subgrupo 1)"
+                                                >
+                                                  [A] Grupo A
+                                                </span>
+                                              )}
+                                              {item.grupo === "B" && (
+                                                <span
+                                                  className="text-[9px] font-bold bg-[#4aaa3c]/15 text-[#4aaa3c] dark:text-[#7de06f] px-1.5 py-0.5 rounded border border-[#4aaa3c]/30"
+                                                  title="Aula exclusiva do Grupo B (Subgrupo 2)"
+                                                >
+                                                  [B] Grupo B
+                                                </span>
+                                              )}
+                                              {isDouble && (
                                               <span
                                                 className="text-[9px] font-bold bg-[#2d3661]/10 dark:bg-[#7de06f]/20 text-[#2d3661] dark:text-[#7de06f] px-1.5 py-0.5 rounded"
                                                 title={
@@ -1026,6 +1058,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                                                 {isPart1 ? "Dupla (1/2)" : isPart2 ? "Dupla (2/2)" : "Dupla"}
                                               </span>
                                             )}
+                                            </div>
                                           </div>
                                           <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-1 mt-0.5 flex items-center space-x-1">
                                             <UserIcon className="w-3 h-3 text-slate-400 shrink-0" />
@@ -1062,6 +1095,30 @@ export const ManagementSchedulesPage: React.FC = () => {
                                       </div>
                                     );
                                   })}
+
+                                  {/* Atalho de alocação de subgrupo complementar */}
+                                  {slotSchedules.length === 1 && slotSchedules[0].grupo === "A" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenNewModal(day.full, period.inicio, period.fim, "B")}
+                                      className="w-full py-1 px-2 rounded-lg border border-dashed border-[#4aaa3c]/50 hover:border-[#4aaa3c] hover:bg-[#4aaa3c]/10 text-[10px] font-semibold text-[#4aaa3c] flex items-center justify-center space-x-1 transition-all"
+                                      title="Alocar Grupo B neste mesmo horário"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                      <span>[B] Alocar Grupo B</span>
+                                    </button>
+                                  )}
+                                  {slotSchedules.length === 1 && slotSchedules[0].grupo === "B" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenNewModal(day.full, period.inicio, period.fim, "A")}
+                                      className="w-full py-1 px-2 rounded-lg border border-dashed border-[#2d3661]/50 hover:border-[#2d3661] hover:bg-[#2d3661]/10 text-[10px] font-semibold text-[#2d3661] dark:text-[#7de06f] flex items-center justify-center space-x-1 transition-all"
+                                      title="Alocar Grupo A neste mesmo horário"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                      <span>[A] Alocar Grupo A</span>
+                                    </button>
+                                  )}
                                 </div>
                               ) : (
                                 <button
@@ -1141,7 +1198,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                               b.balanco_status === "OK"
                                 ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
                                 : b.balanco_status === "PENDENTE"
-                                ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                                ? "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300"
                                 : "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
                             }`}
                           >
@@ -1310,7 +1367,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                     periods.map((p) => (
                       <tr
                         key={p.id}
-                        className={p.is_intervalo ? "bg-amber-50/50 dark:bg-amber-950/20" : "hover:bg-slate-50/50 dark:hover:bg-slate-800/40"}
+                        className={p.is_intervalo ? "bg-slate-100/60 dark:bg-slate-800/40" : "hover:bg-slate-50/50 dark:hover:bg-slate-800/40"}
                       >
                         <td className="py-3 px-4 font-bold text-slate-800 dark:text-slate-200">
                           #{p.ordem}
@@ -1329,7 +1386,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                         </td>
                         <td className="py-3 px-4 text-center">
                           {p.is_intervalo ? (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
                               ☕ Intervalo / Recreio
                             </span>
                           ) : (
@@ -1385,8 +1442,8 @@ export const ManagementSchedulesPage: React.FC = () => {
 
             {/* Alerta de Detecção de Conflito */}
             {modalConflictError && (
-              <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs flex items-start space-x-2.5 animate-in fade-in duration-150">
-                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 text-red-900 dark:text-red-200 text-xs flex items-start space-x-2.5 animate-in fade-in duration-150">
+                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                 <div className="space-y-0.5 text-left">
                   <p className="font-bold">Conflito ou Restrição Detectada</p>
                   <p className="text-[11px] leading-relaxed font-medium">
@@ -1513,6 +1570,57 @@ export const ManagementSchedulesPage: React.FC = () => {
                     ))}
                   </datalist>
                 </div>
+              </div>
+
+              {/* Alocação da Turma / Subgrupo */}
+              <div className="space-y-1.5 pt-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                  <span>Alocação da Turma / Subgrupo</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Rodízio prático / divisão</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, grupo: null })}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center justify-center space-y-0.5 ${
+                      formData.grupo === null
+                        ? "bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 border-transparent shadow-xs"
+                        : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-400"
+                    }`}
+                  >
+                    <span>Turma Inteira</span>
+                    <span className="text-[9px] font-normal opacity-75">Aula regular</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, grupo: "A" })}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center justify-center space-y-0.5 ${
+                      formData.grupo === "A"
+                        ? "bg-[#2d3661] text-white border-[#2d3661] shadow-xs"
+                        : "bg-slate-50 dark:bg-slate-800 text-[#2d3661] dark:text-indigo-300 border-slate-200 dark:border-slate-700 hover:border-[#2d3661]"
+                    }`}
+                  >
+                    <span>[A] Grupo A</span>
+                    <span className="text-[9px] font-normal opacity-75">1º Subgrupo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, grupo: "B" })}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center justify-center space-y-0.5 ${
+                      formData.grupo === "B"
+                        ? "bg-[#4aaa3c] text-white border-[#4aaa3c] shadow-xs"
+                        : "bg-slate-50 dark:bg-slate-800 text-[#4aaa3c] dark:text-[#7de06f] border-slate-200 dark:border-slate-700 hover:border-[#4aaa3c]"
+                    }`}
+                  >
+                    <span>[B] Grupo B</span>
+                    <span className="text-[9px] font-normal opacity-75">2º Subgrupo</span>
+                  </button>
+                </div>
+                {formData.grupo && (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    Permite alocar outro subgrupo complementar ({formData.grupo === "A" ? "Grupo B" : "Grupo A"}) no mesmo horário sem conflito.
+                  </p>
+                )}
               </div>
 
               {/* Disciplina e Docente */}
@@ -1972,7 +2080,7 @@ export const ManagementSchedulesPage: React.FC = () => {
                   id="is_intervalo"
                   checked={periodFormData.is_intervalo}
                   onChange={(e) => setPeriodFormData({ ...periodFormData, is_intervalo: e.target.checked })}
-                  className="rounded text-amber-600 focus:ring-amber-500"
+                  className="rounded text-[#2d3661] focus:ring-[#2d3661] dark:text-[#7de06f] dark:focus:ring-[#7de06f]"
                 />
                 <label htmlFor="is_intervalo" className="text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
                   Este período é um Intervalo / Recreio (bloqueia agendamento de aulas)

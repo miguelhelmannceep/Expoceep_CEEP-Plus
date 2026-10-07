@@ -35,6 +35,8 @@ def ensure_schema_migrations(db: Session) -> None:
                     conn.execute(text("ALTER TABLE horarios ADD COLUMN periodo_ordem INTEGER"))
                 if "grupo" not in h_cols:
                     conn.execute(text("ALTER TABLE horarios ADD COLUMN grupo VARCHAR(50)"))
+                if "horario_origem_id" not in h_cols:
+                    conn.execute(text("ALTER TABLE horarios ADD COLUMN horario_origem_id INTEGER REFERENCES horarios(id)"))
                 conn.commit()
         except Exception as e:
             print(f"Migration warning horarios: {e}")

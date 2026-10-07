@@ -18,11 +18,13 @@ class Horario(Base):
     duracao = Column(Integer, default=1, nullable=False) # Quantidade de períodos ocupados (1 = aula normal, 2 = aula dupla)
     periodo_ordem = Column(Integer, nullable=True) # Ordem do período inicial (1ª, 2ª aula...)
     grupo = Column(String(50), nullable=True) # Preparado para divisões de grupo (null = Turma toda, "Grupo A", "Grupo B")
+    horario_origem_id = Column(Integer, ForeignKey("horarios.id"), nullable=True) # ID do horário de origem (para rastreabilidade e rollback)
     ativo = Column(Boolean, default=True, nullable=False)
 
     turma_rel = relationship("Turma", back_populates="horarios")
     disciplina_rel = relationship("Disciplina")
     professor_rel = relationship("Professor")
+    horario_origem_rel = relationship("Horario", remote_side=[id], backref="horarios_derivados")
 
 
 class PeriodoHorario(Base):

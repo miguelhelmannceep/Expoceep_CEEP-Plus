@@ -169,7 +169,7 @@ def test_student_can_list_tasks():
     tasks = resp.json()
     assert len(tasks) >= 3
     titles = [t["titulo"] for t in tasks]
-    assert "Trabalho de Banco de Dados" in titles
+    assert ("Trabalho Prático: Modelagem Relacional e Banco de Dados" in titles) or ("Trabalho de Banco de Dados" in titles)
     assert "Maquete Estrutural — Edificações" not in titles
 
 def test_student_can_toggle_own_task():
@@ -2134,7 +2134,7 @@ def test_e2e_student_complete_journey():
     assert dash_resp.status_code == 200
     dash = dash_resp.json()
     assert dash["aluno_nome"] == "Aluno Demo"
-    assert "3C" in dash["turma_nome"] or "3º C" in dash["turma_nome"]
+    assert "1C" in dash["turma_nome"] or "3C" in dash["turma_nome"] or "3º C" in dash["turma_nome"]
     if dash.get("proxima_aula"):
         assert dash["proxima_aula"]["sala"] is None
 

@@ -861,6 +861,7 @@ def validate_and_check_conflicts(
     professor_nome: str,
     professor_id: Optional[int] = None,
     sala: Optional[str] = None,
+    grupo: Optional[str] = None,
     exclude_id: Optional[int] = None
 ) -> None:
     # 1. Validação de ordem cronológica do intervalo
@@ -891,7 +892,7 @@ def validate_and_check_conflicts(
                 detail=f"Não é permitido agendar aulas no período de intervalo/recreio ({intervalo_conflict.nome}: {intervalo_conflict.horario_inicio} às {intervalo_conflict.horario_fim})."
             )
 
-    # 3. Conflito de Turma no mesmo intervalo (overlap: existing_inicio < new_fim AND existing_fim > new_inicio)
+    # 3. Conflito de Turma no mesmo intervalo considerando subgrupos (A/B/NULL)
     turma_conflict_query = db.query(Horario).filter(
         Horario.turma_id == turma_id,
         func.lower(Horario.dia_semana) == func.lower(dia_semana),
@@ -901,12 +902,18 @@ def validate_and_check_conflicts(
     )
     if exclude_id:
         turma_conflict_query = turma_conflict_query.filter(Horario.id != exclude_id)
-    turma_conf = turma_conflict_query.first()
-    if turma_conf:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Conflito de horário para a turma: já existe aula de '{turma_conf.disciplina}' ({turma_conf.horario_inicio} às {turma_conf.horario_fim}) no mesmo intervalo."
-        )
+    
+    turma_confs = turma_conflict_query.all()
+    for conf in turma_confs:
+        grp_existente = conf.grupo.strip().upper() if conf.grupo else None
+        grp_novo = grupo.strip().upper() if grupo else None
+        if grp_existente is None or grp_novo is None or grp_existente == grp_novo:
+            desc_existente = f"Grupo {conf.grupo}" if conf.grupo else "Turma Inteira"
+            desc_nova = f"Grupo {grupo}" if grupo else "Turma Inteira"
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Conflito de horário para a turma ({desc_nova} vs {desc_existente}): já existe aula de '{conf.disciplina}' ({conf.horario_inicio} às {conf.horario_fim}) no mesmo intervalo."
+            )
 
     # 4. Conflito de Professor no mesmo intervalo
     prof_filters = [func.lower(Horario.professor) == func.lower(professor_nome)]
@@ -1048,6 +1055,7 @@ def list_management_schedules(
             duracao=h.duracao if h.duracao is not None else 1,
             periodo_ordem=h.periodo_ordem,
             grupo=h.grupo,
+            horario_origem_id=h.horario_origem_id,
             turma_nome=h.turma_rel.nome_turma if h.turma_rel else None,
             curso_nome=h.turma_rel.curso if h.turma_rel else None,
             ativo=h.ativo if h.ativo is not None else True
@@ -1123,8 +1131,9 @@ def create_schedule(
         )
 
     sala_clean = payload.sala.strip() if payload.sala else None
+    grupo_clean = payload.grupo.strip() if payload.grupo else None
 
-    # 4. Checa conflitos de horários e valida intervalos
+    # 4. Checa conflitos de horários e valida intervalos (considerando grupo)
     validate_and_check_conflicts(
         db=db,
         dia_semana=payload.dia_semana.strip(),
@@ -1133,7 +1142,8 @@ def create_schedule(
         turma_id=turma.id,
         professor_nome=professor_nome,
         professor_id=professor_obj.id if professor_obj else None,
-        sala=sala_clean
+        sala=sala_clean,
+        grupo=grupo_clean
     )
 
     novo_horario = Horario(
@@ -1148,7 +1158,8 @@ def create_schedule(
         professor_id=professor_obj.id if professor_obj else None,
         duracao=payload.duracao if payload.duracao is not None else 1,
         periodo_ordem=payload.periodo_ordem,
-        grupo=payload.grupo.strip() if payload.grupo else None,
+        grupo=grupo_clean,
+        horario_origem_id=payload.horario_origem_id,
         ativo=payload.ativo if payload.ativo is not None else True
     )
     db.add(novo_horario)
@@ -1169,6 +1180,7 @@ def create_schedule(
         duracao=novo_horario.duracao if novo_horario.duracao is not None else 1,
         periodo_ordem=novo_horario.periodo_ordem,
         grupo=novo_horario.grupo,
+        horario_origem_id=novo_horario.horario_origem_id,
         turma_nome=turma.nome_turma,
         curso_nome=turma.curso,
         ativo=novo_horario.ativo
@@ -1254,8 +1266,9 @@ def update_schedule(
     horario_inicio = payload.horario_inicio.strip() if payload.horario_inicio is not None else horario.horario_inicio
     horario_fim = payload.horario_fim.strip() if payload.horario_fim is not None else horario.horario_fim
     sala = payload.sala.strip() if payload.sala is not None else horario.sala
+    grupo = payload.grupo.strip() if payload.grupo is not None and payload.grupo.strip() else (horario.grupo if payload.grupo is None else None)
 
-    # 5. Validação de intervalos e conflitos
+    # 5. Validação de intervalos e conflitos (considerando grupo)
     validate_and_check_conflicts(
         db=db,
         dia_semana=dia_semana,
@@ -1265,6 +1278,7 @@ def update_schedule(
         professor_nome=professor_nome,
         professor_id=professor_id,
         sala=sala,
+        grupo=grupo,
         exclude_id=schedule_id
     )
 
@@ -1284,6 +1298,8 @@ def update_schedule(
         horario.periodo_ordem = payload.periodo_ordem
     if payload.grupo is not None:
         horario.grupo = payload.grupo.strip() if payload.grupo else None
+    if payload.horario_origem_id is not None:
+        horario.horario_origem_id = payload.horario_origem_id
     if payload.ativo is not None:
         horario.ativo = payload.ativo
 
@@ -1304,6 +1320,7 @@ def update_schedule(
         duracao=horario.duracao if horario.duracao is not None else 1,
         periodo_ordem=horario.periodo_ordem,
         grupo=horario.grupo,
+        horario_origem_id=horario.horario_origem_id,
         turma_nome=turma.nome_turma,
         curso_nome=turma.curso,
         ativo=horario.ativo

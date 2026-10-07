@@ -14,6 +14,7 @@ class HorarioCreate(BaseModel):
     duracao: Optional[int] = 1 # 1 período, 2 para aula dupla
     periodo_ordem: Optional[int] = None
     grupo: Optional[str] = None
+    horario_origem_id: Optional[int] = None
     ativo: Optional[bool] = True
 
     @field_validator("dia_semana")
@@ -45,6 +46,7 @@ class HorarioUpdate(BaseModel):
     duracao: Optional[int] = None
     periodo_ordem: Optional[int] = None
     grupo: Optional[str] = None
+    horario_origem_id: Optional[int] = None
     ativo: Optional[bool] = None
 
 class HorarioOut(BaseModel):
@@ -63,6 +65,7 @@ class HorarioOut(BaseModel):
     duracao: int = 1
     periodo_ordem: Optional[int] = None
     grupo: Optional[str] = None
+    horario_origem_id: Optional[int] = None
     turma_nome: Optional[str] = None
     curso_nome: Optional[str] = None
     ativo: bool = True

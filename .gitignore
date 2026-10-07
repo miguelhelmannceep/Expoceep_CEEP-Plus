@@ -7,6 +7,10 @@ ENV/
 
 *.db-journal
 *.sqlite3-journal
+*_backup_*.db
+migration_*_log.json
+run_migration_*.py
+run_audit_*.py
 
 node_modules/
 dist/

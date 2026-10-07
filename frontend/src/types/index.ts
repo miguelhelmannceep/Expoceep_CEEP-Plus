@@ -136,6 +136,7 @@ export interface ScheduleItem {
   duracao?: number;
   periodo_ordem?: number | null;
   grupo?: string | null;
+  horario_origem_id?: number | null;
 }
 
 export interface CanteenOverviewSummary {
@@ -339,6 +340,7 @@ export interface ManagementScheduleItem {
   duracao?: number;
   periodo_ordem?: number | null;
   grupo?: string | null;
+  horario_origem_id?: number | null;
   turma_nome?: string | null;
   curso_nome?: string | null;
   ativo: boolean;

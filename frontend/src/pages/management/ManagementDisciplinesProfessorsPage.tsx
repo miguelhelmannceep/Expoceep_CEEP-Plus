@@ -502,11 +502,11 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-1.5 flex-wrap gap-1">
                         {d.tipo === "FORMACAO_GERAL" ? (
-                          <span className="text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-lg">
+                          <span className="text-xs font-bold text-[#4aaa3c] dark:text-[#7de06f] bg-[#4aaa3c]/10 dark:bg-[#4aaa3c]/20 border border-[#4aaa3c]/30 dark:border-[#4aaa3c]/40 px-2 py-0.5 rounded-lg">
                             Formação Geral
                           </span>
                         ) : d.tipo === "COMPARTILHADA" ? (
-                          <span className="text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-lg">
+                          <span className="text-xs font-bold text-[#2d3661] dark:text-slate-200 bg-[#2d3661]/10 dark:bg-[#2d3661]/25 border border-[#2d3661]/25 dark:border-[#2d3661]/40 px-2 py-0.5 rounded-lg">
                             Compartilhada ({d.cursos_nomes?.length || d.curso_ids?.length || 0})
                           </span>
                         ) : (
@@ -802,9 +802,9 @@ export const ManagementDisciplinesProfessorsPage: React.FC = () => {
 
               {/* Formação Geral: Nota explicativa */}
               {disciplineFormData.tipo === "FORMACAO_GERAL" && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-200">
-                  <p className="font-semibold">Disciplina de Formação Geral / BNCC</p>
-                  <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
+                <div className="p-3 bg-[#4aaa3c]/10 dark:bg-[#4aaa3c]/20 border border-[#4aaa3c]/25 dark:border-[#4aaa3c]/40 rounded-xl text-xs text-slate-800 dark:text-slate-200">
+                  <p className="font-semibold text-[#4aaa3c] dark:text-[#7de06f]">Disciplina de Formação Geral / BNCC</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
                     Esta disciplina não pertence a um curso específico e estará disponível para turmas de todos os cursos.
                   </p>
                 </div>

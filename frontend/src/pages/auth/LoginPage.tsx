@@ -79,7 +79,10 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [quickLoadingRole, setQuickLoadingRole] = useState<string | null>(null);
   const [error, setError] = useState<LoginError | null>(null);
+
+  const isAnyLoading = isLoading || isGoogleLoading || !!quickLoadingRole;
 
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
@@ -161,6 +164,7 @@ export const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isAnyLoading) return;
     const emailClean = email.toLowerCase().trim();
 
     if (!emailClean || !password) {
@@ -195,6 +199,23 @@ export const LoginPage: React.FC = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleQuickLogin = async (demoEmail: string, roleKey: string) => {
+    if (isAnyLoading) return;
+    setError(null);
+    setQuickLoadingRole(roleKey);
+
+    try {
+      await login(demoEmail, "demo123");
+    } catch {
+      setError({
+        title: "Não foi possível entrar",
+        message: "Falha ao autenticar com a conta de demonstração. Verifique a conexão com o servidor.",
+      });
+    } finally {
+      setQuickLoadingRole(null);
     }
   };
 
@@ -330,7 +351,7 @@ export const LoginPage: React.FC = () => {
               {/* Botão de Envio */}
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isAnyLoading}
                 className="w-full mt-2 py-2.5 px-4 bg-[#2d3661] hover:bg-[#222949] active:bg-[#1b203a] text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
@@ -343,6 +364,101 @@ export const LoginPage: React.FC = () => {
                 )}
               </button>
             </form>
+
+            {/* Seção de Demonstração EXPOCEEP / Quick Login */}
+            <div className="pt-2 border-t border-slate-200/80 space-y-3">
+              <div className="text-center space-y-0.5">
+                <p className="text-xs font-bold text-slate-700 tracking-tight">
+                  Demonstração CEEP+
+                </p>
+                <p className="text-[11px] text-slate-500 font-medium">
+                  Acesse rapidamente um dos ambientes de demonstração:
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {/* 1. Aluno Demo */}
+                <button
+                  type="button"
+                  disabled={isAnyLoading}
+                  onClick={() => handleQuickLogin("aluno@escola.pr.gov.br", "ALUNO")}
+                  className="w-full min-h-[46px] py-2.5 px-3.5 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200 hover:border-[#2d3661]/40 text-slate-800 rounded-xl transition-all flex items-center justify-between text-left group disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center space-x-2.5 min-w-0 pr-2">
+                    <span className="text-base shrink-0 leading-none" role="img" aria-label="Aluno">👨‍🎓</span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-800 group-hover:text-[#2d3661] transition-colors truncate">
+                        Entrar como Aluno Demo
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-medium truncate">
+                        aluno@escola.pr.gov.br • 1C DES. SISTEMAS
+                      </div>
+                    </div>
+                  </div>
+                  {quickLoadingRole === "ALUNO" ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-[#2d3661] shrink-0" />
+                  ) : (
+                    <span className="text-[10px] font-semibold text-[#2d3661] bg-[#2d3661]/10 px-2 py-0.5 rounded-md shrink-0">
+                      Entrar
+                    </span>
+                  )}
+                </button>
+
+                {/* 2. Gestão Demo */}
+                <button
+                  type="button"
+                  disabled={isAnyLoading}
+                  onClick={() => handleQuickLogin("gestao@ceep.demo", "GESTAO")}
+                  className="w-full min-h-[46px] py-2.5 px-3.5 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200 hover:border-[#2d3661]/40 text-slate-800 rounded-xl transition-all flex items-center justify-between text-left group disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center space-x-2.5 min-w-0 pr-2">
+                    <span className="text-base shrink-0 leading-none" role="img" aria-label="Gestão">💼</span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-800 group-hover:text-[#2d3661] transition-colors truncate">
+                        Entrar como Gestão Demo
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-medium truncate">
+                        gestao@ceep.demo • Painel Geral
+                      </div>
+                    </div>
+                  </div>
+                  {quickLoadingRole === "GESTAO" ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-[#2d3661] shrink-0" />
+                  ) : (
+                    <span className="text-[10px] font-semibold text-[#2d3661] bg-[#2d3661]/10 px-2 py-0.5 rounded-md shrink-0">
+                      Entrar
+                    </span>
+                  )}
+                </button>
+
+                {/* 3. Cantina Demo */}
+                <button
+                  type="button"
+                  disabled={isAnyLoading}
+                  onClick={() => handleQuickLogin("cantina@ceep.demo", "CANTINA")}
+                  className="w-full min-h-[46px] py-2.5 px-3.5 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200 hover:border-[#4aaa3c]/40 text-slate-800 rounded-xl transition-all flex items-center justify-between text-left group disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center space-x-2.5 min-w-0 pr-2">
+                    <span className="text-base shrink-0 leading-none" role="img" aria-label="Cantina">🥪</span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-800 group-hover:text-[#4aaa3c] transition-colors truncate">
+                        Terminal da Cantina
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-medium truncate">
+                        cantina@ceep.demo • Pedidos & Produtos
+                      </div>
+                    </div>
+                  </div>
+                  {quickLoadingRole === "CANTINA" ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-[#4aaa3c] shrink-0" />
+                  ) : (
+                    <span className="text-[10px] font-semibold text-[#4aaa3c] bg-[#4aaa3c]/10 px-2 py-0.5 rounded-md shrink-0">
+                      Entrar
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

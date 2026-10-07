@@ -52,10 +52,11 @@ def get_student_dashboard(
                 sala=None
             )
 
-    # Aviso recente publicado e segmentado para o aluno
+    # Aviso recente publicado e segmentado para o aluno respeitando is_demo
     curso_id = current_user.turma_rel.curso_id if current_user.turma_rel else None
     aviso_db = db.query(Aviso).filter(
         Aviso.status == "PUBLICADO",
+        Aviso.is_demo == bool(current_user.is_demo),
         or_(
             Aviso.publico_alvo_tipo == "GERAL",
             and_(
@@ -78,6 +79,9 @@ def get_student_dashboard(
             prioridade=aviso_db.prioridade,
             publico_alvo_tipo=aviso_db.publico_alvo_tipo,
             publico_alvo_id=aviso_db.publico_alvo_id,
+            status=getattr(aviso_db, "status", "PUBLICADO"),
+            imagem_url=getattr(aviso_db, "imagem_url", None),
+            is_demo=bool(getattr(aviso_db, "is_demo", False)),
             data_publicacao=aviso_db.data_publicacao,
             autor_nome=aviso_db.autor_rel.nome if aviso_db.autor_rel else "Coordenação"
         )

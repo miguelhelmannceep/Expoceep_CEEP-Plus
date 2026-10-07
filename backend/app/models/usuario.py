@@ -14,6 +14,7 @@ class Usuario(Base):
     turma_id = Column(Integer, ForeignKey("turmas.id"), nullable=True)
     google_sub = Column(String(255), unique=True, index=True, nullable=True)
     ativo = Column(Boolean, default=True)
+    is_demo = Column(Boolean, default=False, nullable=False)
     criado_em = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     turma_rel = relationship("Turma", back_populates="usuarios")

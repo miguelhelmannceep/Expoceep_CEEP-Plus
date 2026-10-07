@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -35,6 +35,7 @@ class PedidoOut(BaseModel):
     valor_total: float
     pickup_token: Optional[str] = None
     pickup_code: Optional[str] = None
+    is_demo: bool = False
     created_at: datetime
     updated_at: Optional[datetime] = None
     used_at: Optional[datetime] = None

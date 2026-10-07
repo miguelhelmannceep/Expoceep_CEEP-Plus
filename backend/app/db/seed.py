@@ -74,6 +74,45 @@ def ensure_schema_migrations(db: Session) -> None:
         except Exception as e:
             print(f"Migration warning cursos_disciplinas: {e}")
 
+        # 5. Colunas is_demo (Milestone 5V)
+        try:
+            u_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(usuarios)")).fetchall()]
+            if u_cols and "is_demo" not in u_cols:
+                conn.execute(text("ALTER TABLE usuarios ADD COLUMN is_demo BOOLEAN DEFAULT 0"))
+                conn.commit()
+
+            a_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(avisos)")).fetchall()]
+            if a_cols and "is_demo" not in a_cols:
+                conn.execute(text("ALTER TABLE avisos ADD COLUMN is_demo BOOLEAN DEFAULT 0"))
+                conn.commit()
+
+            p_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(pedidos)")).fetchall()]
+            if p_cols and "is_demo" not in p_cols:
+                conn.execute(text("ALTER TABLE pedidos ADD COLUMN is_demo BOOLEAN DEFAULT 0"))
+                conn.commit()
+
+            # Garante que os usuários Demo existentes sejam marcados com is_demo = 1
+            # e os oficiais com is_demo = 0
+            conn.execute(text("""
+                UPDATE usuarios SET is_demo = 1 WHERE email IN (
+                    'aluno@escola.pr.gov.br',
+                    'outro.aluno@escola.pr.gov.br',
+                    'gestao@ceep.demo',
+                    'cantina@ceep.demo'
+                )
+            """))
+            conn.execute(text("""
+                UPDATE usuarios SET is_demo = 0 WHERE email NOT IN (
+                    'aluno@escola.pr.gov.br',
+                    'outro.aluno@escola.pr.gov.br',
+                    'gestao@ceep.demo',
+                    'cantina@ceep.demo'
+                )
+            """))
+            conn.commit()
+        except Exception as e:
+            print(f"Migration warning is_demo: {e}")
+
 def init_db(db: Session) -> None:
     Base.metadata.create_all(bind=engine)
     ensure_schema_migrations(db)
@@ -292,12 +331,12 @@ def sync_real_school_data(db: Session) -> None:
     # Garante usuários estruturais e essenciais para a operação do CEEP+
     senha_padrao = get_password_hash("demo123")
     essential_users = [
-        {"nome": "Aluno Demo", "email": "aluno@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 1},
-        {"nome": "Outro Aluno Demo", "email": "outro.aluno@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 2},
-        {"nome": "Gestão Demo", "email": "gestao@ceep.demo", "perfil": "GESTAO", "turma_id": None},
-        {"nome": "Cantina Demo", "email": "cantina@ceep.demo", "perfil": "CANTINA", "turma_id": None},
-        {"nome": "Diretoria", "email": "diretoria@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 1},
-        {"nome": "Miguel Helmann", "email": "miguel.helmann@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 1},
+        {"nome": "Aluno Demo", "email": "aluno@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 8, "is_demo": True},
+        {"nome": "Outro Aluno Demo", "email": "outro.aluno@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 2, "is_demo": True},
+        {"nome": "Gestão Demo", "email": "gestao@ceep.demo", "perfil": "GESTAO", "turma_id": None, "is_demo": True},
+        {"nome": "Cantina Demo", "email": "cantina@ceep.demo", "perfil": "CANTINA", "turma_id": None, "is_demo": True},
+        {"nome": "Diretoria", "email": "diretoria@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 1, "is_demo": False},
+        {"nome": "Miguel Helmann", "email": "miguel.helmann@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 1, "is_demo": False},
     ]
     for u_data in essential_users:
         if not db.query(Usuario).filter(Usuario.email == u_data["email"]).first():
@@ -307,7 +346,8 @@ def sync_real_school_data(db: Session) -> None:
                 senha_hash=senha_padrao,
                 perfil=u_data["perfil"],
                 turma_id=u_data["turma_id"],
-                ativo=True
+                ativo=True,
+                is_demo=u_data.get("is_demo", False)
             ))
 
     # Garante item base da cantina
@@ -363,6 +403,7 @@ def seed_test_fixtures(db: Session) -> None:
     # 3. Avisos de teste
     gestao_user = db.query(Usuario).filter(Usuario.perfil == "GESTAO").first()
     autor_id = gestao_user.id if gestao_user else 3
+    is_demo_val = bool(gestao_user.is_demo) if gestao_user else True
 
     if db.query(Aviso).count() < 4:
         avisos_fixtures = [
@@ -372,7 +413,8 @@ def seed_test_fixtures(db: Session) -> None:
                 prioridade="ALTA",
                 publico_alvo_tipo="GERAL",
                 status="PUBLICADO",
-                autor_id=autor_id
+                autor_id=autor_id,
+                is_demo=is_demo_val
             ),
             Aviso(
                 titulo="Reunião de Pais e Mestres — 3º Ano Técnico",
@@ -381,7 +423,8 @@ def seed_test_fixtures(db: Session) -> None:
                 publico_alvo_tipo="CURSO",
                 publico_alvo_id=c_id,
                 status="PUBLICADO",
-                autor_id=autor_id
+                autor_id=autor_id,
+                is_demo=is_demo_val
             ),
             Aviso(
                 titulo="Horário Especial da Biblioteca no Recesso",
@@ -389,7 +432,8 @@ def seed_test_fixtures(db: Session) -> None:
                 prioridade="MEDIA",
                 publico_alvo_tipo="GERAL",
                 status="PUBLICADO",
-                autor_id=autor_id
+                autor_id=autor_id,
+                is_demo=is_demo_val
             ),
             Aviso(
                 titulo="Palestra sobre Mercado de Tecnologia e Estágios",
@@ -398,7 +442,8 @@ def seed_test_fixtures(db: Session) -> None:
                 publico_alvo_tipo="CURSO",
                 publico_alvo_id=c_id,
                 status="PUBLICADO",
-                autor_id=autor_id
+                autor_id=autor_id,
+                is_demo=is_demo_val
             ),
         ]
         db.add_all(avisos_fixtures)

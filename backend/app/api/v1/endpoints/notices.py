@@ -76,6 +76,7 @@ def format_aviso_out(aviso: Aviso, db: Session) -> AvisoOut:
         publico_alvo_nome=target_name,
         status=getattr(aviso, "status", "PUBLICADO"),
         imagem_url=getattr(aviso, "imagem_url", None),
+        is_demo=bool(getattr(aviso, "is_demo", False)),
         data_publicacao=aviso.data_publicacao,
         autor_nome=aviso.autor_rel.nome if aviso.autor_rel else "Coordenação"
     )
@@ -86,8 +87,9 @@ def list_notices(
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    user_is_demo = bool(current_user.is_demo)
     if current_user.perfil == "ALUNO":
-        # Aluno só pode visualizar avisos com status PUBLICADO
+        # Aluno só pode visualizar avisos com status PUBLICADO do seu mesmo escopo demo/oficial
         student_turma_id = current_user.turma_id
         student_curso_id = None
         if current_user.turma_rel and current_user.turma_rel.curso_id:
@@ -111,11 +113,14 @@ def list_notices(
 
         avisos = db.query(Aviso).filter(
             Aviso.status == "PUBLICADO",
+            Aviso.is_demo == user_is_demo,
             or_(*conditions)
         ).order_by(Aviso.data_publicacao.desc()).all()
     else:
         # Gestão ou Cantina visualizando o mural
-        avisos = db.query(Aviso).order_by(Aviso.data_publicacao.desc()).all()
+        avisos = db.query(Aviso).filter(
+            Aviso.is_demo == user_is_demo
+        ).order_by(Aviso.data_publicacao.desc()).all()
 
     return [format_aviso_out(a, db) for a in avisos]
 
@@ -124,7 +129,9 @@ def list_all_notices_management(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
-    avisos = db.query(Aviso).order_by(Aviso.data_publicacao.desc()).all()
+    avisos = db.query(Aviso).filter(
+        Aviso.is_demo == bool(current_user.is_demo)
+    ).order_by(Aviso.data_publicacao.desc()).all()
     return [format_aviso_out(a, db) for a in avisos]
 
 @router.post("/", response_model=AvisoOut, status_code=status.HTTP_201_CREATED, summary="Cria novo comunicado escolar")
@@ -179,7 +186,8 @@ def create_notice(
         status=payload.status,
         imagem_url=validate_image_payload(payload.imagem_url),
         data_publicacao=datetime.now(timezone.utc),
-        autor_id=current_user.id
+        autor_id=current_user.id,
+        is_demo=bool(current_user.is_demo)
     )
     db.add(novo_aviso)
     db.commit()
@@ -193,7 +201,10 @@ def update_notice(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
-    aviso = db.query(Aviso).filter(Aviso.id == notice_id).first()
+    aviso = db.query(Aviso).filter(
+        Aviso.id == notice_id,
+        Aviso.is_demo == bool(current_user.is_demo)
+    ).first()
     if not aviso:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -264,7 +275,10 @@ def publish_notice(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
-    aviso = db.query(Aviso).filter(Aviso.id == notice_id).first()
+    aviso = db.query(Aviso).filter(
+        Aviso.id == notice_id,
+        Aviso.is_demo == bool(current_user.is_demo)
+    ).first()
     if not aviso:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -283,7 +297,10 @@ def delete_notice(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
-    aviso = db.query(Aviso).filter(Aviso.id == notice_id).first()
+    aviso = db.query(Aviso).filter(
+        Aviso.id == notice_id,
+        Aviso.is_demo == bool(current_user.is_demo)
+    ).first()
     if not aviso:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

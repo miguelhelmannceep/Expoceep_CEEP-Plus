@@ -1,6 +1,6 @@
-﻿import secrets
+import secrets
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
@@ -12,6 +12,7 @@ class Pedido(Base):
     status = Column(String(30), nullable=False, default="PENDENTE_PAGAMENTO") # PENDENTE_PAGAMENTO, PAGO, UTILIZADO
     valor_total = Column(Float, nullable=False)
     pickup_token = Column(String(64), unique=True, index=True, nullable=True)
+    is_demo = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     used_at = Column(DateTime, nullable=True)

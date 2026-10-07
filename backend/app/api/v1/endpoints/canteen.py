@@ -1,4 +1,4 @@
-﻿import secrets
+import secrets
 from typing import List
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -52,6 +52,7 @@ def format_pedido_response(pedido: Pedido) -> dict:
         "valor_total": pedido.valor_total,
         "pickup_token": pedido.pickup_token,
         "pickup_code": pickup_code,
+        "is_demo": bool(getattr(pedido, "is_demo", False)),
         "created_at": pedido.created_at,
         "updated_at": pedido.updated_at,
         "used_at": pedido.used_at,
@@ -89,7 +90,8 @@ def create_canteen_order(
             usuario_id=current_user.id,
             status="PENDENTE_PAGAMENTO",
             valor_total=valor_total,
-            pickup_token=token
+            pickup_token=token,
+            is_demo=bool(current_user.is_demo)
         )
         db.add(pedido)
         db.flush()
@@ -122,7 +124,10 @@ def list_canteen_orders(
     current_user: Usuario = Depends(require_roles(["ALUNO"])),
     db: Session = Depends(get_db)
 ):
-    pedidos = db.query(Pedido).filter(Pedido.usuario_id == current_user.id).order_by(Pedido.created_at.desc()).all()
+    pedidos = db.query(Pedido).filter(
+        Pedido.usuario_id == current_user.id,
+        Pedido.is_demo == bool(current_user.is_demo)
+    ).order_by(Pedido.created_at.desc()).all()
     return [format_pedido_response(p) for p in pedidos]
 
 @router.get("/orders/{order_id}", response_model=PedidoOut, summary="Detalhes de um pedido específico")
@@ -131,8 +136,12 @@ def get_canteen_order(
     current_user: Usuario = Depends(require_roles(["ALUNO"])),
     db: Session = Depends(get_db)
 ):
-    pedido = db.query(Pedido).filter(Pedido.id == order_id).first()
-    if not pedido or pedido.usuario_id != current_user.id:
+    pedido = db.query(Pedido).filter(
+        Pedido.id == order_id,
+        Pedido.usuario_id == current_user.id,
+        Pedido.is_demo == bool(current_user.is_demo)
+    ).first()
+    if not pedido:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pedido não encontrado.")
     return format_pedido_response(pedido)
 
@@ -142,8 +151,12 @@ def simulate_order_payment(
     current_user: Usuario = Depends(require_roles(["ALUNO"])),
     db: Session = Depends(get_db)
 ):
-    pedido = db.query(Pedido).filter(Pedido.id == order_id).first()
-    if not pedido or pedido.usuario_id != current_user.id:
+    pedido = db.query(Pedido).filter(
+        Pedido.id == order_id,
+        Pedido.usuario_id == current_user.id,
+        Pedido.is_demo == bool(current_user.is_demo)
+    ).first()
+    if not pedido:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pedido não encontrado.")
 
     if pedido.status == "PAGO":
@@ -181,8 +194,12 @@ def get_order_pickup_qr(
     current_user: Usuario = Depends(require_roles(["ALUNO"])),
     db: Session = Depends(get_db)
 ):
-    pedido = db.query(Pedido).filter(Pedido.id == order_id).first()
-    if not pedido or pedido.usuario_id != current_user.id:
+    pedido = db.query(Pedido).filter(
+        Pedido.id == order_id,
+        Pedido.usuario_id == current_user.id,
+        Pedido.is_demo == bool(current_user.is_demo)
+    ).first()
+    if not pedido:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pedido não encontrado.")
 
     if pedido.status == "PENDENTE_PAGAMENTO":
@@ -220,7 +237,8 @@ def validate_pickup_qr(
     token = raw_code.replace("CEEPPLUS-PICKUP-", "").strip()
 
     pedido = db.query(Pedido).filter(
-        (Pedido.pickup_token == token) | (Pedido.pickup_token == raw_code)
+        (Pedido.pickup_token == token) | (Pedido.pickup_token == raw_code),
+        Pedido.is_demo == bool(current_user.is_demo)
     ).first()
 
     if not pedido:
@@ -262,10 +280,11 @@ def confirm_pickup_order(
 ):
     now = datetime.now(timezone.utc)
 
-    # Atualização atômica para prevenção absoluta de duplo uso / race conditions
+    # Atualização atômica para prevenção absoluta de duplo uso / race conditions respeitando escopo demo
     rows_updated = db.query(Pedido).filter(
         Pedido.id == order_id,
-        Pedido.status == "PAGO"
+        Pedido.status == "PAGO",
+        Pedido.is_demo == bool(current_user.is_demo)
     ).update({
         Pedido.status: "UTILIZADO",
         Pedido.used_at: now,
@@ -275,7 +294,10 @@ def confirm_pickup_order(
     db.commit()
 
     if rows_updated == 0:
-        pedido = db.query(Pedido).filter(Pedido.id == order_id).first()
+        pedido = db.query(Pedido).filter(
+            Pedido.id == order_id,
+            Pedido.is_demo == bool(current_user.is_demo)
+        ).first()
         if not pedido:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pedido não encontrado.")
         if pedido.status == "UTILIZADO":

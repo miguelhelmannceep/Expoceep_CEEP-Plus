@@ -41,6 +41,7 @@ class ManagementOrderDetailOut(BaseModel):
     status: str
     valor_total: float
     pickup_token: Optional[str] = None
+    is_demo: bool = False
     created_at: datetime
     updated_at: Optional[datetime] = None
     paid_at: Optional[datetime] = None

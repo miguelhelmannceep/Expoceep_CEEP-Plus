@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
@@ -14,6 +14,7 @@ class Aviso(Base):
     publico_alvo_id = Column(Integer, nullable=True)
     status = Column(String(20), default="PUBLICADO", nullable=False) # RASCUNHO, PUBLICADO
     imagem_url = Column(Text, nullable=True)
+    is_demo = Column(Boolean, default=False, nullable=False)
     data_publicacao = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     autor_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
 

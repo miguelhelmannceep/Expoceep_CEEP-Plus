@@ -61,18 +61,20 @@ def get_management_overview(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    user_is_demo = bool(current_user.is_demo)
     total_turmas = db.query(Turma).count()
-    total_avisos = db.query(Aviso).count()
-    total_alunos = db.query(Usuario).filter(Usuario.perfil == "ALUNO").count()
+    total_avisos = db.query(Aviso).filter(Aviso.is_demo == user_is_demo).count()
+    total_alunos = db.query(Usuario).filter(Usuario.perfil == "ALUNO", Usuario.is_demo == user_is_demo).count()
 
     # Métricas consolidadas da Cantina a partir do banco de dados
-    total_pedidos = db.query(Pedido).count()
-    pedidos_pagos = db.query(Pedido).filter(Pedido.status == "PAGO").count()
-    pedidos_utilizados = db.query(Pedido).filter(Pedido.status == "UTILIZADO").count()
-    pedidos_pendentes = db.query(Pedido).filter(Pedido.status == "PENDENTE_PAGAMENTO").count()
+    total_pedidos = db.query(Pedido).filter(Pedido.is_demo == user_is_demo).count()
+    pedidos_pagos = db.query(Pedido).filter(Pedido.status == "PAGO", Pedido.is_demo == user_is_demo).count()
+    pedidos_utilizados = db.query(Pedido).filter(Pedido.status == "UTILIZADO", Pedido.is_demo == user_is_demo).count()
+    pedidos_pendentes = db.query(Pedido).filter(Pedido.status == "PENDENTE_PAGAMENTO", Pedido.is_demo == user_is_demo).count()
 
     receita_res = db.query(func.sum(Pedido.valor_total)).filter(
-        Pedido.status.in_(["PAGO", "UTILIZADO"])
+        Pedido.status.in_(["PAGO", "UTILIZADO"]),
+        Pedido.is_demo == user_is_demo
     ).scalar()
     receita_confirmada = float(receita_res) if receita_res else 0.0
 
@@ -85,7 +87,7 @@ def get_management_overview(
     )
 
     # Avisos recentes (ordenados por data de publicação decrescente)
-    avisos_db = db.query(Aviso).order_by(Aviso.data_publicacao.desc()).limit(4).all()
+    avisos_db = db.query(Aviso).filter(Aviso.is_demo == user_is_demo).order_by(Aviso.data_publicacao.desc()).limit(4).all()
     avisos_recentes = [
         AvisoOut(
             id=a.id,
@@ -95,6 +97,8 @@ def get_management_overview(
             publico_alvo_tipo=a.publico_alvo_tipo,
             publico_alvo_id=a.publico_alvo_id,
             status=a.status,
+            imagem_url=getattr(a, "imagem_url", None),
+            is_demo=bool(getattr(a, "is_demo", False)),
             data_publicacao=a.data_publicacao,
             autor_nome=a.autor_rel.nome if a.autor_rel else "Coordenação"
         )
@@ -1624,7 +1628,7 @@ def list_canteen_orders(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
-    query = db.query(Pedido)
+    query = db.query(Pedido).filter(Pedido.is_demo == bool(current_user.is_demo))
     if status_filter:
         s_upper = status_filter.strip().upper()
         if s_upper:
@@ -1662,6 +1666,7 @@ def list_canteen_orders(
             status=p.status,
             valor_total=p.valor_total,
             pickup_token=p.pickup_token,
+            is_demo=bool(getattr(p, "is_demo", False)),
             created_at=p.created_at,
             updated_at=p.updated_at,
             paid_at=paid_at,
@@ -1684,7 +1689,10 @@ def get_canteen_order_detail(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
-    p = db.query(Pedido).filter(Pedido.id == order_id).first()
+    p = db.query(Pedido).filter(
+        Pedido.id == order_id,
+        Pedido.is_demo == bool(current_user.is_demo)
+    ).first()
     if not p:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -1719,6 +1727,7 @@ def get_canteen_order_detail(
         status=p.status,
         valor_total=p.valor_total,
         pickup_token=p.pickup_token,
+        is_demo=bool(getattr(p, "is_demo", False)),
         created_at=p.created_at,
         updated_at=p.updated_at,
         paid_at=paid_at,

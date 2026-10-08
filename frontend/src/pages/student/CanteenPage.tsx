@@ -49,11 +49,8 @@ export const CanteenPage: React.FC = () => {
         canteenService.getProducts(),
         canteenService.getOrders(),
       ]);
-      // Filtra catálogo do aluno para exibir exclusivamente o Salgado (R$ 8,00)
-      const salgadoProducts = prods.filter(
-        (p) => p.ativo && p.nome.trim().toLowerCase().includes("salgado")
-      );
-      setProducts(salgadoProducts.length > 0 ? [salgadoProducts[0]] : prods.slice(0, 1));
+      // Exibe todos os produtos ativos do catálogo oficial
+      setProducts(prods.filter((p) => p.ativo));
       setOrders(myOrders);
     } catch (err: any) {
       setError(err.message || "Erro ao carregar informações da cantina.");
@@ -156,7 +153,7 @@ export const CanteenPage: React.FC = () => {
           <span>Cantina Escolar</span>
         </h2>
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Adquira sua ficha antecipada e retire seu salgado no balcão da cantina.
+          Adquira sua ficha antecipada e retire seu pedido no balcão da cantina.
         </p>
       </div>
 
@@ -167,11 +164,11 @@ export const CanteenPage: React.FC = () => {
             <div className="flex items-start justify-between">
               <div className="space-y-1">
                 <span className="text-[11px] font-bold text-[#2d3661] dark:text-[#7de06f] bg-[#2d3661]/10 dark:bg-[#2d3661]/30 border border-[#2d3661]/20 dark:border-[#2d3661]/40 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
-                  Ficha Padrão
+                  Ficha Digital
                 </span>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">{p.nome}</h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs">
-                  {p.descricao || "Escolha seu salgado e retire na cantina após a confirmação do pedido."}
+                  {p.descricao || "Item disponível para retirada rápida no balcão da cantina."}
                 </p>
               </div>
               <div className="text-right">
@@ -186,11 +183,15 @@ export const CanteenPage: React.FC = () => {
             <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 rounded-2xl p-3 space-y-2 text-xs text-slate-600 dark:text-slate-300">
               <div className="flex items-center space-x-2">
                 <Check className="w-3.5 h-3.5 text-[#4aaa3c] shrink-0" />
-                <span>Válido para qualquer opção de salgado (assado ou frito).</span>
+                <span>Sem filas no caixa: apresente seu QR Code diretamente no balcão.</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Check className="w-3.5 h-3.5 text-[#4aaa3c] shrink-0" />
-                <span>Sem filas no caixa: apresentação direta no balcão com QR Code.</span>
+                <span>
+                  {p.nome.toLowerCase().includes("salgado")
+                    ? "Opção artesanal preparada diariamente."
+                    : "Ficha digital com confirmação e entrega imediata."}
+                </span>
               </div>
             </div>
 
@@ -263,7 +264,7 @@ export const CanteenPage: React.FC = () => {
                         <Clock className="w-3.5 h-3.5 text-slate-400" />
                       )}
                       <span>
-                        {order.itens[0]?.produto_nome || "Salgado"} (x{order.itens[0]?.quantidade || 1})
+                        {order.itens[0]?.produto_nome || "Item"} (x{order.itens[0]?.quantidade || 1})
                       </span>
                     </div>
 
@@ -281,7 +282,9 @@ export const CanteenPage: React.FC = () => {
                       <button
                         onClick={() => {
                           setCurrentOrder(order);
-                          setSelectedProduct(products[0] || null);
+                          setSelectedProduct(
+                            products.find((p) => p.id === order.itens[0]?.produto_id) || products[0] || null
+                          );
                           setCheckoutStep("PAYMENT");
                         }}
                         className="text-xs font-bold text-[#2d3661] dark:text-[#7de06f] hover:underline"
@@ -391,7 +394,7 @@ export const CanteenPage: React.FC = () => {
                 Pedido {formatOrderId(currentOrder.id)}
               </span>
               <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                {currentOrder.itens[0]?.produto_nome || "Salgado"}
+                {currentOrder.itens[0]?.produto_nome || selectedProduct?.nome || "Item"}
               </h4>
               <p className="text-2xl font-black text-[#4aaa3c]">
                 {formatCurrency(currentOrder.valor_total)}
@@ -498,7 +501,7 @@ export const CanteenPage: React.FC = () => {
               <div className="flex justify-between items-center">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Item</span>
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  {currentOrder.itens[0]?.produto_nome || "Salgado"}
+                  {currentOrder.itens[0]?.produto_nome || selectedProduct?.nome || "Item"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -565,7 +568,7 @@ export const CanteenPage: React.FC = () => {
                   Apresente este QR Code na cantina
                 </p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  O operador fará a leitura para entrega imediata do seu salgado.
+                  O operador fará a leitura para entrega imediata do seu pedido.
                 </p>
               </div>
             </div>

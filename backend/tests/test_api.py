@@ -324,7 +324,7 @@ def test_canteen_student_can_create_order():
     headers = {"Authorization": f"Bearer {token}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
     assert salgado is not None
 
@@ -350,7 +350,7 @@ def test_canteen_order_price_derived_from_database():
     headers = {"Authorization": f"Bearer {token}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     payload = {"produto_id": salgado.id, "quantidade": 2, "preco": 0.01, "valor_total": 0.01}
@@ -366,7 +366,7 @@ def test_canteen_order_belongs_to_authenticated_user():
 
     db = SessionLocal()
     aluno_user = db.query(Usuario).filter((Usuario.email == "aluno@escola.pr.gov.br") | (Usuario.email == "aluno@ceep.demo")).first()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
     assert aluno_user is not None
 
@@ -381,7 +381,7 @@ def test_canteen_payment_starts_pending():
     headers = {"Authorization": f"Bearer {token}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     resp = client.post("/api/v1/canteen/orders", json={"produto_id": salgado.id, "quantidade": 1}, headers=headers)
@@ -394,7 +394,7 @@ def test_canteen_student_simulate_payment_success():
     headers = {"Authorization": f"Bearer {token}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     order_resp = client.post("/api/v1/canteen/orders", json={"produto_id": salgado.id, "quantidade": 1}, headers=headers)
@@ -413,7 +413,7 @@ def test_canteen_simulate_payment_idempotent():
     headers = {"Authorization": f"Bearer {token}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     order_resp = client.post("/api/v1/canteen/orders", json={"produto_id": salgado.id, "quantidade": 1}, headers=headers)
@@ -435,7 +435,7 @@ def test_canteen_isolation_student_a_cannot_access_or_pay_student_b_order():
     headers_b = {"Authorization": f"Bearer {token_b}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     order_a = client.post("/api/v1/canteen/orders", json={"produto_id": salgado.id, "quantidade": 1}, headers=headers_a).json()
@@ -449,7 +449,7 @@ def test_canteen_isolation_student_a_cannot_access_or_pay_student_b_order():
 
 def test_canteen_unauthenticated_cannot_create_order():
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     resp = client.post("/api/v1/canteen/orders", json={"produto_id": salgado.id, "quantidade": 1})
@@ -460,7 +460,7 @@ def test_canteen_gestao_cannot_create_order():
     headers = {"Authorization": f"Bearer {token_gestao}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     resp = client.post("/api/v1/canteen/orders", json={"produto_id": salgado.id, "quantidade": 1}, headers=headers)
@@ -471,7 +471,7 @@ def test_canteen_staff_cannot_create_order():
     headers = {"Authorization": f"Bearer {token_cantina}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     resp = client.post("/api/v1/canteen/orders", json={"produto_id": salgado.id, "quantidade": 1}, headers=headers)
@@ -482,7 +482,7 @@ def test_canteen_transaction_consistency():
     headers = {"Authorization": f"Bearer {token}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     resp = client.post("/api/v1/canteen/orders", json={"produto_id": salgado.id, "quantidade": 1}, headers=headers)
@@ -516,7 +516,7 @@ def test_canteen_paid_order_can_get_pickup_qr():
     headers_aluno = {"Authorization": f"Bearer {token_aluno}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     # 1. Cria pedido
@@ -541,7 +541,7 @@ def test_canteen_unpaid_order_cannot_get_pickup_qr():
     headers_aluno = {"Authorization": f"Bearer {token_aluno}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     order_resp = client.post("/api/v1/canteen/orders", json={"produto_id": salgado.id, "quantidade": 1}, headers=headers_aluno)
@@ -559,7 +559,7 @@ def test_canteen_student_cannot_get_other_student_pickup_qr():
     headers_b = {"Authorization": f"Bearer {token_b}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     order_a = client.post("/api/v1/canteen/orders", json={"produto_id": salgado.id, "quantidade": 1}, headers=headers_a).json()
@@ -585,7 +585,7 @@ def test_canteen_validate_valid_qr_code_success():
     headers_cantina = {"Authorization": f"Bearer {token_cantina}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     order = client.post("/api/v1/canteen/orders", json={"produto_id": salgado.id, "quantidade": 1}, headers=headers_aluno).json()
@@ -601,7 +601,7 @@ def test_canteen_validate_valid_qr_code_success():
 
     assert val_data["order_id"] == order_id
     assert val_data["status_validacao"] == "DISPONIVEL"
-    assert val_data["produto_nome"] == "Salgado"
+    assert val_data["produto_nome"] == "Salgado assado / Mini pizza"
     assert val_data["valor_total"] == 8.00
 
 def test_canteen_only_canteen_role_can_validate_and_confirm():
@@ -635,7 +635,7 @@ def test_canteen_full_pickup_flow_and_double_use_prevention():
     headers_cantina = {"Authorization": f"Bearer {token_cantina}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     # 1. Aluno cria e paga o pedido
@@ -729,7 +729,7 @@ def test_management_overview_metrics_accuracy():
     headers_aluno = {"Authorization": f"Bearer {token_aluno}"}
 
     db = SessionLocal()
-    salgado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    salgado = db.query(Produto).filter(Produto.nome == "Salgado assado / Mini pizza").first()
     db.close()
 
     order = client.post("/api/v1/canteen/orders", json={"produto_id": salgado.id, "quantidade": 1}, headers=headers_aluno).json()
@@ -2165,7 +2165,7 @@ def test_e2e_student_complete_journey():
     assert prods_resp.status_code == 200
     prods = prods_resp.json()
     assert len(prods) > 0
-    salgado = next(p for p in prods if p["nome"] == "Salgado")
+    salgado = next(p for p in prods if p["nome"] == "Salgado assado / Mini pizza")
 
     # 6. Cantina: Criar Pedido
     order_resp = client.post("/api/v1/canteen/orders", json={

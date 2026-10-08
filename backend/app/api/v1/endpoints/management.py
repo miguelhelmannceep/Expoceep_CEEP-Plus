@@ -57,7 +57,7 @@ from app.schemas.produto import (
 router = APIRouter()
 
 def check_structural_permission(user: Usuario):
-    if getattr(user, "ambiente", "OFICIAL") == "PUBLICO":
+    if getattr(user, "ambiente", "OFICIAL") == "PUBLICO" or bool(getattr(user, "is_demo", False)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Operação não permitida no ambiente público: dados estruturais oficiais da escola são protegidos."

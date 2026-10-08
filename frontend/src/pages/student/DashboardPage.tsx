@@ -113,15 +113,53 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </Card>
       )}
 
-      {/* Próxima Aula */}
-      {dashboard.proxima_aula ? (
-        <Card className="border-[#4aaa3c]/20 bg-[#4aaa3c]/5 dark:bg-[#4aaa3c]/10 dark:border-[#4aaa3c]/30 p-4 space-y-2.5">
+      {/* Aula Atual (Em Andamento) */}
+      {dashboard.aula_atual && (
+        <Card className="border-[#4aaa3c]/40 bg-[#4aaa3c]/10 dark:bg-[#4aaa3c]/15 dark:border-[#4aaa3c]/50 p-4 space-y-2.5 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#2d3661] dark:text-[#7de06f] uppercase tracking-wider flex items-center space-x-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#4aaa3c] dark:text-[#7de06f]" />
-              <span>Próxima Aula</span>
+              <span className="relative flex h-2 w-2 mr-1">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4aaa3c] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4aaa3c]"></span>
+              </span>
+              <span>Aula Atual</span>
             </span>
-            <span className="text-xs font-bold bg-[#4aaa3c]/15 text-[#2d3661] dark:text-[#7de06f] px-2.5 py-0.5 rounded-full border border-[#4aaa3c]/30">
+            <span className="text-xs font-bold bg-[#4aaa3c] text-white dark:text-slate-900 px-2.5 py-0.5 rounded-full shadow-xs">
+              {dashboard.aula_atual.horario_inicio} - {dashboard.aula_atual.horario_fim}
+            </span>
+          </div>
+
+          <div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              {dashboard.aula_atual.disciplina}
+            </h3>
+            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+              <span className="flex items-center">
+                <UserIcon className="w-3 h-3 mr-1 text-slate-400" />
+                {dashboard.aula_atual.professor}
+              </span>
+              {dashboard.aula_atual.sala && (
+                <span className="text-slate-500 font-medium">Sala: {dashboard.aula_atual.sala}</span>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Próxima Aula */}
+      {dashboard.proxima_aula && (
+        <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 p-4 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+              <Clock className="w-3.5 h-3.5 text-[#2d3661] dark:text-[#7de06f]" />
+              <span>
+                Próxima Aula
+                {dashboard.proxima_aula.dia_semana && dashboard.proxima_aula.dia_semana !== dashboard.dia_semana_atual
+                  ? ` (${dashboard.proxima_aula.dia_semana})`
+                  : ""}
+              </span>
+            </span>
+            <span className="text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">
               {dashboard.proxima_aula.horario_inicio} - {dashboard.proxima_aula.horario_fim}
             </span>
           </div>
@@ -130,14 +168,31 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
               {dashboard.proxima_aula.disciplina}
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center mt-0.5">
-              <UserIcon className="w-3 h-3 mr-1 text-slate-400" />
-              {dashboard.proxima_aula.professor}
-            </p>
+            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+              <span className="flex items-center">
+                <UserIcon className="w-3 h-3 mr-1 text-slate-400" />
+                {dashboard.proxima_aula.professor}
+              </span>
+              {dashboard.proxima_aula.sala && (
+                <span className="text-slate-500 font-medium">Sala: {dashboard.proxima_aula.sala}</span>
+              )}
+            </div>
           </div>
         </Card>
+      )}
 
-      ) : null}
+      {/* Aulas de Hoje Concluídas (sem aulas adicionais) */}
+      {dashboard.turma_nome && !dashboard.aula_atual && !dashboard.proxima_aula && (
+        <Card className="p-4 border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 space-y-1.5 text-center py-5">
+          <Clock className="w-5 h-5 mx-auto text-slate-400" />
+          <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            {dashboard.mensagem_aulas || "Aulas de hoje concluídas"}
+          </h3>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            Consulte a grade completa na aba Horários.
+          </p>
+        </Card>
+      )}
 
       {/* Aviso Destaque */}
       {dashboard.aviso_recente ? (

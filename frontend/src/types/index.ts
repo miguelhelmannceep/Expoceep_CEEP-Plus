@@ -38,7 +38,8 @@ export interface NextClass {
   horario_fim: string;
   disciplina: string;
   professor: string;
-  sala: string;
+  sala?: string | null;
+  dia_semana?: string | null;
 }
 
 export interface CourseOption {
@@ -113,7 +114,13 @@ export interface StudentDashboard {
   aluno_nome: string;
   turma_nome?: string | null;
   curso_nome?: string | null;
+  aula_atual?: NextClass | null;
   proxima_aula?: NextClass | null;
+  status_aulas?: string | null;
+  mensagem_aulas?: string | null;
+  dia_semana_atual?: string | null;
+  horario_atual?: string | null;
+  is_dia_letivo?: boolean | null;
   aviso_recente?: Notice | null;
   tarefas_pendentes_count: number;
   tarefas_preview: Task[];

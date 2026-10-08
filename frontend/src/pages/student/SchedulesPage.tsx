@@ -194,6 +194,24 @@ const CeepDropdown: React.FC<CeepDropdownProps> = ({
   );
 };
 
+const getBrasiliaCurrentDayOfWeek = (): string => {
+  try {
+    const formatter = new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      weekday: "long"
+    });
+    const weekdayStr = formatter.format(new Date()).toLowerCase();
+    if (weekdayStr.startsWith("segunda")) return "Segunda-feira";
+    if (weekdayStr.startsWith("ter")) return "Terça-feira";
+    if (weekdayStr.startsWith("qua")) return "Quarta-feira";
+    if (weekdayStr.startsWith("qui")) return "Quinta-feira";
+    if (weekdayStr.startsWith("sex")) return "Sexta-feira";
+    return "Segunda-feira";
+  } catch {
+    return "Segunda-feira";
+  }
+};
+
 interface SchedulesPageProps {
   onNavigate?: (tab: any) => void;
 }
@@ -208,7 +226,7 @@ export const SchedulesPage: React.FC<SchedulesPageProps> = ({ onNavigate }) => {
   const dropdownContainerRef = useRef<HTMLDivElement>(null);
 
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
-  const [selectedDay, setSelectedDay] = useState<string>("Segunda-feira");
+  const [selectedDay, setSelectedDay] = useState<string>(getBrasiliaCurrentDayOfWeek);
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -377,37 +377,36 @@ def init_db(db: Session) -> None:
                 u_obj.turma_id = None
     db.commit()
 
-    # Tarefas demonstrativas para o Aluno Público
-    aluno_pub = db.query(Usuario).filter(Usuario.email == "aluno.publico@ceep.demo").first()
-    if aluno_pub and db.query(Tarefa).filter(Tarefa.aluno_id == aluno_pub.id).count() == 0:
-        db.add_all([
-            Tarefa(
-                titulo="Explorar estandes da EXPOCEEP 2026",
-                descricao="Conhecer as inovações tecnológicas desenvolvidas pelos estudantes do CEEP.",
-                data_entrega=None,
-                status="PENDENTE",
-                prioridade="ALTA",
-                aluno_id=aluno_pub.id
-            ),
-            Tarefa(
-                titulo="Testar pedido interativo na Cantina",
-                descricao="Selecionar produto, simular o pagamento PIX e gerar o QR Code de retirada.",
-                data_entrega=None,
-                status="PENDENTE",
-                prioridade="MEDIA",
-                aluno_id=aluno_pub.id
-            )
-        ])
+    # Milestone 5Z: Garante o catálogo oficial de 9 produtos da cantina
+    canteen_catalog = [
+        {"nome": "Achocolatado Chocomil 200ml", "preco": 3.00, "descricao": "Achocolatado Chocomil 200ml gelado."},
+        {"nome": "Alfajor", "preco": 4.00, "descricao": "Alfajor tradicional recheado com doce de leite."},
+        {"nome": "Água sem gás", "preco": 3.00, "descricao": "Garrafa de água mineral 500ml sem gás."},
+        {"nome": "Água com gás", "preco": 3.00, "descricao": "Garrafa de água mineral 500ml com gás."},
+        {"nome": "Barra de cereal", "preco": 3.00, "descricao": "Barra de cereal nutritiva de sabores sortidos."},
+        {"nome": "Salgadinho Cegonha 50g", "preco": 3.00, "descricao": "Pacote de salgadinho crocante Cegonha 50g."},
+        {"nome": "Geladinho", "preco": 1.00, "descricao": "Geladinho artesanal refrescante."},
+        {"nome": "Salgado assado / Mini pizza", "preco": 8.00, "descricao": "Salgado assado tradicional ou mini pizza artesanal."},
+        {"nome": "Suco", "preco": 5.00, "descricao": "Suco refrescante sabor fruta."},
+    ]
+    # Remove produto 'Salgado' legado se ainda existir
+    salgado_legado = db.query(Produto).filter(Produto.nome == "Salgado").first()
+    if salgado_legado:
+        db.delete(salgado_legado)
         db.commit()
 
-    # Garante item base da cantina
-    if not db.query(Produto).filter(Produto.nome == "Salgado").first():
-        db.add(Produto(
-            nome="Salgado",
-            descricao="Escolha seu salgado e retire na cantina após a confirmação do pedido.",
-            preco=8.00,
-            ativo=True
-        ))
+    for item in canteen_catalog:
+        prod = db.query(Produto).filter(Produto.nome == item["nome"]).first()
+        if not prod:
+            db.add(Produto(
+                nome=item["nome"],
+                descricao=item["descricao"],
+                preco=item["preco"],
+                ativo=True
+            ))
+        else:
+            prod.preco = item["preco"]
+            prod.ativo = True
     db.commit()
 
 

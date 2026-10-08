@@ -18,13 +18,16 @@ from app.schemas.usuario import UsuarioOut
 
 router = APIRouter()
 
+from app.utils.schedule_detector import detect_student_schedules, get_brasilia_now
+
 @router.get("/dashboard", response_model=StudentDashboardOut, summary="Dashboard consolidado do Aluno")
 def get_student_dashboard(
     current_user: Usuario = Depends(require_roles(["ALUNO"])),
     db: Session = Depends(get_db)
 ):
-    # Saudação de acordo com o turno
-    hora = datetime.now().hour
+    # Horário de Brasília oficial para saudação e rotina
+    now_br = get_brasilia_now()
+    hora = now_br.hour
     if 5 <= hora < 12:
         saudacao = "Bom dia"
     elif 12 <= hora < 18:
@@ -35,23 +38,15 @@ def get_student_dashboard(
     turma_nome = current_user.turma_rel.nome_turma if current_user.turma_rel else None
     curso_nome = current_user.turma_rel.curso if current_user.turma_rel else None
 
-    # Próxima aula dinâmica baseada nos horários cadastrados da turma
-    proxima_aula = None
-    if current_user.turma_id:
-        horario = db.query(Horario).filter(
-            Horario.turma_id == current_user.turma_id,
-            (Horario.ativo == True) | (Horario.ativo == None)
-        ).order_by(Horario.horario_inicio.asc()).first()
-        if horario:
-            disc_nome = horario.disciplina_rel.nome if horario.disciplina_rel else (horario.disciplina or "Disciplina")
-            prof_nome = horario.professor_rel.nome if horario.professor_rel else (horario.professor or "Professor")
-            proxima_aula = NextClassOut(
-                horario_inicio=horario.horario_inicio,
-                horario_fim=horario.horario_fim,
-                disciplina=disc_nome,
-                professor=prof_nome,
-                sala=None
-            )
+    # Automação de Horários (Milestone 5Z) em Horário de Brasília
+    schedule_detection = detect_student_schedules(
+        db=db,
+        turma_id=current_user.turma_id,
+        reference_dt=now_br
+    )
+
+    aula_atual = NextClassOut(**schedule_detection["aula_atual"]) if schedule_detection["aula_atual"] else None
+    proxima_aula = NextClassOut(**schedule_detection["proxima_aula"]) if schedule_detection["proxima_aula"] else None
 
     # Aviso recente publicado e segmentado para o aluno respeitando ambiente
     user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
@@ -108,7 +103,13 @@ def get_student_dashboard(
         aluno_nome=current_user.nome,
         turma_nome=turma_nome,
         curso_nome=curso_nome,
+        aula_atual=aula_atual,
         proxima_aula=proxima_aula,
+        status_aulas=schedule_detection["status_aulas"],
+        mensagem_aulas=schedule_detection["mensagem_aulas"],
+        dia_semana_atual=schedule_detection["dia_semana_atual"],
+        horario_atual=schedule_detection["horario_atual"],
+        is_dia_letivo=schedule_detection["is_dia_letivo"],
         aviso_recente=aviso_recente,
         tarefas_pendentes_count=len(tarefas_db),
         tarefas_preview=tarefas_preview,

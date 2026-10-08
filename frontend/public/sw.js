@@ -2,7 +2,7 @@
 // Estratégia: Network-First para App Shell + Cache para assets estáticos.
 // REGRA MANDATÓRIA: NENHUMA requisição de API (/api/*) ou método não-GET é armazenado em cache.
 
-const CACHE_NAME = 'ceep-plus-v1';
+const CACHE_NAME = 'ceep-plus-v2';
 
 const PRECACHE_ASSETS = [
   '/',

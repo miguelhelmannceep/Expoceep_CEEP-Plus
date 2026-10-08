@@ -18,18 +18,22 @@ router = APIRouter()
 
 AUTHORIZED_GESTAO_EMAILS: Set[str] = {
     "gestao@ceep.demo",
+    "gestao.publico@ceep.demo",
+    "gestao.oficial@escola.pr.gov.br",
 }
 
 AUTHORIZED_CANTINA_EMAILS: Set[str] = {
     "cantina@ceep.demo",
+    "cantina.publico@ceep.demo",
+    "cantina.oficial@escola.pr.gov.br",
 }
 
 @router.post("/login", response_model=Token, summary="Autenticação com e-mail e senha")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     email_clean = req.email.lower().strip()
     
-    # 1. Regra ALUNO: qualquer e-mail institucional @escola.pr.gov.br
-    if email_clean.endswith("@escola.pr.gov.br"):
+    # 1. Regra ALUNO: e-mails institucionais @escola.pr.gov.br ou conta pública de demonstração
+    if email_clean.endswith("@escola.pr.gov.br") or email_clean == "aluno.publico@ceep.demo":
         user = db.query(Usuario).filter(Usuario.email == email_clean).first()
         if not user:
             # Provisiona dinamicamente ou associa à turma padrão (demo) para novo acesso institucional
@@ -71,7 +75,9 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             role=user.perfil,
             nome=user.nome,
             email=user.email,
-            turma=turma_nome
+            turma=turma_nome,
+            ambiente=getattr(user, "ambiente", "OFICIAL"),
+            is_demo=bool(getattr(user, "is_demo", False))
         )
 
     # 2. Regra GESTÃO: somente e-mails previamente autorizados + senha correta
@@ -93,7 +99,9 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             role=user.perfil,
             nome=user.nome,
             email=user.email,
-            turma=None
+            turma=None,
+            ambiente=getattr(user, "ambiente", "OFICIAL"),
+            is_demo=bool(getattr(user, "is_demo", False))
         )
 
     # 3. Regra CANTINA: somente e-mails previamente autorizados + senha correta
@@ -115,7 +123,9 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             role=user.perfil,
             nome=user.nome,
             email=user.email,
-            turma=None
+            turma=None,
+            ambiente=getattr(user, "ambiente", "OFICIAL"),
+            is_demo=bool(getattr(user, "is_demo", False))
         )
 
     # 4. Qualquer outro e-mail não autorizado: recusado
@@ -273,7 +283,9 @@ def login_google(req: GoogleLoginRequest, db: Session = Depends(get_db)):
         nome=user.nome,
         email=user.email,
         turma=turma_nome,
-        avatar_url=google_picture
+        avatar_url=google_picture,
+        ambiente=getattr(user, "ambiente", "OFICIAL"),
+        is_demo=bool(getattr(user, "is_demo", False))
     )
 
 @router.get("/me", response_model=UsuarioOut, summary="Dados do usuário logado")
@@ -291,31 +303,39 @@ def get_me(
         turma_id=current_user.turma_id,
         turma_nome=current_user.turma_rel.nome_turma if current_user.turma_rel else None,
         curso_nome=current_user.turma_rel.curso if current_user.turma_rel else None,
-        avatar_url=avatar_url
+        avatar_url=avatar_url,
+        ambiente=getattr(current_user, "ambiente", "OFICIAL"),
+        is_demo=bool(getattr(current_user, "is_demo", False))
     )
 
-@router.get("/demo-accounts", response_model=List[DemoAccount], summary="Contas de demonstração disponíveis")
+@router.get("/demo-accounts", response_model=List[DemoAccount], summary="Contas públicas de demonstração disponíveis")
 def get_demo_accounts():
     return [
         DemoAccount(
-            label="Aluno Demo",
-            email="aluno@escola.pr.gov.br",
+            label="Aluno Público",
+            email="aluno.publico@ceep.demo",
             role="ALUNO",
-            descricao="Acesso de aluno com horários, avisos, tarefas e cantina.",
-            turma="3º C — Desenvolvimento de Sistemas"
+            descricao="Ambiente público para visitantes da EXPOCEEP explorarem horários, avisos, tarefas e cantina.",
+            turma="1C — Desenvolvimento de Sistemas",
+            ambiente="PUBLICO",
+            is_demo=True
         ),
         DemoAccount(
-            label="Gestão Demo",
-            email="gestao@ceep.demo",
+            label="Gestão Pública",
+            email="gestao.publico@ceep.demo",
             role="GESTAO",
-            descricao="Acesso administrativo da coordenação e direção escolar.",
-            turma=None
+            descricao="Painel público para testes de avisos e monitoramento interativo da EXPOCEEP.",
+            turma=None,
+            ambiente="PUBLICO",
+            is_demo=True
         ),
         DemoAccount(
-            label="Cantina Demo",
-            email="cantina@ceep.demo",
+            label="Cantina Pública",
+            email="cantina.publico@ceep.demo",
             role="CANTINA",
-            descricao="Terminal simplificado para controle e entrega de pedidos.",
-            turma=None
+            descricao="Terminal interativo para controle, leitura e retirada de pedidos públicos.",
+            turma=None,
+            ambiente="PUBLICO",
+            is_demo=True
         ),
     ]

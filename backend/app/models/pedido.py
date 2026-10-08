@@ -12,6 +12,7 @@ class Pedido(Base):
     status = Column(String(30), nullable=False, default="PENDENTE_PAGAMENTO") # PENDENTE_PAGAMENTO, PAGO, UTILIZADO
     valor_total = Column(Float, nullable=False)
     pickup_token = Column(String(64), unique=True, index=True, nullable=True)
+    ambiente = Column(String(20), default="OFICIAL", nullable=False) # OFICIAL, PUBLICO
     is_demo = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

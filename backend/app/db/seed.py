@@ -74,77 +74,55 @@ def ensure_schema_migrations(db: Session) -> None:
         except Exception as e:
             print(f"Migration warning cursos_disciplinas: {e}")
 
-        # 5. Colunas is_demo (Milestone 5V)
+        # 5. Colunas is_demo e ambiente (Milestones 5V e 5X)
         try:
             u_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(usuarios)")).fetchall()]
             if u_cols and "is_demo" not in u_cols:
                 conn.execute(text("ALTER TABLE usuarios ADD COLUMN is_demo BOOLEAN DEFAULT 0"))
+                conn.commit()
+            if u_cols and "ambiente" not in u_cols:
+                conn.execute(text("ALTER TABLE usuarios ADD COLUMN ambiente VARCHAR(20) DEFAULT 'OFICIAL' NOT NULL"))
                 conn.commit()
 
             a_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(avisos)")).fetchall()]
             if a_cols and "is_demo" not in a_cols:
                 conn.execute(text("ALTER TABLE avisos ADD COLUMN is_demo BOOLEAN DEFAULT 0"))
                 conn.commit()
+            if a_cols and "ambiente" not in a_cols:
+                conn.execute(text("ALTER TABLE avisos ADD COLUMN ambiente VARCHAR(20) DEFAULT 'OFICIAL' NOT NULL"))
+                conn.commit()
 
             p_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(pedidos)")).fetchall()]
             if p_cols and "is_demo" not in p_cols:
                 conn.execute(text("ALTER TABLE pedidos ADD COLUMN is_demo BOOLEAN DEFAULT 0"))
                 conn.commit()
+            if p_cols and "ambiente" not in p_cols:
+                conn.execute(text("ALTER TABLE pedidos ADD COLUMN ambiente VARCHAR(20) DEFAULT 'OFICIAL' NOT NULL"))
+                conn.commit()
 
-            # Garante que os usuários Demo existentes sejam marcados com is_demo = 1
-            # e os oficiais com is_demo = 0
+            # Milestone 5X: Define explicitamente o AMBIENTE OFICIAL para as contas oficiais
+            # e AMBIENTE PÚBLICO exclusivamente para as contas públicas da EXPOCEEP
             conn.execute(text("""
-                UPDATE usuarios SET is_demo = 1 WHERE email IN (
-                    'aluno@escola.pr.gov.br',
-                    'outro.aluno@escola.pr.gov.br',
-                    'gestao@ceep.demo',
-                    'cantina@ceep.demo'
+                UPDATE usuarios 
+                SET ambiente = 'PUBLICO', is_demo = 1 
+                WHERE email IN (
+                    'aluno.publico@ceep.demo',
+                    'gestao.publico@ceep.demo',
+                    'cantina.publico@ceep.demo'
                 )
             """))
             conn.execute(text("""
-                UPDATE usuarios SET is_demo = 0 WHERE email NOT IN (
-                    'aluno@escola.pr.gov.br',
-                    'outro.aluno@escola.pr.gov.br',
-                    'gestao@ceep.demo',
-                    'cantina@ceep.demo'
+                UPDATE usuarios 
+                SET ambiente = 'OFICIAL', is_demo = 0 
+                WHERE email NOT IN (
+                    'aluno.publico@ceep.demo',
+                    'gestao.publico@ceep.demo',
+                    'cantina.publico@ceep.demo'
                 )
             """))
             conn.commit()
         except Exception as e:
-            print(f"Migration warning is_demo: {e}")
-
-def init_db(db: Session) -> None:
-    Base.metadata.create_all(bind=engine)
-    ensure_schema_migrations(db)
-
-    # Backfill disciplina_id e professor_id para horários legados se existirem
-    try:
-        horarios_sem_fk = db.query(Horario).filter((Horario.disciplina_id == None) | (Horario.professor_id == None)).all()
-        if horarios_sem_fk:
-            discs = {d.nome.lower(): d.id for d in db.query(Disciplina).all()}
-            profs = {p.nome.lower(): p.id for p in db.query(Professor).all()}
-            for h in horarios_sem_fk:
-                if h.disciplina_id is None and h.disciplina and h.disciplina.lower() in discs:
-                    h.disciplina_id = discs[h.disciplina.lower()]
-                if h.professor_id is None and h.professor and h.professor.lower() in profs:
-                    h.professor_id = profs[h.professor.lower()]
-                if h.ativo is None:
-                    h.ativo = True
-            db.commit()
-    except Exception as e:
-        print(f"Backfill warning: {e}")
-
-    # Migra e-mails de alunos legados para @escola.pr.gov.br se existirem
-    try:
-        aluno_legado = db.query(Usuario).filter(Usuario.email == "aluno@ceep.demo").first()
-        if aluno_legado:
-            aluno_legado.email = "aluno@escola.pr.gov.br"
-        outro_legado = db.query(Usuario).filter(Usuario.email == "outro.aluno@ceep.demo").first()
-        if outro_legado:
-            outro_legado.email = "outro.aluno@escola.pr.gov.br"
-        db.commit()
-    except Exception as e:
-        print(f"Email migration warning: {e}")
+            print(f"Migration warning ambiente/is_demo: {e}")
 
 OFFICIAL_PERIODS = [
     # Manhã
@@ -324,6 +302,40 @@ def sync_real_school_data(db: Session) -> None:
     except Exception as e:
         print(f"School data sync warning: {e}")
 
+
+def init_db(db: Session) -> None:
+    Base.metadata.create_all(bind=engine)
+    ensure_schema_migrations(db)
+
+    # Backfill disciplina_id e professor_id para horários legados se existirem
+    try:
+        horarios_sem_fk = db.query(Horario).filter((Horario.disciplina_id == None) | (Horario.professor_id == None)).all()
+        if horarios_sem_fk:
+            discs = {d.nome.lower(): d.id for d in db.query(Disciplina).all()}
+            profs = {p.nome.lower(): p.id for p in db.query(Professor).all()}
+            for h in horarios_sem_fk:
+                if h.disciplina_id is None and h.disciplina and h.disciplina.lower() in discs:
+                    h.disciplina_id = discs[h.disciplina.lower()]
+                if h.professor_id is None and h.professor and h.professor.lower() in profs:
+                    h.professor_id = profs[h.professor.lower()]
+                if h.ativo is None:
+                    h.ativo = True
+            db.commit()
+    except Exception as e:
+        print(f"Backfill warning: {e}")
+
+    # Migra e-mails de alunos legados para @escola.pr.gov.br se existirem
+    try:
+        aluno_legado = db.query(Usuario).filter(Usuario.email == "aluno@ceep.demo").first()
+        if aluno_legado:
+            aluno_legado.email = "aluno@escola.pr.gov.br"
+        outro_legado = db.query(Usuario).filter(Usuario.email == "outro.aluno@ceep.demo").first()
+        if outro_legado:
+            outro_legado.email = "outro.aluno@escola.pr.gov.br"
+        db.commit()
+    except Exception as e:
+        print(f"Email migration warning: {e}")
+
     # 0. Garante Períodos e Intervalos Oficiais da Escola (Milestone 5E)
     sync_official_periods(db)
     sync_real_school_data(db)
@@ -331,15 +343,22 @@ def sync_real_school_data(db: Session) -> None:
     # Garante usuários estruturais e essenciais para a operação do CEEP+
     senha_padrao = get_password_hash("demo123")
     essential_users = [
-        {"nome": "Aluno Demo", "email": "aluno@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 8, "is_demo": True},
-        {"nome": "Outro Aluno Demo", "email": "outro.aluno@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 2, "is_demo": True},
-        {"nome": "Gestão Demo", "email": "gestao@ceep.demo", "perfil": "GESTAO", "turma_id": None, "is_demo": True},
-        {"nome": "Cantina Demo", "email": "cantina@ceep.demo", "perfil": "CANTINA", "turma_id": None, "is_demo": True},
-        {"nome": "Diretoria", "email": "diretoria@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 1, "is_demo": False},
-        {"nome": "Miguel Helmann", "email": "miguel.helmann@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 1, "is_demo": False},
+        # --- AMBIENTE OFICIAL (Apresentação e Operação Oficial do Projeto) ---
+        {"nome": "Aluno Oficial", "email": "aluno@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 8, "ambiente": "OFICIAL", "is_demo": False},
+        {"nome": "Outro Aluno Oficial", "email": "outro.aluno@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 2, "ambiente": "OFICIAL", "is_demo": False},
+        {"nome": "Gestão Oficial", "email": "gestao@ceep.demo", "perfil": "GESTAO", "turma_id": None, "ambiente": "OFICIAL", "is_demo": False},
+        {"nome": "Cantina Oficial", "email": "cantina@ceep.demo", "perfil": "CANTINA", "turma_id": None, "ambiente": "OFICIAL", "is_demo": False},
+        {"nome": "Diretoria", "email": "diretoria@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 1, "ambiente": "OFICIAL", "is_demo": False},
+        {"nome": "Miguel Helmann", "email": "miguel.helmann@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 1, "ambiente": "OFICIAL", "is_demo": False},
+
+        # --- AMBIENTE PÚBLICO / EXPOCEEP 2026 (Visitantes e Interação Livre) ---
+        {"nome": "Aluno Visitante (EXPOCEEP)", "email": "aluno.publico@ceep.demo", "perfil": "ALUNO", "turma_id": 8, "ambiente": "PUBLICO", "is_demo": True},
+        {"nome": "Gestão Pública (EXPOCEEP)", "email": "gestao.publico@ceep.demo", "perfil": "GESTAO", "turma_id": None, "ambiente": "PUBLICO", "is_demo": True},
+        {"nome": "Cantina Pública (EXPOCEEP)", "email": "cantina.publico@ceep.demo", "perfil": "CANTINA", "turma_id": None, "ambiente": "PUBLICO", "is_demo": True},
     ]
     for u_data in essential_users:
-        if not db.query(Usuario).filter(Usuario.email == u_data["email"]).first():
+        u_obj = db.query(Usuario).filter(Usuario.email == u_data["email"]).first()
+        if not u_obj:
             db.add(Usuario(
                 nome=u_data["nome"],
                 email=u_data["email"],
@@ -347,8 +366,36 @@ def sync_real_school_data(db: Session) -> None:
                 perfil=u_data["perfil"],
                 turma_id=u_data["turma_id"],
                 ativo=True,
+                ambiente=u_data.get("ambiente", "OFICIAL"),
                 is_demo=u_data.get("is_demo", False)
             ))
+        else:
+            u_obj.ambiente = u_data.get("ambiente", "OFICIAL")
+            u_obj.is_demo = u_data.get("is_demo", False)
+    db.commit()
+
+    # Tarefas demonstrativas para o Aluno Público
+    aluno_pub = db.query(Usuario).filter(Usuario.email == "aluno.publico@ceep.demo").first()
+    if aluno_pub and db.query(Tarefa).filter(Tarefa.aluno_id == aluno_pub.id).count() == 0:
+        db.add_all([
+            Tarefa(
+                titulo="Explorar estandes da EXPOCEEP 2026",
+                descricao="Conhecer as inovações tecnológicas desenvolvidas pelos estudantes do CEEP.",
+                data_entrega=None,
+                status="PENDENTE",
+                prioridade="ALTA",
+                aluno_id=aluno_pub.id
+            ),
+            Tarefa(
+                titulo="Testar pedido interativo na Cantina",
+                descricao="Selecionar produto, simular o pagamento PIX e gerar o QR Code de retirada.",
+                data_entrega=None,
+                status="PENDENTE",
+                prioridade="MEDIA",
+                aluno_id=aluno_pub.id
+            )
+        ])
+        db.commit()
 
     # Garante item base da cantina
     if not db.query(Produto).filter(Produto.nome == "Salgado").first():

@@ -52,6 +52,7 @@ def format_pedido_response(pedido: Pedido) -> dict:
         "valor_total": pedido.valor_total,
         "pickup_token": pedido.pickup_token,
         "pickup_code": pickup_code,
+        "ambiente": getattr(pedido, "ambiente", "OFICIAL"),
         "is_demo": bool(getattr(pedido, "is_demo", False)),
         "created_at": pedido.created_at,
         "updated_at": pedido.updated_at,
@@ -91,7 +92,8 @@ def create_canteen_order(
             status="PENDENTE_PAGAMENTO",
             valor_total=valor_total,
             pickup_token=token,
-            is_demo=bool(current_user.is_demo)
+            ambiente=getattr(current_user, "ambiente", "OFICIAL"),
+            is_demo=bool(getattr(current_user, "is_demo", False))
         )
         db.add(pedido)
         db.flush()
@@ -124,9 +126,10 @@ def list_canteen_orders(
     current_user: Usuario = Depends(require_roles(["ALUNO"])),
     db: Session = Depends(get_db)
 ):
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
     pedidos = db.query(Pedido).filter(
         Pedido.usuario_id == current_user.id,
-        Pedido.is_demo == bool(current_user.is_demo)
+        Pedido.ambiente == user_ambiente
     ).order_by(Pedido.created_at.desc()).all()
     return [format_pedido_response(p) for p in pedidos]
 
@@ -136,10 +139,11 @@ def get_canteen_order(
     current_user: Usuario = Depends(require_roles(["ALUNO"])),
     db: Session = Depends(get_db)
 ):
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
     pedido = db.query(Pedido).filter(
         Pedido.id == order_id,
         Pedido.usuario_id == current_user.id,
-        Pedido.is_demo == bool(current_user.is_demo)
+        Pedido.ambiente == user_ambiente
     ).first()
     if not pedido:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pedido não encontrado.")
@@ -151,10 +155,11 @@ def simulate_order_payment(
     current_user: Usuario = Depends(require_roles(["ALUNO"])),
     db: Session = Depends(get_db)
 ):
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
     pedido = db.query(Pedido).filter(
         Pedido.id == order_id,
         Pedido.usuario_id == current_user.id,
-        Pedido.is_demo == bool(current_user.is_demo)
+        Pedido.ambiente == user_ambiente
     ).first()
     if not pedido:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pedido não encontrado.")
@@ -194,10 +199,11 @@ def get_order_pickup_qr(
     current_user: Usuario = Depends(require_roles(["ALUNO"])),
     db: Session = Depends(get_db)
 ):
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
     pedido = db.query(Pedido).filter(
         Pedido.id == order_id,
         Pedido.usuario_id == current_user.id,
-        Pedido.is_demo == bool(current_user.is_demo)
+        Pedido.ambiente == user_ambiente
     ).first()
     if not pedido:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pedido não encontrado.")
@@ -235,10 +241,11 @@ def validate_pickup_qr(
 ):
     raw_code = payload.pickup_code.strip()
     token = raw_code.replace("CEEPPLUS-PICKUP-", "").strip()
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
 
     pedido = db.query(Pedido).filter(
         (Pedido.pickup_token == token) | (Pedido.pickup_token == raw_code),
-        Pedido.is_demo == bool(current_user.is_demo)
+        Pedido.ambiente == user_ambiente
     ).first()
 
     if not pedido:
@@ -279,12 +286,13 @@ def confirm_pickup_order(
     db: Session = Depends(get_db)
 ):
     now = datetime.now(timezone.utc)
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
 
-    # Atualização atômica para prevenção absoluta de duplo uso / race conditions respeitando escopo demo
+    # Atualização atômica para prevenção absoluta de duplo uso / race conditions respeitando escopo de ambiente
     rows_updated = db.query(Pedido).filter(
         Pedido.id == order_id,
         Pedido.status == "PAGO",
-        Pedido.is_demo == bool(current_user.is_demo)
+        Pedido.ambiente == user_ambiente
     ).update({
         Pedido.status: "UTILIZADO",
         Pedido.used_at: now,
@@ -296,7 +304,7 @@ def confirm_pickup_order(
     if rows_updated == 0:
         pedido = db.query(Pedido).filter(
             Pedido.id == order_id,
-            Pedido.is_demo == bool(current_user.is_demo)
+            Pedido.ambiente == user_ambiente
         ).first()
         if not pedido:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pedido não encontrado.")

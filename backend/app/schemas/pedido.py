@@ -35,6 +35,7 @@ class PedidoOut(BaseModel):
     valor_total: float
     pickup_token: Optional[str] = None
     pickup_code: Optional[str] = None
+    ambiente: str = "OFICIAL"
     is_demo: bool = False
     created_at: datetime
     updated_at: Optional[datetime] = None

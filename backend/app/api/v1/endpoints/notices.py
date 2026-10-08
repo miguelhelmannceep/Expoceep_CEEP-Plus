@@ -76,6 +76,7 @@ def format_aviso_out(aviso: Aviso, db: Session) -> AvisoOut:
         publico_alvo_nome=target_name,
         status=getattr(aviso, "status", "PUBLICADO"),
         imagem_url=getattr(aviso, "imagem_url", None),
+        ambiente=getattr(aviso, "ambiente", "OFICIAL"),
         is_demo=bool(getattr(aviso, "is_demo", False)),
         data_publicacao=aviso.data_publicacao,
         autor_nome=aviso.autor_rel.nome if aviso.autor_rel else "Coordenação"
@@ -87,9 +88,10 @@ def list_notices(
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    user_is_demo = bool(current_user.is_demo)
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
+    user_is_demo = bool(getattr(current_user, "is_demo", False))
     if current_user.perfil == "ALUNO":
-        # Aluno só pode visualizar avisos com status PUBLICADO do seu mesmo escopo demo/oficial
+        # Aluno só pode visualizar avisos com status PUBLICADO do seu mesmo ambiente (OFICIAL ou PUBLICO)
         student_turma_id = current_user.turma_id
         student_curso_id = None
         if current_user.turma_rel and current_user.turma_rel.curso_id:
@@ -113,12 +115,14 @@ def list_notices(
 
         avisos = db.query(Aviso).filter(
             Aviso.status == "PUBLICADO",
+            Aviso.ambiente == user_ambiente,
             Aviso.is_demo == user_is_demo,
             or_(*conditions)
         ).order_by(Aviso.data_publicacao.desc()).all()
     else:
-        # Gestão ou Cantina visualizando o mural
+        # Gestão ou Cantina visualizando o mural do seu próprio ambiente
         avisos = db.query(Aviso).filter(
+            Aviso.ambiente == user_ambiente,
             Aviso.is_demo == user_is_demo
         ).order_by(Aviso.data_publicacao.desc()).all()
 
@@ -129,8 +133,11 @@ def list_all_notices_management(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
+    user_is_demo = bool(getattr(current_user, "is_demo", False))
     avisos = db.query(Aviso).filter(
-        Aviso.is_demo == bool(current_user.is_demo)
+        Aviso.ambiente == user_ambiente,
+        Aviso.is_demo == user_is_demo
     ).order_by(Aviso.data_publicacao.desc()).all()
     return [format_aviso_out(a, db) for a in avisos]
 
@@ -187,7 +194,8 @@ def create_notice(
         imagem_url=validate_image_payload(payload.imagem_url),
         data_publicacao=datetime.now(timezone.utc),
         autor_id=current_user.id,
-        is_demo=bool(current_user.is_demo)
+        ambiente=getattr(current_user, "ambiente", "OFICIAL"),
+        is_demo=bool(getattr(current_user, "is_demo", False))
     )
     db.add(novo_aviso)
     db.commit()
@@ -201,9 +209,10 @@ def update_notice(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
     aviso = db.query(Aviso).filter(
         Aviso.id == notice_id,
-        Aviso.is_demo == bool(current_user.is_demo)
+        Aviso.ambiente == user_ambiente
     ).first()
     if not aviso:
         raise HTTPException(
@@ -275,9 +284,10 @@ def publish_notice(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
     aviso = db.query(Aviso).filter(
         Aviso.id == notice_id,
-        Aviso.is_demo == bool(current_user.is_demo)
+        Aviso.ambiente == user_ambiente
     ).first()
     if not aviso:
         raise HTTPException(
@@ -297,9 +307,10 @@ def delete_notice(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
     aviso = db.query(Aviso).filter(
         Aviso.id == notice_id,
-        Aviso.is_demo == bool(current_user.is_demo)
+        Aviso.ambiente == user_ambiente
     ).first()
     if not aviso:
         raise HTTPException(

@@ -56,25 +56,32 @@ from app.schemas.produto import (
 
 router = APIRouter()
 
+def check_structural_permission(user: Usuario):
+    if getattr(user, "ambiente", "OFICIAL") == "PUBLICO":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Operação não permitida no ambiente público: dados estruturais oficiais da escola são protegidos."
+        )
+
 @router.get("/overview", response_model=ManagementOverviewOut, summary="Visão geral e métricas consolidadas da Gestão")
 def get_management_overview(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
-    user_is_demo = bool(current_user.is_demo)
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
     total_turmas = db.query(Turma).count()
-    total_avisos = db.query(Aviso).filter(Aviso.is_demo == user_is_demo).count()
-    total_alunos = db.query(Usuario).filter(Usuario.perfil == "ALUNO", Usuario.is_demo == user_is_demo).count()
+    total_avisos = db.query(Aviso).filter(Aviso.ambiente == user_ambiente).count()
+    total_alunos = db.query(Usuario).filter(Usuario.perfil == "ALUNO", Usuario.ambiente == user_ambiente).count()
 
     # Métricas consolidadas da Cantina a partir do banco de dados
-    total_pedidos = db.query(Pedido).filter(Pedido.is_demo == user_is_demo).count()
-    pedidos_pagos = db.query(Pedido).filter(Pedido.status == "PAGO", Pedido.is_demo == user_is_demo).count()
-    pedidos_utilizados = db.query(Pedido).filter(Pedido.status == "UTILIZADO", Pedido.is_demo == user_is_demo).count()
-    pedidos_pendentes = db.query(Pedido).filter(Pedido.status == "PENDENTE_PAGAMENTO", Pedido.is_demo == user_is_demo).count()
+    total_pedidos = db.query(Pedido).filter(Pedido.ambiente == user_ambiente).count()
+    pedidos_pagos = db.query(Pedido).filter(Pedido.status == "PAGO", Pedido.ambiente == user_ambiente).count()
+    pedidos_utilizados = db.query(Pedido).filter(Pedido.status == "UTILIZADO", Pedido.ambiente == user_ambiente).count()
+    pedidos_pendentes = db.query(Pedido).filter(Pedido.status == "PENDENTE_PAGAMENTO", Pedido.ambiente == user_ambiente).count()
 
     receita_res = db.query(func.sum(Pedido.valor_total)).filter(
         Pedido.status.in_(["PAGO", "UTILIZADO"]),
-        Pedido.is_demo == user_is_demo
+        Pedido.ambiente == user_ambiente
     ).scalar()
     receita_confirmada = float(receita_res) if receita_res else 0.0
 
@@ -87,7 +94,7 @@ def get_management_overview(
     )
 
     # Avisos recentes (ordenados por data de publicação decrescente)
-    avisos_db = db.query(Aviso).filter(Aviso.is_demo == user_is_demo).order_by(Aviso.data_publicacao.desc()).limit(4).all()
+    avisos_db = db.query(Aviso).filter(Aviso.ambiente == user_ambiente).order_by(Aviso.data_publicacao.desc()).limit(4).all()
     avisos_recentes = [
         AvisoOut(
             id=a.id,
@@ -98,6 +105,7 @@ def get_management_overview(
             publico_alvo_id=a.publico_alvo_id,
             status=a.status,
             imagem_url=getattr(a, "imagem_url", None),
+            ambiente=getattr(a, "ambiente", "OFICIAL"),
             is_demo=bool(getattr(a, "is_demo", False)),
             data_publicacao=a.data_publicacao,
             autor_nome=a.autor_rel.nome if a.autor_rel else "Coordenação"
@@ -147,6 +155,7 @@ def create_course(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     nome_clean = payload.nome.strip()
     sigla_clean = payload.sigla.strip().upper()
 
@@ -190,6 +199,7 @@ def update_course(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     curso = db.query(Curso).filter(Curso.id == course_id).first()
     if not curso:
         raise HTTPException(
@@ -245,6 +255,7 @@ def delete_course(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     curso = db.query(Curso).filter(Curso.id == course_id).first()
     if not curso:
         raise HTTPException(
@@ -317,6 +328,7 @@ def create_class(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     # Valida se o curso informado existe
     curso = db.query(Curso).filter(Curso.id == payload.curso_id).first()
     if not curso:
@@ -369,6 +381,7 @@ def update_class(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     turma = db.query(Turma).filter(Turma.id == class_id).first()
     if not turma:
         raise HTTPException(
@@ -428,6 +441,7 @@ def delete_class(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     turma = db.query(Turma).filter(Turma.id == class_id).first()
     if not turma:
         raise HTTPException(
@@ -537,6 +551,7 @@ def create_discipline(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     target_curso_ids = []
     if payload.curso_ids is not None:
         target_curso_ids = payload.curso_ids
@@ -602,6 +617,7 @@ def update_discipline(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     disciplina = db.query(Disciplina).filter(Disciplina.id == discipline_id).first()
     if not disciplina:
         raise HTTPException(
@@ -652,6 +668,7 @@ def toggle_discipline_active(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     disciplina = db.query(Disciplina).filter(Disciplina.id == discipline_id).first()
     if not disciplina:
         raise HTTPException(
@@ -672,6 +689,7 @@ def delete_discipline(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     disciplina = db.query(Disciplina).filter(Disciplina.id == discipline_id).first()
     if not disciplina:
         raise HTTPException(
@@ -728,6 +746,7 @@ def create_professor(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     nome_clean = payload.nome.strip()
     dup = db.query(Professor).filter(
         func.lower(Professor.nome) == func.lower(nome_clean)
@@ -762,6 +781,7 @@ def update_professor(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     professor = db.query(Professor).filter(Professor.id == professor_id).first()
     if not professor:
         raise HTTPException(
@@ -805,6 +825,7 @@ def toggle_professor_active(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     professor = db.query(Professor).filter(Professor.id == professor_id).first()
     if not professor:
         raise HTTPException(
@@ -830,6 +851,7 @@ def delete_professor(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     professor = db.query(Professor).filter(Professor.id == professor_id).first()
     if not professor:
         raise HTTPException(
@@ -1074,6 +1096,7 @@ def create_schedule(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     # 1. Valida existência da Turma
     turma = db.query(Turma).filter(Turma.id == payload.turma_id).first()
     if not turma:
@@ -1198,6 +1221,7 @@ def update_schedule(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     horario = db.query(Horario).filter(Horario.id == schedule_id).first()
     if not horario:
         raise HTTPException(
@@ -1337,6 +1361,7 @@ def delete_schedule(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     horario = db.query(Horario).filter(Horario.id == schedule_id).first()
     if not horario:
         raise HTTPException(
@@ -1372,6 +1397,7 @@ def create_period(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     if payload.horario_inicio.strip() >= payload.horario_fim.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1398,6 +1424,7 @@ def delete_period(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     periodo = db.query(PeriodoHorario).filter(PeriodoHorario.id == period_id).first()
     if not periodo:
         raise HTTPException(
@@ -1438,6 +1465,7 @@ def create_availability(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     if payload.horario_inicio.strip() >= payload.horario_fim.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1477,6 +1505,7 @@ def delete_availability(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     disp = db.query(DisponibilidadeRecurso).filter(DisponibilidadeRecurso.id == availability_id).first()
     if not disp:
         raise HTTPException(
@@ -1551,6 +1580,7 @@ def upsert_discipline_rule(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     turma = db.query(Turma).filter(Turma.id == payload.turma_id).first()
     if not turma:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Turma não encontrada.")
@@ -1628,7 +1658,8 @@ def list_canteen_orders(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
-    query = db.query(Pedido).filter(Pedido.is_demo == bool(current_user.is_demo))
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
+    query = db.query(Pedido).filter(Pedido.ambiente == user_ambiente)
     if status_filter:
         s_upper = status_filter.strip().upper()
         if s_upper:
@@ -1666,6 +1697,7 @@ def list_canteen_orders(
             status=p.status,
             valor_total=p.valor_total,
             pickup_token=p.pickup_token,
+            ambiente=getattr(p, "ambiente", "OFICIAL"),
             is_demo=bool(getattr(p, "is_demo", False)),
             created_at=p.created_at,
             updated_at=p.updated_at,
@@ -1689,9 +1721,10 @@ def get_canteen_order_detail(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    user_ambiente = getattr(current_user, "ambiente", "OFICIAL")
     p = db.query(Pedido).filter(
         Pedido.id == order_id,
-        Pedido.is_demo == bool(current_user.is_demo)
+        Pedido.ambiente == user_ambiente
     ).first()
     if not p:
         raise HTTPException(
@@ -1727,6 +1760,7 @@ def get_canteen_order_detail(
         status=p.status,
         valor_total=p.valor_total,
         pickup_token=p.pickup_token,
+        ambiente=getattr(p, "ambiente", "OFICIAL"),
         is_demo=bool(getattr(p, "is_demo", False)),
         created_at=p.created_at,
         updated_at=p.updated_at,
@@ -1761,6 +1795,7 @@ def create_canteen_product(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     nome_clean = payload.nome.strip()
     if not nome_clean:
         raise HTTPException(
@@ -1804,6 +1839,7 @@ def update_canteen_product(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     produto = db.query(Produto).filter(Produto.id == product_id).first()
     if not produto:
         raise HTTPException(
@@ -1859,6 +1895,7 @@ def toggle_canteen_product_active(
     current_user: Usuario = Depends(require_roles(["GESTAO"])),
     db: Session = Depends(get_db)
 ):
+    check_structural_permission(current_user)
     produto = db.query(Produto).filter(Produto.id == product_id).first()
     if not produto:
         raise HTTPException(

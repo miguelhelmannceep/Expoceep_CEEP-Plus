@@ -16,6 +16,8 @@ class Token(BaseModel):
     email: str
     turma: Optional[str] = None
     avatar_url: Optional[str] = None
+    ambiente: str = "OFICIAL"
+    is_demo: bool = False
 
 class DemoAccount(BaseModel):
     label: str
@@ -23,3 +25,5 @@ class DemoAccount(BaseModel):
     role: str
     descricao: str
     turma: Optional[str] = None
+    ambiente: str = "PUBLICO"
+    is_demo: bool = True

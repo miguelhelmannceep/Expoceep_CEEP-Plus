@@ -13,3 +13,5 @@ class UsuarioOut(BaseModel):
     turma_nome: Optional[str] = None
     curso_nome: Optional[str] = None
     avatar_url: Optional[str] = None
+    ambiente: str = "OFICIAL"
+    is_demo: bool = False

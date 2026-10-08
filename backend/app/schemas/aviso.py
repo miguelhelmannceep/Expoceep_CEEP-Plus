@@ -32,6 +32,7 @@ class AvisoOut(BaseModel):
     publico_alvo_nome: Optional[str] = None
     status: str = "PUBLICADO"
     imagem_url: Optional[str] = None
+    ambiente: str = "OFICIAL"
     is_demo: bool = False
     data_publicacao: datetime
     autor_nome: Optional[str] = None

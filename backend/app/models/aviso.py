@@ -14,6 +14,7 @@ class Aviso(Base):
     publico_alvo_id = Column(Integer, nullable=True)
     status = Column(String(20), default="PUBLICADO", nullable=False) # RASCUNHO, PUBLICADO
     imagem_url = Column(Text, nullable=True)
+    ambiente = Column(String(20), default="OFICIAL", nullable=False) # OFICIAL, PUBLICO
     is_demo = Column(Boolean, default=False, nullable=False)
     data_publicacao = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     autor_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)

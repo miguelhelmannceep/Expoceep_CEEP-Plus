@@ -175,14 +175,14 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    // Validação de e-mail institucional para alunos
+    // Validação de e-mail institucional ou demo
     const isInstitutional = emailClean.endsWith("@escola.pr.gov.br");
-    const isAdministrative = emailClean === "gestao@ceep.demo" || emailClean === "cantina@ceep.demo";
+    const isCeepDemo = emailClean.endsWith("@ceep.demo");
 
-    if (!isInstitutional && !isAdministrative) {
+    if (!isInstitutional && !isCeepDemo) {
       setError({
         title: "Não foi possível entrar",
-        message: "Para acessar como aluno, é necessário utilizar uma conta institucional @escola.pr.gov.br.",
+        message: "Para acessar como aluno, é necessário utilizar uma conta @escola.pr.gov.br ou @ceep.demo.",
       });
       return;
     }
@@ -369,92 +369,68 @@ export const LoginPage: React.FC = () => {
             <div className="pt-2 border-t border-slate-200/80 space-y-3">
               <div className="text-center space-y-0.5">
                 <p className="text-xs font-bold text-slate-700 tracking-tight">
-                  Demonstração CEEP+
+                  Demonstração EXPOCEEP 2026
                 </p>
                 <p className="text-[11px] text-slate-500 font-medium">
-                  Acesse rapidamente um dos ambientes de demonstração:
+                  Acesso rápido de demonstração para visitantes:
                 </p>
               </div>
 
-              <div className="space-y-2">
-                {/* 1. Aluno Demo */}
+              <div className="grid grid-cols-3 gap-2">
+                {/* 1. Aluno */}
                 <button
                   type="button"
                   disabled={isAnyLoading}
-                  onClick={() => handleQuickLogin("aluno@escola.pr.gov.br", "ALUNO")}
-                  className="w-full min-h-[46px] py-2.5 px-3.5 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200 hover:border-[#2d3661]/40 text-slate-800 rounded-xl transition-all flex items-center justify-between text-left group disabled:opacity-60 disabled:cursor-not-allowed"
+                  onClick={() => handleQuickLogin("aluno.publico@ceep.demo", "ALUNO")}
+                  className="min-h-[46px] py-2.5 px-2 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200 hover:border-[#2d3661]/40 text-slate-800 rounded-xl transition-all flex flex-col items-center justify-center gap-1 group disabled:opacity-60 disabled:cursor-not-allowed shadow-xs"
                 >
-                  <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-                    <span className="text-base shrink-0 leading-none" role="img" aria-label="Aluno">👨‍🎓</span>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-800 group-hover:text-[#2d3661] transition-colors truncate">
-                        Entrar como Aluno Demo
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-medium truncate">
-                        aluno@escola.pr.gov.br
-                      </div>
-                    </div>
-                  </div>
                   {quickLoadingRole === "ALUNO" ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#2d3661] shrink-0" />
+                    <Loader2 className="w-4 h-4 animate-spin text-[#2d3661]" />
                   ) : (
-                    <span className="text-[10px] font-semibold text-[#2d3661] bg-[#2d3661]/10 px-2 py-0.5 rounded-md shrink-0">
-                      Entrar
-                    </span>
+                    <>
+                      <span className="text-base leading-none" role="img" aria-label="Aluno">👤</span>
+                      <span className="text-xs font-bold text-slate-800 group-hover:text-[#2d3661] transition-colors">
+                        Aluno
+                      </span>
+                    </>
                   )}
                 </button>
 
-                {/* 2. Gestão Demo */}
+                {/* 2. Gestão */}
                 <button
                   type="button"
                   disabled={isAnyLoading}
-                  onClick={() => handleQuickLogin("gestao@ceep.demo", "GESTAO")}
-                  className="w-full min-h-[46px] py-2.5 px-3.5 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200 hover:border-[#2d3661]/40 text-slate-800 rounded-xl transition-all flex items-center justify-between text-left group disabled:opacity-60 disabled:cursor-not-allowed"
+                  onClick={() => handleQuickLogin("gestao.publico@ceep.demo", "GESTAO")}
+                  className="min-h-[46px] py-2.5 px-2 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200 hover:border-[#2d3661]/40 text-slate-800 rounded-xl transition-all flex flex-col items-center justify-center gap-1 group disabled:opacity-60 disabled:cursor-not-allowed shadow-xs"
                 >
-                  <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-                    <span className="text-base shrink-0 leading-none" role="img" aria-label="Gestão">💼</span>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-800 group-hover:text-[#2d3661] transition-colors truncate">
-                        Entrar como Gestão Demo
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-medium truncate">
-                        gestao@ceep.demo • Painel Geral
-                      </div>
-                    </div>
-                  </div>
                   {quickLoadingRole === "GESTAO" ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#2d3661] shrink-0" />
+                    <Loader2 className="w-4 h-4 animate-spin text-[#2d3661]" />
                   ) : (
-                    <span className="text-[10px] font-semibold text-[#2d3661] bg-[#2d3661]/10 px-2 py-0.5 rounded-md shrink-0">
-                      Entrar
-                    </span>
+                    <>
+                      <span className="text-base leading-none" role="img" aria-label="Gestão">⚙️</span>
+                      <span className="text-xs font-bold text-slate-800 group-hover:text-[#2d3661] transition-colors">
+                        Gestão
+                      </span>
+                    </>
                   )}
                 </button>
 
-                {/* 3. Cantina Demo */}
+                {/* 3. Cantina */}
                 <button
                   type="button"
                   disabled={isAnyLoading}
-                  onClick={() => handleQuickLogin("cantina@ceep.demo", "CANTINA")}
-                  className="w-full min-h-[46px] py-2.5 px-3.5 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200 hover:border-[#4aaa3c]/40 text-slate-800 rounded-xl transition-all flex items-center justify-between text-left group disabled:opacity-60 disabled:cursor-not-allowed"
+                  onClick={() => handleQuickLogin("cantina.publico@ceep.demo", "CANTINA")}
+                  className="min-h-[46px] py-2.5 px-2 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200 hover:border-[#4aaa3c]/40 text-slate-800 rounded-xl transition-all flex flex-col items-center justify-center gap-1 group disabled:opacity-60 disabled:cursor-not-allowed shadow-xs"
                 >
-                  <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-                    <span className="text-base shrink-0 leading-none" role="img" aria-label="Cantina">🥪</span>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-800 group-hover:text-[#4aaa3c] transition-colors truncate">
-                        Terminal da Cantina
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-medium truncate">
-                        cantina@ceep.demo • Pedidos & Produtos
-                      </div>
-                    </div>
-                  </div>
                   {quickLoadingRole === "CANTINA" ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#4aaa3c] shrink-0" />
+                    <Loader2 className="w-4 h-4 animate-spin text-[#4aaa3c]" />
                   ) : (
-                    <span className="text-[10px] font-semibold text-[#4aaa3c] bg-[#4aaa3c]/10 px-2 py-0.5 rounded-md shrink-0">
-                      Entrar
-                    </span>
+                    <>
+                      <span className="text-base leading-none" role="img" aria-label="Cantina">🥪</span>
+                      <span className="text-xs font-bold text-slate-800 group-hover:text-[#4aaa3c] transition-colors">
+                        Cantina
+                      </span>
+                    </>
                   )}
                 </button>
               </div>

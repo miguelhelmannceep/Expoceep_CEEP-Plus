@@ -210,8 +210,9 @@ export interface Order {
 }
 
 export interface CreateOrderPayload {
-  produto_id: number;
+  produto_id?: number;
   quantidade?: number;
+  itens?: { produto_id: number; quantidade: number }[];
 }
 
 export interface PickupQRResponse {
@@ -222,6 +223,7 @@ export interface PickupQRResponse {
   produto_nome: string;
   quantidade: number;
   valor_total: number;
+  itens?: OrderItem[];
 }
 
 export interface PickupValidationResponse {
@@ -233,6 +235,7 @@ export interface PickupValidationResponse {
   quantidade: number;
   valor_total: number;
   pago_em?: string | null;
+  itens?: OrderItem[];
 }
 
 export interface ConfirmPickupResponse {

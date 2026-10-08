@@ -10,6 +10,7 @@ from app.models.pedido import Pedido, PedidoItem, Pagamento
 from app.schemas.produto import ProdutoOut
 from app.schemas.pedido import (
     OrderCreateRequest,
+    OrderItemCreate,
     PedidoOut,
     PickupQRResponse,
     PickupValidateRequest,
@@ -76,14 +77,72 @@ def create_canteen_order(
     current_user: Usuario = Depends(require_roles(["ALUNO"])),
     db: Session = Depends(get_db)
 ):
-    if payload.quantidade <= 0:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="A quantidade deve ser de pelo menos 1 item.")
+    # 1. Normalização dos itens recebidos (carrinho múltiplo ou item único legado)
+    itens_solicitados = []
+    if payload.itens is not None:
+        if len(payload.itens) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="O carrinho está vazio. Adicione pelo menos 1 item."
+            )
+        itens_solicitados = payload.itens
+    elif payload.produto_id is not None:
+        qtd = payload.quantidade if payload.quantidade is not None else 1
+        itens_solicitados = [OrderItemCreate(produto_id=payload.produto_id, quantidade=qtd)]
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Nenhum item informado para o pedido."
+        )
 
-    produto = db.query(Produto).filter(Produto.id == payload.produto_id, Produto.ativo == True).first()
-    if not produto:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado ou indisponível.")
+    # 2. Validação das quantidades e consolidação de produtos duplicados
+    qtd_por_produto = {}
+    for item in itens_solicitados:
+        if item.quantidade <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="A quantidade de cada produto deve ser de pelo menos 1 item."
+            )
+        qtd_por_produto[item.produto_id] = qtd_por_produto.get(item.produto_id, 0) + item.quantidade
 
-    valor_total = round(float(produto.preco) * payload.quantidade, 2)
+    if not qtd_por_produto:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="O carrinho não possui itens válidos."
+        )
+
+    # 3. Busca e validação dos produtos ativos no banco de dados
+    produto_ids = list(qtd_por_produto.keys())
+    produtos_db = db.query(Produto).filter(
+        Produto.id.in_(produto_ids),
+        Produto.ativo == True
+    ).all()
+
+    produtos_map = {p.id: p for p in produtos_db}
+
+    for pid in produto_ids:
+        if pid not in produtos_map:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Produto ID {pid} não encontrado ou indisponível no catálogo."
+            )
+
+    # 4. Cálculo oficial dos subtotais e valor total no backend (nunca confiar no frontend)
+    itens_para_criar = []
+    valor_total = 0.0
+
+    for pid, qtd in qtd_por_produto.items():
+        prod = produtos_map[pid]
+        preco_unit = float(prod.preco)
+        subtotal = round(preco_unit * qtd, 2)
+        valor_total += subtotal
+        itens_para_criar.append({
+            "produto_id": pid,
+            "quantidade": qtd,
+            "preco_unitario": preco_unit
+        })
+
+    valor_total = round(valor_total, 2)
     token = secrets.token_hex(16)
 
     try:
@@ -98,13 +157,13 @@ def create_canteen_order(
         db.add(pedido)
         db.flush()
 
-        item = PedidoItem(
-            pedido_id=pedido.id,
-            produto_id=produto.id,
-            quantidade=payload.quantidade,
-            preco_unitario=produto.preco
-        )
-        db.add(item)
+        for item_data in itens_para_criar:
+            db.add(PedidoItem(
+                pedido_id=pedido.id,
+                produto_id=item_data["produto_id"],
+                quantidade=item_data["quantidade"],
+                preco_unitario=item_data["preco_unitario"]
+            ))
 
         pagamento = Pagamento(
             pedido_id=pedido.id,
@@ -117,9 +176,14 @@ def create_canteen_order(
         db.commit()
         db.refresh(pedido)
         return format_pedido_response(pedido)
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao processar transação do pedido: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao processar transação do pedido: {str(e)}"
+        )
 
 @router.get("/orders", response_model=List[PedidoOut], summary="Lista pedidos do aluno logado")
 def list_canteen_orders(
@@ -219,9 +283,25 @@ def get_order_pickup_qr(
         db.commit()
         db.refresh(pedido)
 
-    item = pedido.itens[0] if pedido.itens else None
-    prod_nome = item.produto_rel.nome if item and item.produto_rel else "Salgado"
-    qtd = item.quantidade if item else 1
+    itens_list = []
+    for it in pedido.itens:
+        itens_list.append({
+            "id": it.id,
+            "produto_id": it.produto_id,
+            "produto_nome": it.produto_rel.nome if it.produto_rel else "Produto",
+            "quantidade": it.quantidade,
+            "preco_unitario": it.preco_unitario,
+        })
+
+    if len(itens_list) == 1:
+        prod_nome = itens_list[0]["produto_nome"]
+        qtd = itens_list[0]["quantidade"]
+    elif len(itens_list) > 1:
+        prod_nome = ", ".join(f"{it['quantidade']}x {it['produto_nome']}" for it in itens_list)
+        qtd = sum(it["quantidade"] for it in itens_list)
+    else:
+        prod_nome = "Pedido Cantina"
+        qtd = 1
 
     return {
         "order_id": pedido.id,
@@ -231,6 +311,7 @@ def get_order_pickup_qr(
         "produto_nome": prod_nome,
         "quantidade": qtd,
         "valor_total": pedido.valor_total,
+        "itens": itens_list,
     }
 
 @router.post("/pickup/validate", response_model=PickupValidationResponse, summary="Validação do QR Code pelo Terminal da Cantina")
@@ -257,9 +338,25 @@ def validate_pickup_qr(
     if pedido.status == "PENDENTE_PAGAMENTO":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="PAGAMENTO NÃO APROVADO")
 
-    item = pedido.itens[0] if pedido.itens else None
-    prod_nome = item.produto_rel.nome if item and item.produto_rel else "Salgado"
-    qtd = item.quantidade if item else 1
+    itens_list = []
+    for it in pedido.itens:
+        itens_list.append({
+            "id": it.id,
+            "produto_id": it.produto_id,
+            "produto_nome": it.produto_rel.nome if it.produto_rel else "Produto",
+            "quantidade": it.quantidade,
+            "preco_unitario": it.preco_unitario,
+        })
+
+    if len(itens_list) == 1:
+        prod_nome = itens_list[0]["produto_nome"]
+        qtd = itens_list[0]["quantidade"]
+    elif len(itens_list) > 1:
+        prod_nome = ", ".join(f"{it['quantidade']}x {it['produto_nome']}" for it in itens_list)
+        qtd = sum(it["quantidade"] for it in itens_list)
+    else:
+        prod_nome = "Pedido Cantina"
+        qtd = 1
 
     paid_at = None
     if pedido.pagamentos:
@@ -277,6 +374,7 @@ def validate_pickup_qr(
         "quantidade": qtd,
         "valor_total": pedido.valor_total,
         "pago_em": paid_at,
+        "itens": itens_list,
     }
 
 @router.post("/pickup/{order_id}/confirm", response_model=ConfirmPickupResponse, summary="Confirmação da Retirada pelo Operador da Cantina")

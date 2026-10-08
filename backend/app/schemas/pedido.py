@@ -2,9 +2,16 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field
 
-class OrderCreateRequest(BaseModel):
+class OrderItemCreate(BaseModel):
     produto_id: int
     quantidade: int = Field(default=1, ge=1)
+
+class OrderCreateRequest(BaseModel):
+    # Suporte a carrinho de compras com múltiplos itens (Milestone 5AA)
+    itens: Optional[List[OrderItemCreate]] = None
+    # Retrocompatibilidade com pedidos de item único legado
+    produto_id: Optional[int] = None
+    quantidade: Optional[int] = Field(default=None, ge=1)
 
 class PagamentoOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -52,6 +59,7 @@ class PickupQRResponse(BaseModel):
     produto_nome: str
     quantidade: int
     valor_total: float
+    itens: List[PedidoItemOut] = []
 
 class PickupValidateRequest(BaseModel):
     pickup_code: str
@@ -65,6 +73,7 @@ class PickupValidationResponse(BaseModel):
     quantidade: int
     valor_total: float
     pago_em: Optional[datetime] = None
+    itens: List[PedidoItemOut] = []
 
 class ConfirmPickupResponse(BaseModel):
     order_id: int

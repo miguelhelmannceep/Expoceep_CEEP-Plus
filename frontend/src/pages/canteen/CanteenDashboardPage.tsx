@@ -439,11 +439,34 @@ export const CanteenDashboardPage: React.FC<CanteenDashboardPageProps> = ({
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/80">
-                    <span className="text-slate-400 font-medium">Item & Quantidade</span>
-                    <span className="font-extrabold text-white text-sm bg-slate-800/80 px-2.5 py-1 rounded-lg">
-                      {validationData.produto_nome} (x{validationData.quantidade})
-                    </span>
+                  <div className="space-y-1.5 pb-2.5 border-b border-slate-800/80">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400 font-medium">Itens para Entrega</span>
+                      <span className="text-[11px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+                        {validationData.itens?.reduce((acc, it) => acc + it.quantidade, 0) || validationData.quantidade} un. total
+                      </span>
+                    </div>
+                    {validationData.itens && validationData.itens.length > 0 ? (
+                      <div className="space-y-1 pt-1">
+                        {validationData.itens.map((it, idx) => (
+                          <div
+                            key={idx}
+                            className="flex justify-between items-center bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-800"
+                          >
+                            <span className="font-bold text-slate-100 text-xs">
+                              {it.produto_nome || "Produto"}
+                            </span>
+                            <span className="font-black text-[#4aaa3c] text-xs bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-700">
+                              x{it.quantidade}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="font-extrabold text-white text-sm bg-slate-800/80 px-2.5 py-1 rounded-lg block text-right">
+                        {validationData.produto_nome} (x{validationData.quantidade})
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/80">
@@ -473,7 +496,7 @@ export const CanteenDashboardPage: React.FC<CanteenDashboardPageProps> = ({
                     ) : (
                       <Check className="w-5 h-5 stroke-[3]" />
                     )}
-                    <span>{isConfirming ? "CONFIRMANDO RETIRADA..." : "CONFIRMAR RETIRADA DO ITEM"}</span>
+                    <span>{isConfirming ? "CONFIRMANDO RETIRADA..." : "CONFIRMAR RETIRADA DO PEDIDO"}</span>
                   </button>
 
                   <button
@@ -693,7 +716,9 @@ export const CanteenDashboardPage: React.FC<CanteenDashboardPageProps> = ({
                         )}
                       </div>
                       <p className="text-slate-400">
-                        {o.itens[0]?.produto_nome || "Salgado"} (x{o.itens[0]?.quantidade || 1}) •{" "}
+                        {o.itens && o.itens.length > 0
+                          ? o.itens.map((it) => `${it.produto_nome || "Item"} (x${it.quantidade})`).join(', ')
+                          : "Pedido Cantina"} •{" "}
                         <span className="font-semibold text-slate-200">{formatCurrency(o.valor_total)}</span>
                       </p>
                     </div>

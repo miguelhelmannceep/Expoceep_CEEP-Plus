@@ -19,12 +19,15 @@ export const canteenService = {
   },
 
   async createOrder(payload: CreateOrderPayload): Promise<Order> {
+    const body = payload.itens
+      ? { itens: payload.itens }
+      : {
+          produto_id: payload.produto_id,
+          quantidade: payload.quantidade ?? 1,
+        };
     return request<Order>("/canteen/orders", {
       method: "POST",
-      body: JSON.stringify({
-        produto_id: payload.produto_id,
-        quantidade: payload.quantidade ?? 1,
-      }),
+      body: JSON.stringify(body),
     });
   },
 

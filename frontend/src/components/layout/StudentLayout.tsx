@@ -28,11 +28,11 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
   ];
 
   return (
-    <div className={`${theme === "dark" ? "dark" : ""} min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-start antialiased`}>
+    <div className={`${theme === "dark" ? "dark" : ""} min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-start antialiased w-full overflow-x-hidden`}>
       {/* Container responsivo mobile-first */}
-      <div className="w-full max-w-md min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col relative shadow-2xl border-x border-slate-200/80 dark:border-slate-800 transition-colors duration-200">
+      <div className="w-full sm:max-w-md min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col relative shadow-2xl sm:border-x border-x-0 border-slate-200/80 dark:border-slate-800 transition-colors duration-200">
         {/* Header Superior Mobile */}
-        <header className="sticky top-0 z-30 bg-[#2d3661] dark:bg-[#1a203a] text-white px-4 py-3 shadow-sm flex items-center justify-between border-b border-[#232b4e] dark:border-slate-800 transition-colors">
+        <header className="w-full sticky top-0 z-30 bg-[#2d3661] dark:bg-[#1a203a] text-white px-4 py-3 shadow-sm flex items-center justify-between border-b border-[#232b4e] dark:border-slate-800 transition-colors pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center p-0.5 shadow-md border border-slate-200 shrink-0 overflow-hidden">
               <img
@@ -48,8 +48,10 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
                   Aluno
                 </span>
               </div>
-              <p className="text-[11px] text-slate-300 dark:text-slate-400 font-medium truncate max-w-[180px]">
-                {user?.turma_nome || "CEEP Pedro Boaretto Neto"}
+              <p className="text-[11px] text-slate-300 dark:text-slate-400 font-medium truncate max-w-[200px]">
+                {user?.email === "aluno@escola.pr.gov.br"
+                  ? user.email
+                  : user?.turma_nome || "CEEP Pedro Boaretto Neto"}
               </p>
             </div>
           </div>
@@ -90,7 +92,7 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
         <nav
           role="navigation"
           aria-label="Navegação Principal do Aluno"
-          className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 max-w-md mx-auto safe-bottom shadow-lg transition-colors"
+          className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 w-full sm:max-w-md mx-auto safe-bottom shadow-lg transition-colors"
         >
           <div className="flex items-center justify-around px-1 py-1.5">
             {navItems.map((item) => {

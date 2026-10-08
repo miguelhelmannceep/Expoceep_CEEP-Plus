@@ -203,10 +203,6 @@ export const SchedulesPage: React.FC = () => {
 
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
   const [selectedDay, setSelectedDay] = useState<string>("Segunda-feira");
-  const [selectedGroupFilter, setSelectedGroupFilter] = useState<"TODOS" | "A" | "B">(() => {
-    const saved = localStorage.getItem("ceep_student_group_filter");
-    return saved === "A" || saved === "B" ? saved : "TODOS";
-  });
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -326,11 +322,6 @@ export const SchedulesPage: React.FC = () => {
     localStorage.setItem("ceep_student_selected_class_id", String(id));
   };
 
-  const handleGroupFilterChange = (filter: "TODOS" | "A" | "B") => {
-    setSelectedGroupFilter(filter);
-    localStorage.setItem("ceep_student_group_filter", filter);
-  };
-
   // Fechar dropdowns abertos ao clicar fora ou pressionar Escape
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
@@ -409,11 +400,7 @@ export const SchedulesPage: React.FC = () => {
   const filledPeriodsCount = currentPeriods.filter(
     (p) =>
       !p.is_intervalo &&
-      filteredSchedules.some(
-        (s) =>
-          checkOverlap(s, p) &&
-          (selectedGroupFilter === "TODOS" || s.grupo === selectedGroupFilter || !s.grupo)
-      )
+      filteredSchedules.some((s) => checkOverlap(s, p))
   ).length;
 
   if (isLoadingClasses) {
@@ -586,48 +573,6 @@ export const SchedulesPage: React.FC = () => {
             })}
           </div>
 
-          {/* Seletor de Subgrupo (Persistente no localStorage) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 px-1">
-              Visualizar subgrupo:
-            </span>
-            <div className="flex items-center space-x-1 bg-slate-200/60 dark:bg-slate-900/60 p-1 rounded-xl">
-              <button
-                type="button"
-                onClick={() => handleGroupFilterChange("TODOS")}
-                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  selectedGroupFilter === "TODOS"
-                    ? "bg-[#2d3661] dark:bg-[#4aaa3c] text-white shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                }`}
-              >
-                Todas as Aulas
-              </button>
-              <button
-                type="button"
-                onClick={() => handleGroupFilterChange("A")}
-                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  selectedGroupFilter === "A"
-                    ? "bg-[#2d3661] text-white shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                }`}
-              >
-                [A] Meu Grupo
-              </button>
-              <button
-                type="button"
-                onClick={() => handleGroupFilterChange("B")}
-                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  selectedGroupFilter === "B"
-                    ? "bg-[#4aaa3c] text-white shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                }`}
-              >
-                [B] Meu Grupo
-              </button>
-            </div>
-          </div>
-
           {/* Lista de Aulas do Dia */}
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
@@ -680,19 +625,9 @@ export const SchedulesPage: React.FC = () => {
                   }
 
                   // 2. PERÍODO LETIVO
-                  const rawMatchingSchedules = filteredSchedules.filter((item) =>
+                  const matchingSchedules = filteredSchedules.filter((item) =>
                     checkOverlap(item, period)
                   );
-
-                  const matchingSchedules = rawMatchingSchedules.filter((item) => {
-                    if (selectedGroupFilter === "A") {
-                      return item.grupo === "A" || !item.grupo;
-                    }
-                    if (selectedGroupFilter === "B") {
-                      return item.grupo === "B" || !item.grupo;
-                    }
-                    return true;
-                  });
 
                   // Período vago / sem aula
                   if (matchingSchedules.length === 0) {

@@ -24,9 +24,9 @@ export const CanteenLayout: React.FC<CanteenLayoutProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col max-w-xl mx-auto shadow-2xl border-x border-slate-800/80 antialiased">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col w-full sm:max-w-xl mx-auto shadow-2xl sm:border-x border-x-0 border-slate-800/80 antialiased overflow-x-hidden">
       {/* Header Institucional do Terminal */}
-      <header className="bg-slate-900/95 backdrop-blur-md p-4 border-b border-slate-800 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+      <header className="w-full bg-slate-900/95 backdrop-blur-md p-4 border-b border-slate-800 flex items-center justify-between sticky top-0 z-30 shadow-sm pt-[max(1rem,env(safe-area-inset-top))]">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-1 shadow-sm border border-slate-200 shrink-0 overflow-hidden">
             <img

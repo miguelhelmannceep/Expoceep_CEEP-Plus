@@ -391,7 +391,7 @@ export const LoginPage: React.FC = () => {
                         Entrar como Aluno Demo
                       </div>
                       <div className="text-[10px] text-slate-500 font-medium truncate">
-                        aluno@escola.pr.gov.br • 1C DES. SISTEMAS
+                        aluno@escola.pr.gov.br
                       </div>
                     </div>
                   </div>

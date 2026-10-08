@@ -225,7 +225,9 @@ export const ProfilePage: React.FC = () => {
               <BookOpen className="w-3.5 h-3.5 mr-2 text-slate-400" />
               Turma
             </span>
-            <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{user?.turma_nome || "—"}</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">
+              {user?.email === "aluno@escola.pr.gov.br" ? "—" : user?.turma_nome || "—"}
+            </span>
           </div>
 
           <div className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">

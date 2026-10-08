@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import { studentService } from "../../services/student.service";
 import type { StudentDashboard } from "../../types";
 import { Card } from "../../components/common/Card";
@@ -15,6 +16,7 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
+  const { user } = useAuth();
   const [dashboard, setDashboard] = useState<StudentDashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +68,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <h2 className="text-xl font-bold tracking-tight text-white">{dashboard.aluno_nome}</h2>
           <div className="pt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-300">
             <span className="bg-[#1f2647] dark:bg-slate-800 text-[#7de06f] border border-[#3c4779] dark:border-slate-700 px-2.5 py-0.5 rounded-lg font-medium">
-              {dashboard.turma_nome}
+              {user?.email === "aluno@escola.pr.gov.br"
+                ? user.email
+                : dashboard.turma_nome}
             </span>
           </div>
         </div>

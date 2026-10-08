@@ -229,9 +229,8 @@ def login_google(req: GoogleLoginRequest, db: Session = Depends(get_db)):
             db.commit()
             db.refresh(user)
 
-    # Provisionamento automático de novo aluno institucional
+    # Provisionamento automático de novo aluno institucional (Milestone 5Y: sem turma pré-atribuída)
     if not user:
-        turma_padrao = db.query(Turma).filter(Turma.nome_turma.ilike("%3º C%")).first() or db.query(Turma).first()
         google_name = idinfo.get("name")
         if not google_name or not str(google_name).strip():
             google_name = email_clean.split("@")[0].replace(".", " ").title()
@@ -241,7 +240,7 @@ def login_google(req: GoogleLoginRequest, db: Session = Depends(get_db)):
             email=email_clean,
             senha_hash=get_password_hash(secrets.token_urlsafe(24)),
             perfil="ALUNO",
-            turma_id=turma_padrao.id if turma_padrao else None,
+            turma_id=None,
             ativo=True,
             google_sub=sub
         )
@@ -302,6 +301,7 @@ def get_me(
         perfil=current_user.perfil,
         turma_id=current_user.turma_id,
         turma_nome=current_user.turma_rel.nome_turma if current_user.turma_rel else None,
+        curso_id=current_user.turma_rel.curso_id if current_user.turma_rel else None,
         curso_nome=current_user.turma_rel.curso if current_user.turma_rel else None,
         avatar_url=avatar_url,
         ambiente=getattr(current_user, "ambiente", "OFICIAL"),
@@ -316,7 +316,7 @@ def get_demo_accounts():
             email="aluno.publico@ceep.demo",
             role="ALUNO",
             descricao="Ambiente público para visitantes da EXPOCEEP explorarem horários, avisos, tarefas e cantina.",
-            turma="1C — Desenvolvimento de Sistemas",
+            turma=None,
             ambiente="PUBLICO",
             is_demo=True
         ),

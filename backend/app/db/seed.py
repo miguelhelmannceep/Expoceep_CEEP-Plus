@@ -352,7 +352,7 @@ def init_db(db: Session) -> None:
         {"nome": "Miguel Helmann", "email": "miguel.helmann@escola.pr.gov.br", "perfil": "ALUNO", "turma_id": 1, "ambiente": "OFICIAL", "is_demo": False},
 
         # --- AMBIENTE PÚBLICO / EXPOCEEP 2026 (Visitantes e Interação Livre) ---
-        {"nome": "Aluno Visitante (EXPOCEEP)", "email": "aluno.publico@ceep.demo", "perfil": "ALUNO", "turma_id": 8, "ambiente": "PUBLICO", "is_demo": True},
+        {"nome": "Aluno Visitante (EXPOCEEP)", "email": "aluno.publico@ceep.demo", "perfil": "ALUNO", "turma_id": None, "ambiente": "PUBLICO", "is_demo": True},
         {"nome": "Gestão Pública (EXPOCEEP)", "email": "gestao.publico@ceep.demo", "perfil": "GESTAO", "turma_id": None, "ambiente": "PUBLICO", "is_demo": True},
         {"nome": "Cantina Pública (EXPOCEEP)", "email": "cantina.publico@ceep.demo", "perfil": "CANTINA", "turma_id": None, "ambiente": "PUBLICO", "is_demo": True},
     ]
@@ -372,6 +372,9 @@ def init_db(db: Session) -> None:
         else:
             u_obj.ambiente = u_data.get("ambiente", "OFICIAL")
             u_obj.is_demo = u_data.get("is_demo", False)
+            # Para o aluno visitante público, garante que seu turma_id inicial é None (Milestone 5Y)
+            if u_data["email"] == "aluno.publico@ceep.demo" and u_obj.turma_id == 8:
+                u_obj.turma_id = None
     db.commit()
 
     # Tarefas demonstrativas para o Aluno Público

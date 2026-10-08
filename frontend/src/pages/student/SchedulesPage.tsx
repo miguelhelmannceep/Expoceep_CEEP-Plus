@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import { scheduleService } from "../../services/schedule.service";
 import type { ClassOption, ScheduleItem } from "../../types";
 import { Card } from "../../components/common/Card";
@@ -193,7 +194,12 @@ const CeepDropdown: React.FC<CeepDropdownProps> = ({
   );
 };
 
-export const SchedulesPage: React.FC = () => {
+interface SchedulesPageProps {
+  onNavigate?: (tab: any) => void;
+}
+
+export const SchedulesPage: React.FC<SchedulesPageProps> = ({ onNavigate }) => {
+  const { user } = useAuth();
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [selectedTurno, setSelectedTurno] = useState<string>("");
   const [selectedCurso, setSelectedCurso] = useState<string>("");
@@ -215,12 +221,25 @@ export const SchedulesPage: React.FC = () => {
     { full: "Sexta-feira", short: "Sex" },
   ];
 
-  // 1. Carregar turmas e restaurar persistência hierárquica válida
+  // 1. Carregar turmas e vincular à turma do perfil ou restaurar persistência hierárquica válida
   useEffect(() => {
     scheduleService
       .getClasses()
       .then((data) => {
         setClasses(data);
+
+        // Se o usuário tem turma definida no perfil, prioriza a turma do perfil
+        if (user?.turma_id) {
+          const profileClass = data.find((c) => c.id === user.turma_id);
+          if (profileClass && profileClass.periodo && profileClass.curso) {
+            const turno = normalizeTurno(profileClass.periodo);
+            setSelectedTurno(turno);
+            setSelectedCurso(profileClass.curso);
+            setSelectedClassId(profileClass.id);
+            return;
+          }
+        }
+
         const savedId = localStorage.getItem("ceep_student_selected_class_id");
         if (savedId) {
           const found = data.find((c) => String(c.id) === savedId);
@@ -245,14 +264,14 @@ export const SchedulesPage: React.FC = () => {
           }
           localStorage.removeItem("ceep_student_selected_class_id");
         }
-        // Sem seleção prévia válida: aguarda seleção hierárquica do aluno
+        // Sem seleção prévia válida ou perfil sem turma: aguarda seleção do aluno
         setSelectedTurno("");
         setSelectedCurso("");
         setSelectedClassId(null);
       })
       .catch((err) => setError(err.message))
       .finally(() => setIsLoadingClasses(false));
-  }, []);
+  }, [user?.turma_id]);
 
   // 2. Carregar horários ao selecionar turma
   useEffect(() => {
@@ -543,12 +562,27 @@ export const SchedulesPage: React.FC = () => {
           </div>
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
-              Selecione sua turma para visualizar os horários
+              {!user?.turma_id
+                ? "Nenhuma turma definida no perfil"
+                : "Selecione sua turma para visualizar os horários"}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-              Escolha o turno, o curso técnico e a sua turma nos campos acima para consultar a grade semanal completa.
+              {!user?.turma_id
+                ? "Você ainda não definiu seu curso e turma. Configure seu perfil acadêmico para carregar seus horários automaticamente ou utilize os filtros acima."
+                : "Escolha o turno, o curso técnico e a sua turma nos campos acima para consultar a grade semanal completa."}
             </p>
           </div>
+          {!user?.turma_id && onNavigate && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => onNavigate("perfil")}
+                className="inline-flex items-center space-x-2 px-4 py-2 bg-[#2d3661] hover:bg-[#222a4d] dark:bg-[#4aaa3c] dark:hover:bg-[#3d9131] text-white dark:text-slate-900 text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
+              >
+                <span>Ir para o Perfil</span>
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <>

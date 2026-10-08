@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { studentService } from "../../services/student.service";
+import { scheduleService } from "../../services/schedule.service";
+import type { CourseOption, ClassOption } from "../../types";
 import { Card } from "../../components/common/Card";
 import { Button } from "../../components/common/Button";
 import { Modal } from "../../components/common/Modal";
@@ -17,12 +19,15 @@ import {
   Sun,
   Moon,
   Check,
-  Lock
+  Lock,
+  GraduationCap
 } from "lucide-react";
 
 export const ProfilePage: React.FC = () => {
   const { user, logout, refreshUser } = useAuth();
   const { theme, setTheme } = useTheme();
+
+  const isVisitor = user?.email === "aluno.publico@ceep.demo";
 
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
@@ -32,6 +37,88 @@ export const ProfilePage: React.FC = () => {
   const [isSavingName, setIsSavingName] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
   const [nameSuccess, setNameSuccess] = useState<string | null>(null);
+
+  // Estados de Seleção Acadêmica (Curso e Turma)
+  const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [selectedCursoId, setSelectedCursoId] = useState<number | "">("");
+  const [selectedTurmaId, setSelectedTurmaId] = useState<number | "">("");
+  const [isLoadingAcademic, setIsLoadingAcademic] = useState(true);
+  const [isSavingAcademic, setIsSavingAcademic] = useState(false);
+  const [academicError, setAcademicError] = useState<string | null>(null);
+  const [academicSuccess, setAcademicSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingAcademic(true);
+    Promise.all([
+      scheduleService.getCourses(),
+      scheduleService.getClasses()
+    ])
+      .then(([coursesData, classesData]) => {
+        if (!isMounted) return;
+        setCourses(coursesData);
+        setClasses(classesData);
+
+        if (user?.turma_id) {
+          setSelectedTurmaId(user.turma_id);
+          const currentClass = classesData.find((c) => c.id === user.turma_id);
+          if (currentClass?.curso_id) {
+            setSelectedCursoId(currentClass.curso_id);
+          } else if (user?.curso_id) {
+            setSelectedCursoId(user.curso_id);
+          }
+        } else if (user?.curso_id) {
+          setSelectedCursoId(user.curso_id);
+        }
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar opções acadêmicas:", err);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingAcademic(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.turma_id, user?.curso_id]);
+
+  const availableClasses = useMemo(() => {
+    if (!selectedCursoId) return [];
+    return classes.filter((c) => c.curso_id === Number(selectedCursoId));
+  }, [classes, selectedCursoId]);
+
+  const handleCourseChange = (newCursoId: number | "") => {
+    setSelectedCursoId(newCursoId);
+    setSelectedTurmaId("");
+    setAcademicError(null);
+  };
+
+  const handleSaveAcademic = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCursoId || !selectedTurmaId) {
+      setAcademicError("Selecione um curso e uma turma para salvar.");
+      return;
+    }
+
+    setIsSavingAcademic(true);
+    setAcademicError(null);
+
+    try {
+      await studentService.updateProfile({
+        curso_id: Number(selectedCursoId),
+        turma_id: Number(selectedTurmaId)
+      });
+      await refreshUser();
+      setAcademicSuccess("Curso e turma atualizados com sucesso!");
+      setTimeout(() => setAcademicSuccess(null), 3500);
+    } catch (err: any) {
+      setAcademicError(err.message || "Erro ao atualizar informações acadêmicas.");
+    } finally {
+      setIsSavingAcademic(false);
+    }
+  };
 
   const getInitials = (name: string) => {
     return name
@@ -43,6 +130,7 @@ export const ProfilePage: React.FC = () => {
   };
 
   const handleOpenEditName = () => {
+    if (isVisitor) return;
     setEditedName(user?.nome || "");
     setNameError(null);
     setIsEditNameModalOpen(true);
@@ -50,6 +138,10 @@ export const ProfilePage: React.FC = () => {
 
   const handleSaveName = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isVisitor) {
+      setNameError("O nome do Aluno Visitante EXPOCEEP não pode ser alterado.");
+      return;
+    }
     const cleanName = editedName.trim();
     if (cleanName.length < 2) {
       setNameError("O nome deve ter pelo menos 2 caracteres.");
@@ -118,14 +210,16 @@ export const ProfilePage: React.FC = () => {
         <div>
           <div className="flex items-center justify-center space-x-2">
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{user?.nome || "Aluno"}</h3>
-            <button
-              onClick={handleOpenEditName}
-              title="Alterar nome exibido"
-              aria-label="Alterar nome exibido"
-              className="p-1 text-slate-400 hover:text-[#2d3661] dark:hover:text-[#7de06f] hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
+            {!isVisitor && (
+              <button
+                onClick={handleOpenEditName}
+                title="Alterar nome exibido"
+                aria-label="Alterar nome exibido"
+                className="p-1 text-slate-400 hover:text-[#2d3661] dark:hover:text-[#7de06f] hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
         </div>
@@ -206,39 +300,50 @@ export const ProfilePage: React.FC = () => {
       </Card>
 
       {/* Detalhes Acadêmicos */}
-      <Card className="p-4 space-y-3 border-slate-100 dark:border-slate-800">
-        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-          Vínculo Escolar
-        </h4>
+      <Card className="p-4 space-y-4 border-slate-100 dark:border-slate-800">
+        <div className="space-y-0.5">
+          <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+            <GraduationCap className="w-4 h-4 text-[#2d3661] dark:text-[#7de06f]" />
+            <span>Vínculo Escolar</span>
+          </h4>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            Identificação institucional e enturmação do estudante.
+          </p>
+        </div>
 
-        <div className="space-y-2.5 text-xs">
-          <div className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
-            <span className="text-slate-500 dark:text-slate-400 flex items-center">
-              <School className="w-3.5 h-3.5 mr-2 text-slate-400" />
+        {/* Resumo Atual */}
+        <div className="space-y-2.5 text-xs bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+          <div className="flex items-start justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60">
+            <span className="text-slate-500 dark:text-slate-400 flex items-center shrink-0 mr-2">
+              <School className="w-3.5 h-3.5 mr-2 text-slate-400 shrink-0" />
               Instituição
             </span>
-            <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">CEEP Cascavel</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200 text-right leading-snug">
+              Centro Estadual de Educação Profissional Pedro Boaretto Neto
+            </span>
           </div>
 
-          <div className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60">
             <span className="text-slate-500 dark:text-slate-400 flex items-center">
               <BookOpen className="w-3.5 h-3.5 mr-2 text-slate-400" />
-              Turma
+              Curso Atual
             </span>
             <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">
-              {user?.email === "aluno@escola.pr.gov.br" ? "—" : user?.turma_nome || "—"}
+              {user?.curso_nome || "—"}
             </span>
           </div>
 
-          <div className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60">
             <span className="text-slate-500 dark:text-slate-400 flex items-center">
-              <BookOpen className="w-3.5 h-3.5 mr-2 text-slate-400" />
-              Curso
+              <GraduationCap className="w-3.5 h-3.5 mr-2 text-slate-400" />
+              Turma Atual
             </span>
-            <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{user?.curso_nome || "Desenvolvimento de Sistemas"}</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">
+              {user?.turma_nome || "—"}
+            </span>
           </div>
 
-          <div className="flex items-center justify-between py-1.5">
+          <div className="flex items-center justify-between py-1">
             <span className="text-slate-500 dark:text-slate-400 flex items-center">
               <Mail className="w-3.5 h-3.5 mr-2 text-slate-400" />
               E-mail Institucional
@@ -251,6 +356,105 @@ export const ProfilePage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Formulário de Seleção de Curso e Turma */}
+        <form onSubmit={handleSaveAcademic} className="space-y-3 pt-1">
+          <div className="space-y-1">
+            <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+              Configurar Curso e Turma
+            </h5>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              Selecione seu curso técnico para filtrar as turmas disponíveis e vincular sua grade horária.
+            </p>
+          </div>
+
+          {academicSuccess && (
+            <div className="p-3 bg-[#4aaa3c]/10 dark:bg-[#4aaa3c]/20 border border-[#4aaa3c]/30 rounded-xl text-xs text-[#2d3661] dark:text-[#7de06f] flex items-center space-x-2 animate-in fade-in duration-200">
+              <Check className="w-4 h-4 text-[#4aaa3c] shrink-0" />
+              <span className="font-semibold">{academicSuccess}</span>
+            </div>
+          )}
+
+          {academicError && (
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-400 flex items-start space-x-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <span>{academicError}</span>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {/* Seletor de Curso */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="select-curso-perfil"
+                className="block text-xs font-bold text-slate-700 dark:text-slate-300"
+              >
+                1. Selecionar Curso Técnico
+              </label>
+              <select
+                id="select-curso-perfil"
+                disabled={isLoadingAcademic || isSavingAcademic}
+                value={selectedCursoId}
+                onChange={(e) => handleCourseChange(e.target.value ? Number(e.target.value) : "")}
+                className="w-full px-3.5 py-2.5 text-xs bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2d3661] dark:focus:border-[#4aaa3c] focus:ring-2 focus:ring-[#2d3661]/15 disabled:bg-slate-100/60 dark:disabled:bg-slate-800/40 disabled:cursor-not-allowed"
+              >
+                <option value="">Selecione seu curso técnico...</option>
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome} ({c.sigla})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Seletor de Turma (Dependente do Curso) */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="select-turma-perfil"
+                className="block text-xs font-bold text-slate-700 dark:text-slate-300"
+              >
+                2. Selecionar Turma
+              </label>
+              <select
+                id="select-turma-perfil"
+                disabled={!selectedCursoId || isLoadingAcademic || isSavingAcademic}
+                value={selectedTurmaId}
+                onChange={(e) => setSelectedTurmaId(e.target.value ? Number(e.target.value) : "")}
+                className="w-full px-3.5 py-2.5 text-xs bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2d3661] dark:focus:border-[#4aaa3c] focus:ring-2 focus:ring-[#2d3661]/15 disabled:bg-slate-100/60 dark:disabled:bg-slate-800/40 disabled:cursor-not-allowed"
+              >
+                <option value="">
+                  {!selectedCursoId
+                    ? "Selecione primeiro o curso técnico"
+                    : availableClasses.length === 0
+                    ? "Nenhuma turma cadastrada para este curso"
+                    : "Selecione sua turma..."}
+                </option>
+                {availableClasses.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nome_turma} — Turno {t.periodo}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            isLoading={isSavingAcademic}
+            disabled={
+              isSavingAcademic ||
+              !selectedCursoId ||
+              !selectedTurmaId ||
+              selectedTurmaId === user?.turma_id
+            }
+            className="w-full font-bold bg-[#2d3661] hover:bg-[#222a4d] text-white mt-1 shadow-sm"
+          >
+            <Check className="w-4 h-4 mr-1.5" />
+            Salvar Vínculo Acadêmico
+          </Button>
+        </form>
       </Card>
 
       {/* Botão Sair */}

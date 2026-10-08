@@ -15,8 +15,8 @@ class NextClassOut(BaseModel):
 class StudentDashboardOut(BaseModel):
     saudacao: str
     aluno_nome: str
-    turma_nome: str
-    curso_nome: str
+    turma_nome: Optional[str] = None
+    curso_nome: Optional[str] = None
     proxima_aula: Optional[NextClassOut] = None
     aviso_recente: Optional[AvisoOut] = None
     tarefas_pendentes_count: int
@@ -24,5 +24,7 @@ class StudentDashboardOut(BaseModel):
     cantina_destaque: Optional[ProdutoOut] = None
 
 class StudentProfileUpdate(BaseModel):
-    nome: str
+    nome: Optional[str] = None
+    curso_id: Optional[int] = None
+    turma_id: Optional[int] = None
 

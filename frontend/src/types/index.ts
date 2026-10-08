@@ -7,6 +7,7 @@ export interface User {
   perfil: Role;
   turma_id?: number | null;
   turma_nome?: string | null;
+  curso_id?: number | null;
   curso_nome?: string | null;
   avatar_url?: string | null;
   ambiente?: string;
@@ -110,8 +111,8 @@ export interface Product {
 export interface StudentDashboard {
   saudacao: string;
   aluno_nome: string;
-  turma_nome: string;
-  curso_nome: string;
+  turma_nome?: string | null;
+  curso_nome?: string | null;
   proxima_aula?: NextClass | null;
   aviso_recente?: Notice | null;
   tarefas_pendentes_count: number;

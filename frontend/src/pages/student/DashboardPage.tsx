@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../../contexts/AuthContext";
 import { studentService } from "../../services/student.service";
 import type { StudentDashboard } from "../../types";
 import { Card } from "../../components/common/Card";
@@ -16,7 +15,6 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
-  const { user } = useAuth();
   const [dashboard, setDashboard] = useState<StudentDashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,10 +66,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <h2 className="text-xl font-bold tracking-tight text-white">{dashboard.aluno_nome}</h2>
           <div className="pt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-300">
             <span className="bg-[#1f2647] dark:bg-slate-800 text-[#7de06f] border border-[#3c4779] dark:border-slate-700 px-2.5 py-0.5 rounded-lg font-medium">
-              {user?.email === "aluno@escola.pr.gov.br"
-                ? user.email
-                : dashboard.turma_nome}
+              {dashboard.turma_nome ? dashboard.turma_nome : "Sem turma definida"}
             </span>
+            {dashboard.curso_nome && (
+              <span className="bg-[#1f2647]/60 dark:bg-slate-800/60 text-slate-300 border border-[#3c4779]/60 dark:border-slate-700/60 px-2 py-0.5 rounded-lg text-[11px]">
+                {dashboard.curso_nome}
+              </span>
+            )}
           </div>
         </div>
 
@@ -85,6 +86,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </div>
         </div>
       </div>
+
+      {/* Alerta Convidando para Seleção de Curso e Turma no Perfil */}
+      {!dashboard.turma_nome && (
+        <Card className="p-4 border-[#2d3661]/20 dark:border-[#7de06f]/30 bg-gradient-to-r from-[#2d3661]/5 to-[#4aaa3c]/5 dark:from-[#2d3661]/20 dark:to-[#4aaa3c]/10 space-y-3">
+          <div className="flex items-start space-x-3">
+            <div className="p-2.5 rounded-2xl bg-[#2d3661]/10 dark:bg-[#7de06f]/20 text-[#2d3661] dark:text-[#7de06f] shrink-0 mt-0.5">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                Defina seu Curso e Turma
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Você ainda não possui uma turma vinculada. Escolha seu curso e turma no Perfil para visualizar sua grade horária e próximas aulas.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigate("perfil")}
+            className="w-full flex items-center justify-center space-x-2 py-2 px-3 bg-[#2d3661] hover:bg-[#222a4d] dark:bg-[#4aaa3c] dark:hover:bg-[#3d9131] text-white dark:text-slate-900 text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
+          >
+            <span>Configurar no Perfil</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </Card>
+      )}
 
       {/* Próxima Aula */}
       {dashboard.proxima_aula ? (

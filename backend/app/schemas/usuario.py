@@ -11,6 +11,7 @@ class UsuarioOut(BaseModel):
     perfil: str
     turma_id: Optional[int] = None
     turma_nome: Optional[str] = None
+    curso_id: Optional[int] = None
     curso_nome: Optional[str] = None
     avatar_url: Optional[str] = None
     ambiente: str = "OFICIAL"

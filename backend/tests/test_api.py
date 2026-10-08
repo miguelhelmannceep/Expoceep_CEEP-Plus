@@ -2523,7 +2523,7 @@ def test_google_login_valid_institutional_student():
         assert data["role"] == "ALUNO"
         assert data["email"] == unique_email
         assert data["nome"] == "Aluno Teste Google"
-        assert data["turma"] is not None
+        assert data["turma"] is None  # Milestone 5Y: novos alunos iniciam sem turma pré-atribuída
 
 def test_google_login_gmail_domain_rejected():
     """2. Token válido de Gmail -> rejeitado com 403 e mensagem clara."""
@@ -2662,7 +2662,7 @@ def test_google_login_new_institutional_user_provisioning():
     assert user.perfil == "ALUNO"
     assert user.google_sub == sub_id
     assert user.nome == nome
-    assert user.turma_id is not None
+    assert user.turma_id is None  # Milestone 5Y: novos alunos iniciam sem turma pré-atribuída
     assert user.ativo is True
     db.close()
 

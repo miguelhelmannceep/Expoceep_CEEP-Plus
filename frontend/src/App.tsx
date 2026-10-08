@@ -50,7 +50,7 @@ const AppContent: React.FC = () => {
       <ProtectedRoute allowedRoles={["ALUNO"]}>
         <StudentLayout activeTab={studentTab} onTabChange={setStudentTab}>
           {studentTab === "inicio" && <StudentDashboardPage onNavigate={setStudentTab} />}
-          {studentTab === "horarios" && <SchedulesPage />}
+          {studentTab === "horarios" && <SchedulesPage onNavigate={setStudentTab} />}
           {studentTab === "cantina" && <CanteenPage />}
           {studentTab === "avisos" && <NoticesPage />}
           {studentTab === "tarefas" && <TasksPage />}

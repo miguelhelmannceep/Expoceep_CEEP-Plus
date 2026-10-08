@@ -6,7 +6,7 @@ export const studentService = {
     return request<StudentDashboard>("/student/dashboard");
   },
 
-  async updateProfile(payload: { nome: string }): Promise<User> {
+  async updateProfile(payload: { nome?: string; curso_id?: number | null; turma_id?: number | null }): Promise<User> {
     return request<User>("/student/profile", {
       method: "PATCH",
       body: JSON.stringify(payload),

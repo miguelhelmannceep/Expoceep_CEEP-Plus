@@ -16,11 +16,7 @@ Aplicação web progressiva (PWA) responsiva e mobile-first projetada para a com
 
 Para testar os 3 perfis da aplicação, utilize as seguintes credenciais na tela de login institucional:
 
-| Perfil | E-mail | Senha | Descrição |
-| :--- | :--- | :--- | :--- |
-| **Aluno** | `aluno@escola.pr.gov.br` (ou qualquer `@escola.pr.gov.br`) | `demo123` | Dashboard do estudante, Horários da Turma (3º C DS), Avisos, Tarefas e Cantina. |
-| **Gestão** | `gestao@ceep.demo` | `demo123` | Painel administrativo institucional com Avisos, Turmas, Disciplinas, Grade e Cantina. |
-| **Cantina** | `cantina@ceep.demo` | `demo123` | Terminal de atendimento, scanner e validação de retiradas por QR Code. |
+
 
 ---
 

@@ -27,16 +27,13 @@ export const DAILY_QUOTES: string[] = [
   "Cada linha de código e projeto é um passo em direção ao seu objetivo."
 ];
 
-/**
- * Retorna a frase do dia de forma determinística para uma dada data (ou a data atual).
- * Garante que todos os alunos visualizem a mesma frase no mesmo dia, e que a frase mude ao virar a data.
- */
+
 export function getDailyQuote(date: Date = new Date()): string {
   const year = date.getFullYear();
   const month = date.getMonth();
   const day = date.getDate();
   
-  // Cálculo determinístico do número de dias desde a época UTC local
+ 
   const dayIndex = Math.floor(Date.UTC(year, month, day) / (24 * 60 * 60 * 1000));
   const index = Math.abs(dayIndex) % DAILY_QUOTES.length;
   

@@ -1,8 +1,3 @@
-/**
- * Frases do Dia institucionais e motivacionais para o CEEP+.
- * Seleção determinística baseada na data atual.
- */
-
 export const DAILY_QUOTES: string[] = [
   "O futuro é glorioso.",
   "A persistência transforma esforço em conquista.",
